@@ -447,9 +447,8 @@
 
             const script = document.createElement('script');
             script.className = 'jsonp-temp';
-            script.src = scriptUrl + "?action=save&username=" + encodeURIComponent(currentUser) + "&date=" + encodeURIComponent(date) + "&project=" + encodeURIComponent(project) + "&start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end) + "&breakTime=" + encodeURIComponent(selectedBreakValue)&notes=" + encodeURIComponent(notes) + "&callback=handleSaveResponse";
-            document.body.appendChild(script);
-        }
+            script.src = scriptUrl + "?action=save&username=" + encodeURIComponent(currentUser) + "&date=" + encodeURIComponent(date) + "&project=" + encodeURIComponent(project) + "&start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end) + "&breakTime=" + encodeURIComponent(selectedBreakValue) + "&notes=" + encodeURIComponent(notes) + "&callback=handleSaveResponse";
+
 
         // 4. RENDER HISTORY
         function renderHistory(historyArray) {
