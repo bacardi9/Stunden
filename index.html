@@ -281,8 +281,7 @@
 
     <script>
         // PASTE YOUR COPIED GOOGLE WEB APP URL BETWEEN THE QUOTES BELOW:
-        
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbzwKnqyZlQkbvKjs9fqp2TIQgWWECjMfJ1v62TlVKu5cgIZwvyE91KZt11HS3RObg9k/exec"; 
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbyBW6wfuoTDd2mx-MrhrSjy1IsznJoEvdfXMke22DNnezLx6yq6jsr8VVydTeomJpMj/exec"; 
         
         let currentUser = "";
         let selectedBreakValue = "45m";
@@ -304,6 +303,20 @@
             chips.forEach(c => c.classList.remove('selected'));
             element.classList.add('selected');
             selectedBreakValue = value;
+        }
+
+        function showToast(id) {
+            const toast = document.getElementById(id);
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        function logout() {
+            currentUser = "";
+            document.getElementById("invite-name").value = "";
+            document.getElementById("invite-code").value = "";
+            document.getElementById("error-message").innerText = "";
+            document.getElementById("invite-gate").style.display = "flex";
         }
 
         // Global JSONP Response Handlers
@@ -411,17 +424,4 @@
             document.body.appendChild(script);
         }
 
-        // 3. RENDER HISTORY
-        function renderHistory(historyArray) {
-            const historyList = document.getElementById("history-list");
-            document.getElementById("total-hours-val").innerText = historyArray.length;
-            
-            if (historyArray.length === 0) {
-                historyList.innerHTML = `<p style="color:gray; font-size:0.9rem;">No entries found for this profile.</p>`;
-                return;
-            }
-            
-            historyList.innerHTML = historyArray.map(item => `
-                <div class="log-item">
-                    <div>
-                        <strong>${item.p
+      
