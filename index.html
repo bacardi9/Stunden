@@ -2,38 +2,130 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schürmann Portal</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="invite-gate" style="text-align: center; margin-top: 100px; font-family: 'Montserrat', sans-serif;">
+        <h2 style="font-family: 'Cinzel', serif; color: #333;">Enter Your Invitation Code</h2>
+        <p style="color: #666; margin-bottom: 20px;">This portal is currently private. Please enter your 6-digit code to continue.</p>
+        
+        <input type="text" id="invite-code" maxlength="6" placeholder="123456" 
+               style="padding: 12px; font-size: 16px; text-align: center; width: 180px; border-radius: 5px; border: 1px solid #ccc; font-family: 'Montserrat', sans-serif; letter-spacing: 2px;">
+        <br><br>
+        <button id="submit-code-btn" onclick="verifyInvitationCode()" 
+                style="padding: 12px 28px; font-size: 16px; background-color: #1a1a1a; color: white; border: none; border-radius: 5px; cursor: pointer; font-family: 'Montserrat', sans-serif; transition: 0.3s;">
+            Verify Code
+        </button>
+        
+        <p id="error-message" style="color: #d9534f; margin-top: 15px; font-weight: 600; min-height: 20px;"></p>
+    </div>
 
-    <style>
-        :root { 
-            --primary-blue: #3b82f6; 
-            --primary-red: #e30613;
-            --bg: #242f3e; 
-            --app-bg: #f3f4f6;
-            --card-bg: #ffffff;
-            --text: #1f2937;
-            --border: #e5e7eb;
-            --secondary-text: #6b7280;
-            --status-green: #10b981;
-        }
+    <div id="main-content" style="display: none;">
+        <div class="background-container"></div>
+        <div class="logo-container">
+            <img src="logo.png" alt="S Logo" class="logo animate-logo">
+        </div>
+        <div class="container animate-content">
+            <header>
+                <h1 class="portal-title">SCHÜRMANN PORTAL</h1>
+                <p class="subtitle">Willkommen zurück</p>
+                <div class="divider"></div>
+            </header>
+            
+            <main class="grid-container">
+                <a href="https://nextcloud.schuermann.portal" class="grid-item card-1" target="_blank">
+                    <div class="card-content">
+                        <div class="icon">📁</div>
+                        <h2>Nextcloud</h2>
+                        <p>Dateien & Cloud-Speicher</p>
+                    </div>
+                </a>
+                
+                <a href="https://bitwarden.schuermann.portal" class="grid-item card-2" target="_blank">
+                    <div class="card-content">
+                        <div class="icon">🛡️</div>
+                        <h2>Bitwarden</h2>
+                        <p>Passwort-Manager</p>
+                    </div>
+                </a>
+                
+                <a href="https://pve.schuermann.portal" class="grid-item card-3" target="_blank">
+                    <div class="card-content">
+                        <div class="icon">🖥️</div>
+                        <h2>Proxmox VE</h2>
+                        <p>Server-Infrastruktur</p>
+                    </div>
+                </a>
+                
+                <a href="https://pbs.schuermann.portal" class="grid-item card-4" target="_blank">
+                    <div class="card-content">
+                        <div class="icon">💾</div>
+                        <h2>Proxmox Backup</h2>
+                        <p>Datensicherung & Storage</p>
+                    </div>
+                </a>
+            </main>
+            
+            <footer>
+                <p class="footer-text">&copy; 2025 Schürmann Portal. Alle Rechte vorbehalten.</p>
+            </footer>
+        </div>
+    </div>
 
-        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
-        body { margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; height: 100vh; }
+    <script>
+    function verifyInvitationCode() {
+      const codeInput = document.getElementById("invite-code").value.trim();
+      const errorMsg = document.getElementById("error-message");
+      const submitBtn = document.getElementById("submit-code-btn");
+      
+      // Basic client-side validation
+      if (codeInput.length !== 6 || isNaN(codeInput)) {
+        errorMsg.style.color = "#d9534f";
+        errorMsg.innerText = "Please enter a valid 6-digit number.";
+        return;
+      }
+      
+      errorMsg.style.color = "#f0ad4e";
+      errorMsg.innerText = "Verifying code...";
+      submitBtn.disabled = true;
 
-        .brand-stack { text-align: center; line-height: 1.1; position: relative; }
-        .brand-main { color: var(--primary-red); font-weight: 800; font-size: 1.1rem; letter-spacing: 1px; display: block; }
-        .brand-sub { color: var(--primary-red); font-weight: 600; font-size: 0.65rem; letter-spacing: 0.5px; display: block; }
-
-        #sync-indicator {
-            position: absolute;
-            left: -18px;
-            top: 50%;
+      // PASTE YOUR COPIED GOOGLE WEB APP URL BETWEEN THE QUOTES BELOW:
+      const scriptUrl = "YOUR_GOOGLESCRIPT_WEBAPP_URL_HERE"; 
+      
+      // Send the 6-digit code to your Google Script backend
+      fetch(`${scriptUrl}?code=${codeInput}`)
+        .then(response => response.json())
+        .then(data => {
+          submitBtn.disabled = false;
+          
+          if (data.status === "valid") {
+            errorMsg.style.color = "#5cb85c";
+            errorMsg.innerText = "Access granted! Unlocking portal...";
+            
+            // Hide the lock gate and display your original dashboard grid smoothly
+            setTimeout(() => {
+              document.getElementById("invite-gate").style.display = "none";
+              document.getElementById("main-content").style.display = "block";
+            }, 1000);
+            
+          } else {
+            errorMsg.style.color = "#d9534f";
+            errorMsg.innerText = data.message; 
+          }
+        })
+        .catch(error => {
+          submitBtn.disabled = false;
+          errorMsg.style.color = "#d9534f";
+          errorMsg.innerText = "An error occurred. Please check your connection.";
+          console.error("Backend Error:", error);
+        });
+    }
+    </script>
+</body>
+</html>
             transform: translateY(-50%);
             width: 10px;
             height: 10px;
@@ -308,7 +400,7 @@
 
         try {
             // Google scripts url deployed as web immer
-            const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwLRvVqgAxbt-VTMPYstJVA9r9zglAkUcGzRzczBnXS8MOqVRNfr8fqach4wTQ8bwOX/exec';
+            const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwTzUsN8ybNMeTQEJth_WLSgToBmqK2mdKRZVy-080VQzhJz_28nFIP4akzHuyN0l2j/exec';
             
             const response = await fetch(BACKEND_URL, {
                 method: 'POST',
