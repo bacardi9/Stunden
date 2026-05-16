@@ -26,9 +26,23 @@
         * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
         body { margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; height: 100vh; }
 
-        .brand-stack { text-align: center; line-height: 1.1; }
+        .brand-stack { text-align: center; line-height: 1.1; position: relative; }
         .brand-main { color: var(--primary-red); font-weight: 800; font-size: 1.1rem; letter-spacing: 1px; display: block; }
         .brand-sub { color: var(--primary-red); font-weight: 600; font-size: 0.65rem; letter-spacing: 0.5px; display: block; }
+
+        /* Sync Indicator Style */
+        #sync-indicator {
+            position: absolute;
+            left: -18px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            background: #ef4444; /* Default Red */
+            border-radius: 50%;
+            box-shadow: 0 0 5px #ef4444;
+            transition: all 0.4s ease;
+        }
 
         #login-screen { position: fixed; inset: 0; z-index: 5000; display: flex; justify-content: center; align-items: center; padding: 20px; background: #242f3e; }
         .login-card { background: white; padding: 40px 30px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
@@ -38,8 +52,6 @@
         .sidebar { position: fixed; left: -280px; top: 0; width: 260px; height: 100%; background: var(--card-bg); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 4000; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
         .sidebar.open { left: 0; }
         .sidebar-header { padding: 30px 20px; border-bottom: 1px solid var(--border); }
-        .sidebar-content { flex: 1; }
-        .sidebar-footer { padding: 20px; border-top: 1px solid var(--border); text-align: center; }
         
         .nav-item { padding: 16px 20px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #f9fafb; }
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 3500; }
@@ -138,6 +150,7 @@
     <header>
         <div class="menu-btn" onclick="toggleNav()">☰</div>
         <div class="brand-stack">
+            <div id="sync-indicator"></div>
             <span class="brand-main">SCHÜRMANN</span>
             <span class="brand-sub">GEBÄUDE + ENERGIE</span>
         </div>
@@ -204,6 +217,36 @@
     let currentUser = "";
     let storageKey = "";
 
+    // --- AUTO-SYNC LOGIC ---
+    function setSyncStatus(isSynced) {
+        const light = document.getElementById('sync-indicator');
+        if (isSynced) {
+            light.style.background = "#10b981"; // Green
+            light.style.boxShadow = "0 0 8px #10b981";
+        } else {
+            light.style.background = "#ef4444"; // Red
+            light.style.boxShadow = "0 0 8px #ef4444";
+        }
+    }
+
+    async function autoSync(data) {
+        // This simulates your "Firebox" outposting service
+        try {
+            console.log("Auto-syncing data to online service...");
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 800));
+            
+            // If we had a real URL, it would look like this:
+            // await fetch('YOUR_FIREBOX_URL', { method: 'POST', body: JSON.stringify(data) });
+            
+            setSyncStatus(true); // Success
+        } catch (error) {
+            console.error("Sync failed", error);
+            setSyncStatus(false); // Fail
+        }
+    }
+    // -----------------------
+
     function toggleNav() {
         document.getElementById('sidebar').classList.toggle('open');
         document.getElementById('overlay').classList.toggle('active');
@@ -228,7 +271,6 @@
             document.getElementById('side-user-name').innerText = name;
             document.getElementById('in-date').valueAsDate = new Date();
             
-            // Set start time automatically to 07:00 on login
             document.getElementById('in-start').value = "07:00";
             
             updateUI();
@@ -257,8 +299,10 @@
         logs.unshift({ id: Date.now(), date, proj, start, end, duration: diff, ot, breakTime, notes });
         localStorage.setItem(storageKey, JSON.stringify(logs));
         
-        // Reset inputs for next entry
-        document.getElementById('in-start').value = "07:00"; // Reset to 07:00 automatically
+        // TRIGGER AUTO-SYNC
+        autoSync(logs);
+
+        document.getElementById('in-start').value = "07:00"; 
         document.getElementById('in-proj').value = "";
         document.getElementById('in-break').value = 0;
         document.getElementById('in-notes').value = "";
@@ -295,6 +339,7 @@
             logs = logs.filter(l => l.id !== id);
             localStorage.setItem(storageKey, JSON.stringify(logs));
             updateUI();
+            autoSync(logs); // Sync again after deletion
         }
     }
 
