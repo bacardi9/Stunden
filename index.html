@@ -330,7 +330,7 @@
                 errorMsg.innerText = "Access granted! Syncing profile...";
                 
                 currentUser = data.username;
-                document.getElementById("welcome-text").innerText = `Guten Tag, ${currentUser}`;
+                document.getElementById("welcome-text").innerText = "Guten Tag, " + currentUser;
                 document.getElementById("settings-username").innerText = currentUser;
                 
                 renderHistory(data.history);
@@ -366,9 +366,9 @@
                 const newName = prompt("Code accepted! Please type the new full name for this profile:");
                 if (newName && newName.trim() !== "") {
                     currentUser = newName.trim();
-                    document.getElementById("welcome-text").innerText = `Guten Tag, ${currentUser}`;
+                    document.getElementById("welcome-text").innerText = "Guten Tag, " + currentUser;
                     document.getElementById("settings-username").innerText = currentUser;
-                    alert(`Profile name updated locally to: ${currentUser}.\nRemember to update this spelling inside your spreadsheet!`);
+                    alert("Profile name updated locally to: " + currentUser + ".\nRemember to update this spelling inside your spreadsheet!");
                 }
             } else {
                 alert(data.message);
@@ -406,11 +406,11 @@
           
           const script = document.createElement('script');
           script.className = 'jsonp-temp';
-          script.src = `${scriptUrl}?action=verify&username=${encodeURIComponent(nameInput)}&code=${codeInput}&callback=handleAuthResponse`;
+          script.src = scriptUrl + "?action=verify&username=" + encodeURIComponent(nameInput) + "&code=" + codeInput + "&callback=handleAuthResponse";
           document.body.appendChild(script);
         }
 
-        // 2. REQUEST UNLOCK VIA ALPHANUMERIC CODE
+                // 2. REQUEST UNLOCK VIA ALPHANUMERIC CODE
         function requestNameChangeUnlock() {
             const enteredCode = document.getElementById("name-change-code").value.trim();
             if (!enteredCode) {
@@ -420,8 +420,63 @@
             
             const script = document.createElement('script');
             script.className = 'jsonp-temp';
-            script.src = `${scriptUrl}?action=verifyNameChangeCode&changeCode=${encodeURIComponent(enteredCode)}&callback=handleNameChangeCodeResponse`;
+            script.src = scriptUrl + "?action=verifyNameChangeCode&changeCode=" + encodeURIComponent(enteredCode) + "&callback=handleNameChangeCodeResponse";
             document.body.appendChild(script);
         }
 
-      
+        // 3. SAVE WORK RECORD
+        function saveRecord() {
+            if (!currentUser) {
+                alert("Error: No authorized user profile detected. Please refresh and log in again.");
+                return;
+            }
+            const date = document.getElementById("work-date").value;
+            const project = document.getElementById("project-name").value.trim();
+            const start = document.getElementById("start-time").value;
+            const end = document.getElementById("end-time").value;
+            const notes = document.getElementById("work-notes").value.trim();
+
+            if (!project) {
+                alert("Please fill out the Project/Task title before saving.");
+                return;
+            }
+
+            const saveBtn = document.getElementById("save-record-btn");
+            saveBtn.disabled = true;
+            saveBtn.innerText = "Saving...";
+
+            const script = document.createElement('script');
+            script.className = 'jsonp-temp';
+            script.src = scriptUrl + "?action=save&username=" + encodeURIComponent(currentUser) + "&date=" + encodeURIComponent(date) + "&project=" + encodeURIComponent(project) + "&start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end) + "&breakTime=" + encodeURIComponent(selectedBreakValue)}&notes=" + encodeURIComponent(notes) + "&callback=handleSaveResponse";
+            document.body.appendChild(script);
+        }
+
+        // 4. RENDER HISTORY
+        function renderHistory(historyArray) {
+            const historyList = document.getElementById("history-list");
+            document.getElementById("total-hours-val").innerText = historyArray.length;
+            
+            if (!historyArray || historyArray.length === 0) {
+                historyList.innerHTML = '<p style="color:gray; font-size:0.9rem;">No entries found for this profile.</p>';
+                return;
+            }
+            
+            let htmlContent = '';
+            for (let i = 0; i < historyArray.length; i++) {
+                let item = historyArray[i];
+                let projName = item.project || 'Unnamed Project';
+                let dateStr = item.date ? item.date.split('T')[0] : '';
+                
+                htmlContent += '<div class="log-item"><div>';
+                htmlContent += '<strong>' + projName + '</strong>';
+                htmlContent += '<div style="font-size:0.75rem; color:gray;">' + dateStr + ' | ' + item.start + ' - ' + item.end + ' (Pause: ' + item.breakTime + ')</div>';
+                if (item.notes) {
+                    htmlContent += '<div style="font-size:0.75rem; color:#666; font-style:italic; margin-top:2px;">Note: ' + item.notes + '</div>';
+                }
+                htmlContent += '</div></div>';
+            }
+            historyList.innerHTML = htmlContent;
+        }
+    </script>
+</body>
+</html>
