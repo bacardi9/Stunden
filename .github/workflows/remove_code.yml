@@ -1,5 +1,6 @@
 name: Remove Used Code
-on:workflow_dispatch:
+on:
+  workflow_dispatch:
     inputs:
       code_to_remove:
         description: 'The code to remove from codesdx.txt'
@@ -12,15 +13,13 @@ jobs:
       - name: Checkout Private Codes Repo
         uses: actions/checkout@v4
         with:
-          # This tells GitHub to use the secret you just created
-          repository: Bacardi9/Codes
+          repository: bacardi9/Codes
           token: ${{ secrets.CODES_REPO_TOKEN }}
           path: codes-repo
 
       - name: Remove code from file
         run: |
           cd codes-repo
-          # This searches for the code and removes that specific line
           sed -i "/^${{ github.event.inputs.code_to_remove }}$/d" codesdx.txt
           
       - name: Commit and Push Changes
