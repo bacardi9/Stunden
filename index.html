@@ -3,199 +3,919 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Campaign Login Portal</title>
+    <title>Schürmann Gebäude + Energie - Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
+        /* --- CORE APPLICATION THEME CONFIGURATION --- */
+        :root {
+            --schurmann-red: #e30613;
+            --dark-blue: #1d2a44;
+            --light-bg: #f4f6f9;
+            --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            --border-radius: 12px;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            height: 100vh;
+            background-color: var(--light-bg);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        /* --- STAGE 1: SECURE FIREBASE LOGIN INTERFACE --- */
+        #login-view {
             display: flex;
             justify-content: center;
             align-items: center;
-            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            background-color: var(--light-bg);
         }
-
         .login-container {
-            background: #ffffff;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            background: white;
+            padding: 35px 25px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
             width: 100%;
-            max-width: 400px;
+            max-width: 360px;
             text-align: center;
         }
-
-        h2 {
-            margin-bottom: 10px;
-            color: #1e3c72;
-            font-size: 28px;
+        .login-container h2 {
+            margin-bottom: 25px;
+            color: var(--dark-blue);
+            font-size: 24px;
+            font-weight: 700;
         }
-
-        p.subtitle {
-            color: #666;
-            margin-bottom: 30px;
+        .login-container input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccd1d9;
+            border-radius: 6px;
+            font-size: 15px;
+            transition: border-color 0.2s;
+        }
+        .login-container input:focus {
+            border-color: var(--schurmann-red);
+            outline: none;
+        }
+        .login-container button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: background-color 0.2s;
+        }
+        .login-container button:hover {
+            background-color: #0056b3;
+        }
+        .message {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
             font-size: 14px;
         }
+        .error { color: #e74c3c; }
+        .success { color: #2ecc71; }
 
-        .input-group {
-            margin-bottom: 20px;
+
+        /* --- STAGE 2: ORIGINAL MAIN SMART APP VIEW --- */
+        #app-view {
+            display: none; /* Hidden on initialization until login is complete */
+            position: relative;
+            min-height: 100vh;
+            padding-top: 60px; /* Space for the top navbar header */
+        }
+
+        /* Top Branded App Header */
+        .app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            z-index: 100;
+        }
+        .menu-toggle {
+            font-size: 22px;
+            color: var(--dark-blue);
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        .brand-logo {
+            text-align: center;
+        }
+        .brand-logo h1 {
+            font-size: 14px;
+            color: var(--schurmann-red);
+            letter-spacing: 0.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .brand-logo p {
+            font-size: 9px;
+            color: var(--dark-blue);
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Dynamic Sliding Sidebar Panel Drawer */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: -280px;
+            width: 280px;
+            background: white;
+            z-index: 200;
+            box-shadow: 5px 0 25px rgba(0,0,0,0.15);
+            transition: left 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 30px 20px;
+        }
+        .sidebar.open {
+            left: 0;
+        }
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 150;
+            display: none;
+        }
+        .sidebar-overlay.show {
+            display: block;
+        }
+        .user-profile-section {
+            margin-bottom: 30px;
+        }
+        .profile-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 2px;
+        }
+        .profile-brand {
+            font-size: 12px;
+            color: var(--schurmann-red);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .nav-menu {
+            list-style: none;
+            flex-grow: 1;
+            margin-top: 20px;
+        }
+        .nav-item {
+            padding: 14px 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #475569;
+            font-weight: 500;
+            font-size: 15px;
+            cursor: pointer;
+            margin-bottom: 6px;
+            transition: all 0.2s;
+        }
+        .nav-item i {
+            font-size: 18px;
+            width: 24px;
+        }
+        .nav-item:hover, .nav-item.active {
+            background-color: #f1f5f9;
+            color: var(--dark-blue);
+        }
+        .nav-item.active {
+            font-weight: 700;
+        }
+        .sidebar-footer {
+            font-size: 10px;
+            font-weight: 700;
+            color: #3b82f6;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             text-align: left;
         }
 
-        label {
+        /* Main Navigated Dashboard Layout Content Viewsheets */
+        .content-panel {
+            padding: 20px;
+            display: none;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .content-panel.active {
             display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-            font-size: 14px;
-            color: #444;
         }
-
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-
-        input[type="text"]:focus,
-        input[type="password"]:focus {
-            border-color: #2a5298;
-            outline: none;
-        }
-
-        #error-message {
+        .view-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--dark-blue);
             margin-bottom: 20px;
-            font-weight: bold;
-            font-size: 14px;
-            min-height: 20px;
         }
 
-        .btn-submit {
+        /* Cards and Structural App Components Setup */
+        .app-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 20px;
+        }
+
+        /* KPI Dash Metrics Badge View */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .kpi-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #edf2f7;
+        }
+        .kpi-card h4 {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        .kpi-card p {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--dark-blue);
+        }
+        .kpi-card.highlight p {
+            color: #10b981;
+        }
+
+        /* Generic Forms Styling Elements */
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 6px;
+            letter-spacing: 0.3px;
+        }
+        .form-group input, .form-group select, .form-group textarea {
             width: 100%;
-            background-color: #2a5298;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 15px;
+            background-color: #fafafa;
+            color: #1e293b;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background-color: white;
+        }
+
+        /* Break System Row pill selection layout component */
+        .break-pill-box {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 5px;
+        }
+        .break-pill {
+            flex: 1;
+            min-width: 55px;
+            padding: 10px 5px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .break-pill.active {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        .break-pill.danger-pill {
+            color: #ef4444;
+        }
+        .break-pill.danger-pill.active {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        /* Action Save Primary UI Elements */
+        .primary-btn {
+            width: 100%;
+            background: #3b82f6;
             color: white;
             border: none;
             padding: 14px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 6px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+            transition: background 0.2s;
+        }
+        .primary-btn:hover {
+            background: #2563eb;
+        }
+        .red-btn {
+            background-color: #e30613;
+            box-shadow: 0 4px 12px rgba(227, 6, 19, 0.2);
+        }
+        .red-btn:hover {
+            background-color: #b8050f;
         }
 
-        .btn-submit:hover {
-            background-color: #1e3c72;
+        /* History Table Data Sheet Framework Output Panel */
+        .history-list-wrapper {
+            margin-top: 15px;
+        }
+        .history-item {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--card-shadow);
+            border-left: 4px solid var(--schurmann-red);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .hist-left h5 {
+            font-size: 15px;
+            color: var(--dark-blue);
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+        .hist-left p {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .hist-right {
+            text-align: right;
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
         }
 
-        .btn-submit:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
+        /* Author Credit line footer signature link text design */
+        .developer-signature {
+            font-size: 9px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            text-align: center;
+            letter-spacing: 0.5px;
+            margin: 25px 0 10px 0;
         }
     </style>
 </head>
 <body>
 
-    <div class="login-container">
-        <h2>Identity Verification</h2>
-        <p class="subtitle">Enter your details to access the campaign dashboard</p>
-        
-        <div class="input-group">
-            <label for="invite-name">Full Name</label>
-            <input type="text" id="invite-name" placeholder="e.g. John Doe" autocomplete="off">
+    <div id="login-view">
+        <div class="login-container">
+            <div class="brand-logo" style="margin-bottom: 20px;">
+                <h1>Schürmann</h1>
+                <p>Gebäude + Energie</p>
+            </div>
+            <h2>Work Log Login</h2>
+            <form id="login-form">
+                <input type="text" id="username" placeholder="Enter Your Name" required>
+                <input type="password" id="passcode" placeholder="Enter Your Code" required>
+                <button type="submit">Log In</button>
+            </form>
+            <div id="message-box" class="message"></div>
         </div>
-
-        <div class="input-group">
-            <label for="invite-code">6-Digit Verification Code</label>
-            <input type="password" id="invite-code" placeholder="••••••" maxlength="6" inputmode="numeric" autocomplete="off">
-        </div>
-
-        <div id="error-message"></div>
-
-        <button id="submit-code-btn" class="btn-submit" onclick="verifyInvitationCode()">Verify Identity</button>
     </div>
 
+
+    <div id="app-view">
+        
+        <header class="app-header">
+            <button class="menu-toggle" onclick="toggleSidebarDrawer(true)">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="brand-logo">
+                <h1>Schürmann</h1>
+                <p>Gebäude + Energie</p>
+            </div>
+            <div style="width: 22px;"></div> </header>
+
+        <div class="sidebar-overlay" id="menu-backdrop" onclick="toggleSidebarDrawer(false)"></div>
+
+        <aside class="sidebar" id="sidebar-drawer">
+            <div>
+                <div class="user-profile-section">
+                    <div class="profile-name" id="user-profile-title">User Account</div>
+                    <div class="profile-brand">Schürmann</div>
+                </div>
+                <ul class="nav-menu">
+                    <li class="nav-item active" onclick="switchActiveView('dashboard', this)">
+                        <i class="fa-solid fa-chart-bar"></i> Dashboard
+                    </li>
+                    <li class="nav-item" onclick="switchActiveView('log-work', this)">
+                        <i class="fa-solid fa-pen-to-square"></i> Log Work
+                    </li>
+                    <li class="nav-item" onclick="switchActiveView('history', this)">
+                        <i class="fa-solid fa-clock-history"></i> History
+                    </li>
+                    <li class="nav-item" onclick="switchActiveView('settings', this)">
+                        <i class="fa-solid fa-gear"></i> Settings
+                    </li>
+                </ul>
+            </div>
+            <div class="sidebar-footer">
+                Developed by Amran Hiluf
+            </div>
+        </aside>
+
+        <main class="content-panel active" id="view-dashboard">
+            <h2 class="view-title">Dashboard</h2>
+            
+            <div class="kpi-row">
+                <div class="kpi-card">
+                    <h4>Total Working Hours</h4>
+                    <p id="dash-gross-hours">0.00 hrs</p>
+                </div>
+                <div class="kpi-card highlight">
+                    <h4>Overtime</h4>
+                    <p id="dash-overtime-hours">+0.0</p>
+                </div>
+            </div>
+
+            <div class="app-card" style="text-align: center; padding: 30px 15px;">
+                <i class="fa-solid fa-briefcase" style="font-size: 40px; color: #cbd5e1; margin-bottom: 15px;"></i>
+                <p style="color: #64748b; font-size: 14px; line-height: 1.5;"> Welcome back to your active performance logs tracker overview. Use the sidebar menu slider to append timestamps or manage target limits.</p>
+            </div>
+
+            <div class="developer-signature">Developed by Amran Hiluf</div>
+        </main>
+
+        <main class="content-panel" id="view-log-work">
+            <h2 class="view-title">Log Work</h2>
+            
+            <div class="app-card">
+                <form id="work-entry-form" onsubmit="handleNewRecordSubmission(event)">
+                    <div class="form-group">
+                        <label>Date</label>
+                        <select id="log-date-select"></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Project/Task</label>
+                        <input type="text" id="log-project-name" placeholder="Project Name" required>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label>Start</label>
+                            <select id="log-start-time" onchange="calculateFormTimeMetrics()"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>End</label>
+                            <select id="log-end-time" onchange="calculateFormTimeMetrics()"></select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label style="margin-bottom: 10px;">Break Selection</label>
+                        <div class="break-pill-box">
+                            <div class="break-pill active danger-pill" onclick="selectBreakOption(0, this)">None</div>
+                            <div class="break-pill" onclick="selectBreakOption(15, this)">15m</div>
+                            <div class="break-pill" onclick="selectBreakOption(30, this)">30m</div>
+                            <div class="break-pill" onclick="selectBreakOption(45, this)">45m</div>
+                            <div class="break-pill" onclick="selectBreakOption(60, this)">1h</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Notes (Optional)</label>
+                        <textarea id="log-notes" rows="3" placeholder="Private details..."></textarea>
+                    </div>
+
+                    <button type="submit" class="primary-btn">Save Record</button>
+                </form>
+            </div>
+
+            <div class="developer-signature">Developed by Amran Hiluf</div>
+        </main>
+
+        <main class="content-panel" id="view-history">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 class="view-title" style="margin-bottom: 0;">History</h2>
+                <button class="primary-btn red-btn" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="triggerPDFExportEngine()">Export PDF</button>
+            </div>
+
+            <div id="pdf-render-target">
+                <div id="pdf-custom-header" style="display: none; padding-bottom: 20px; border-bottom: 2px solid #e30613; margin-bottom: 20px;">
+                    <h1 style="color: #1d2a44; font-size: 22px;">Schürmann Gebäude + Energie</h1>
+                    <p style="font-size: 12px; color: #64748b;" id="pdf-user-metadata">Operational Segment Log Activity Sheet</p>
+                </div>
+                
+                <div id="history-items-container" class="history-list-wrapper">
+                    </div>
+            </div>
+
+            <div class="developer-signature">Developed by Amran Hiluf</div>
+        </main>
+
+        <main class="content-panel" id="view-settings">
+            <h2 class="view-title">Settings</h2>
+
+            <div class="app-card">
+                <div class="form-group">
+                    <label>Standard Shift Target (Hours)</label>
+                    <input type="number" id="setting-shift-hours" value="8" step="0.5" onchange="runGlobalApplicationMetricsEngine()">
+                </div>
+                <div class="form-group">
+                    <label>Automatic Break Rule Rate (Mins per 4h Session)</label>
+                    <input type="number" id="setting-break-minutes" value="30" onchange="runGlobalApplicationMetricsEngine()">
+                </div>
+                <p style="font-size: 12px; color: #64748b; line-height: 1.5; margin-top: 10px;">
+                    Altering these operational constants directly adjusts database variance delta outputs across metrics widgets.
+                </p>
+            </div>
+
+            <div class="developer-signature">Developed by Amran Hiluf</div>
+        </main>
+
+    </div>
+
+
+                <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <script>
-        // CRITICAL: Replace this string with your exact Apps Script Executable URL!
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbwQZi--2RshdLjGWh1XhuVgC1jralBcGN22BuEaPA_x-OgD_CpceEXvhlGlnUn1FbTE/usercontent";
-        // Clean up temporary script links from DOM dynamically
-        function clearTempScripts() {
-            const temps = document.querySelectorAll('.jsonp-temp');
-            temps.forEach(el => el.remove());
-        }
+        // Production Database Config credentials mapping
+        const firebaseConfig = {
+            apiKey: 'AIzaSyBbBMWCPlE-TNauiJgn3SeOgM9usMXUEJA',
+            authDomain: 'logins-fa136.firebaseapp.com',
+            projectId: 'logins-fa136',
+            storageBucket: 'logins-fa136.firebasestorage.app',
+            messagingSenderId: '624142930319',
+            appId: '1:624142930319:web:f4e0c97ee517b848cf3bfa'
+        };
 
-        // 1. SEND DATA TO GOOGLE SHEETS
-        function verifyInvitationCode() {
-            // Trim whitespace and process string configurations gracefully
-            const nameInput = document.getElementById("invite-name").value.trim().toLowerCase();
-            const codeInput = document.getElementById("invite-code").value.trim();
-            const errorMsg = document.getElementById("error-message");
-            const submitBtn = document.getElementById("submit-code-btn");
+        // App Instantiation
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Local State Memory Cache Arrays Context Store
+        let authenticatedUserGlobal = "Amran Hiluf";
+        let activeSelectedFormBreakDuration = 0;
+        
+        // Mock data parsed to match standard DD/MM/YYYY calendar formats
+        let globalLoggedSessionsDatabaseMock = [
+            { id: "1", date: "14/05/2026", project: "Central Facility Ventilation Fix", duration: 10.0, breakTime: 30, notes: "Worked late on Thursday" },
+            { id: "2", date: "15/05/2026", project: "Branded Grid Circuit Assembly", duration: 7.5, breakTime: 15, notes: "Friday shift" }
+        ];
+
+        // Object tracking calculated overtime breakdown records per day
+        let dailyOvertimeBreakdownLogs = {};
+
+        // Core Form Selection Select options loop generators
+        window.addEventListener('DOMContentLoaded', () => {
+            populateLogTimeFormDropdowns();
+            buildDateSelectionDropdown();
+            renderHistoricalRecordsSheet();
             
-            // Clean interface slate
-            errorMsg.innerText = "";
-            clearTempScripts();
+            // Add interactive click listener to the overtime card element container
+            const otCard = document.getElementById('dash-overtime-hours').parentElement;
+            otCard.style.cursor = 'pointer';
+            otCard.setAttribute('onclick', 'displayOvertimeBreakdownSummary()');
+        });
 
-            if (!nameInput) {
-                errorMsg.style.color = "#d9534f";
-                errorMsg.innerText = "Please enter your full name.";
-                return;
+        // Firebase Core Authenticated Login Form Submission Controller Interceptor
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault(); 
+            
+            const nameInput = document.getElementById('username').value.trim();
+            const codeInput = document.getElementById('passcode').value.trim();
+            const messageBox = document.getElementById('message-box');
+            
+            messageBox.textContent = 'Connecting safely...';
+            messageBox.className = 'message';
+
+            try {
+                await auth.signInAnonymously();
+
+                const querySnapshot = await db.collection('Users').get();
+                let foundDoc = null;
+                let dbCode = '';
+
+                querySnapshot.forEach((doc) => {
+                    if (doc.id.trim() === nameInput) {
+                        foundDoc = doc;
+                        dbCode = doc.data().Code !== undefined ? String(doc.data().Code).trim() : '';
+                    }
+                });
+
+                if (foundDoc) {
+                    if (dbCode === codeInput && codeInput !== '') {
+                        messageBox.textContent = `Welcome back, ${nameInput}!`;
+                        messageBox.className = 'message success';
+
+                        authenticatedUserGlobal = nameInput;
+
+                        setTimeout(() => {
+                            document.getElementById('login-view').style.display = 'none';
+                            document.getElementById('app-view').style.display = 'block';
+                            document.getElementById('user-profile-title').textContent = nameInput;
+                            document.getElementById('pdf-user-metadata').textContent = `Activity Logs Record Sheet - Issued for: ${nameInput}`;
+                            runGlobalApplicationMetricsEngine();
+                        }, 600);
+
+                    } else {
+                        messageBox.textContent = 'Invalid Name or Code. Please try again.';
+                        messageBox.className = 'message error';
+                    }
+                } else {
+                    messageBox.textContent = 'Invalid Name or Code. Please try again.';
+                    messageBox.className = 'message error';
+                }
+            } catch (error) {
+                console.error(error);
+                messageBox.textContent = 'Error connecting to database.';
+                messageBox.className = 'message error';
             }
+        });
 
-            if (codeInput.length !== 6 || isNaN(codeInput)) {
-                errorMsg.style.color = "#d9534f";
-                errorMsg.innerText = "Please enter a valid 6-digit number.";
-                return;
-            }
-            
-            // Status update
-            errorMsg.style.color = "#f0ad4e";
-            errorMsg.innerText = "Authenticating with database...";
-            submitBtn.disabled = true;
-            
-            // JSONP Pipeline Engine construction
-            const script = document.createElement('script');
-            script.className = 'jsonp-temp';
-            script.src = scriptUrl + "?action=verify&username=" + encodeURIComponent(nameInput) + "&code=" + codeInput + "&callback=handleAuthResponse";
-            
-            // Append and deploy call asynchronously
-            document.body.appendChild(script);
-        }
-
-        // 2. CATCH AND RESOLVE WEB APP RESPONSE
-        function handleAuthResponse(response) {
-            const errorMsg = document.getElementById("error-message");
-            const submitBtn = document.getElementById("submit-code-btn");
-            
-            // Unlock submit handling immediately upon handshake reply
-            if (submitBtn) submitBtn.disabled = false;
-            clearTempScripts();
-
-            if (response && response.success === true) {
-                errorMsg.style.color = "#5cb85c";
-                errorMsg.innerText = "Login successful! Redirecting...";
-                
-                // Keep local state active for active campaign tracking
-                localStorage.setItem("username", response.username);
-                
-                // Proceed directly to app landing page layout
-                setTimeout(() => {
-                    window.location.href = "dashboard.html";
-                }, 1200);
-                
+        /* --- APPLICATION NAVIGATION & TRACKING SCHEDULER ENGINES --- */
+        
+        function toggleSidebarDrawer(openState) {
+            const drawer = document.getElementById('sidebar-drawer');
+            const backdrop = document.getElementById('menu-backdrop');
+            if(openState) {
+                drawer.classList.add('open');
+                backdrop.classList.add('show');
             } else {
-                // FALLBACK REJECTION TRAP - Explicitly fires requested text
-                errorMsg.style.color = "#d9534f";
-                errorMsg.innerText = "Login incorrect. Please check your name and code.";
+                drawer.classList.remove('open');
+                backdrop.classList.remove('show');
             }
+        }
+
+        function switchActiveView(targetViewId, elementsRef) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            elementsRef.classList.add('active');
+
+            document.querySelectorAll('.content-panel').forEach(panel => panel.classList.remove('active'));
+            document.getElementById(`view-${targetViewId}`).classList.add('active');
+            
+            toggleSidebarDrawer(false);
+        }
+
+        function populateLogTimeFormDropdowns() {
+            const startSelect = document.getElementById('log-start-time');
+            const endSelect = document.getElementById('log-end-time');
+            
+            startSelect.innerHTML = '';
+            endSelect.innerHTML = '';
+
+            for (let hour = 0; hour < 24; hour++) {
+                for (let min of ['00', '30']) {
+                    const timeString = `${String(hour).padStart(2, '0')}:${min}`;
+                    
+                    let optStart = document.createElement('option');
+                    optStart.value = timeString;
+                    optStart.textContent = timeString;
+                    // Updated default initialization to 07:00
+                    if(timeString === "07:00") optStart.selected = true;
+                    startSelect.appendChild(optStart);
+
+                    let optEnd = document.createElement('option');
+                    optEnd.value = timeString;
+                    optEnd.textContent = timeString;
+                    if(timeString === "16:30") optEnd.selected = true;
+                    endSelect.appendChild(optEnd);
+                }
+            }
+        }
+
+        function buildDateSelectionDropdown() {
+            const dateSelect = document.getElementById('log-date-select');
+            dateSelect.innerHTML = '';
+            
+            for (let i = 0; i < 7; i++) {
+                let d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                
+                let opt = document.createElement('option');
+                opt.value = dateStr;
+                opt.textContent = dateStr;
+                dateSelect.appendChild(opt);
+            }
+        }
+
+        function selectBreakOption(minutes, elementRef) {
+            document.querySelectorAll('.break-pill').forEach(pill => pill.classList.remove('active'));
+            elementRef.classList.add('active');
+            activeSelectedFormBreakDuration = minutes;
+        }
+
+        function calculateFormTimeMetrics() {
+            const startVal = document.getElementById('log-start-time').value.split(':');
+            const endVal = document.getElementById('log-end-time').value.split(':');
+
+            const startHrs = parseFloat(startVal[0]) + (parseFloat(startVal[1]) / 60);
+            const endHrs = parseFloat(endVal[0]) + (parseFloat(endVal[1]) / 60);
+
+            let diff = endHrs - startHrs;
+            return diff > 0 ? diff : 0;
+        }
+
+        function handleNewRecordSubmission(event) {
+            event.preventDefault();
+            const grossDiffSpan = calculateFormTimeMetrics();
+
+            if(grossDiffSpan <= 0) {
+                alert("Error: End time must fall sequence hours ahead of your chosen segment start frame!");
+                return;
+            }
+
+            const newRecordBlock = {
+                id: String(Date.now()),
+                date: document.getElementById('log-date-select').value,
+                project: document.getElementById('log-project-name').value,
+                duration: grossDiffSpan,
+                breakTime: activeSelectedFormBreakDuration,
+                notes: document.getElementById('log-notes').value
+            };
+
+            globalLoggedSessionsDatabaseMock.unshift(newRecordBlock);
+            
+            document.getElementById('log-project-name').value = '';
+            document.getElementById('log-notes').value = '';
+            selectBreakOption(0, document.querySelectorAll('.break-pill')[0]);
+
+            renderHistoricalRecordsSheet();
+            runGlobalApplicationMetricsEngine();
+            
+            switchActiveView('dashboard', document.querySelectorAll('.nav-item')[0]);
+        }
+
+        function renderHistoricalRecordsSheet() {
+            const mountPoint = document.getElementById('history-items-container');
+            mountPoint.innerHTML = '';
+
+            if(globalLoggedSessionsDatabaseMock.length === 0) {
+                mountPoint.innerHTML = `<p style="color:#64748b; font-size:13px; text-align:center; padding:20px;">No segment rows committed yet.</p>`;
+                return;
+            }
+
+            globalLoggedSessionsDatabaseMock.forEach(session => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.innerHTML = `
+                    <div class="hist-left">
+                        <h5>${session.project}</h5>
+                        <p><i class="fa-solid fa-calendar-day" style="font-size:11px; margin-right:4px;"></i> ${session.date} ${session.notes ? ' | ' + session.notes : ''}</p>
+                    </div>
+                    <div class="hist-right">
+                        ${session.duration.toFixed(2)}h
+                        <div style="font-size:10px; color:#64748b; font-weight:500; margin-top:2px;">Break: ${session.breakTime}m</div>
+                    </div>
+                `;
+                mountPoint.appendChild(item);
+            });
+        }
+
+        /* --- REWRITTEN METRICS ENGINE USING FIRM WEEKDAY SCHEDULING RULES --- */
+        function runGlobalApplicationMetricsEngine() {
+            let aggregatedNetWorkingHours = 0;
+            let totalOvertimeCalculatedHours = 0;
+            
+            // Reset daily record mapping arrays objects
+            dailyOvertimeBreakdownLogs = {};
+
+            globalLoggedSessionsDatabaseMock.forEach(session => {
+                const netSessionHours = session.duration - (session.breakTime / 60);
+                aggregatedNetWorkingHours += netSessionHours;
+
+                const dateParts = session.date.split('/');
+                const parsedJSDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+                const dayOfWeekIndex = parsedJSDate.getDay(); 
+
+                let standardDailyRequirementLimit = 8.5; // Mon-Thu Target
+                
+                if (dayOfWeekIndex === 5) {
+                    standardDailyRequirementLimit = 6.0; // Friday Target
+                } else if (dayOfWeekIndex === 0 || dayOfWeekIndex === 6) {
+                    standardDailyRequirementLimit = 0.0; // Weekends
+                }
+
+                if (netSessionHours > standardDailyRequirementLimit) {
+                    const sessionOvertimeGain = netSessionHours - standardDailyRequirementLimit;
+                    totalOvertimeCalculatedHours += sessionOvertimeGain;
+
+                    if (dailyOvertimeBreakdownLogs[session.date]) {
+                        dailyOvertimeBreakdownLogs[session.date] += sessionOvertimeGain;
+                    } else {
+                        dailyOvertimeBreakdownLogs[session.date] = sessionOvertimeGain;
+                    }
+                }
+            });
+
+            document.getElementById('dash-gross-hours').textContent = `${aggregatedNetWorkingHours.toFixed(2)} hrs`;
+            
+            const overtimeDisplayElement = document.getElementById('dash-overtime-hours');
+            overtimeDisplayElement.textContent = `+${totalOvertimeCalculatedHours.toFixed(2)} hrs`;
+            
+            if (totalOvertimeCalculatedHours > 0) {
+                overtimeDisplayElement.parentElement.style.borderTop = "4px solid #10b981"; 
+            } else {
+                overtimeDisplayElement.parentElement.style.borderTop = "4px solid #cbd5e1"; 
+            }
+        }
+
+        /* --- DASHBOARD EXPANSION SYSTEM: OVERTIME ITEMIZED POPUP --- */
+        function displayOvertimeBreakdownSummary() {
+            const datesListKeys = Object.keys(dailyOvertimeBreakdownLogs);
+            
+            if (datesListKeys.length === 0) {
+                alert("Overtime Report:\nNo overtime hours have been logged for your current shifts.");
+                return;
+            }
+
+            let summaryReportMessage = "⏱️ Itemized Overtime Summary Breakdown:\n";
+            summaryReportMessage += "----------------------------------------\n";
+            
+            datesListKeys.forEach(dateKey => {
+                summaryReportMessage += `• Date: ${dateKey} ➔ +${dailyOvertimeBreakdownLogs[dateKey].toFixed(2)} hrs earned\n`;
+            });
+
+            summaryReportMessage += "----------------------------------------\n";
+            summaryReportMessage += "Click 'Export PDF' on your History page to download this log data layout sheet.";
+
+            alert(summaryReportMessage);
+        }
+
+        // Complete Local Client Side Document Rendering Engine
+        function triggerPDFExportEngine() {
+            const targetElement = document.getElementById('pdf-render-target');
+            const headerBannerElement = document.getElementById('pdf-custom-header');
+
+            headerBannerElement.style.display = 'block';
+
+            const conversionOptionsMap = {
+                margin:       [15, 15, 15, 15],
+                filename:     `WorkLog_Report_${authenticatedUserGlobal.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(conversionOptionsMap).from(targetElement).save().then(() => {
+                headerBannerElement.style.display = 'none';
+            }).catch(err => {
+                console.error("PDF Export failed: ", err);
+                headerBannerElement.style.display = 'none';
+            });
         }
     </script>
 </body>
