@@ -238,12 +238,6 @@
     let logs = [];
     let currentUser = "";
     let storageKey = "";
-    
-    // --- MASTER CONFIGURATION ---
-    // No secrets here! All sensitive operations handled by secure backend.
-    // Backend is deployed on Vercel/Netlify with GitHub token stored as secret.
-    // Website users only see this public HTML - no tokens exposed!
-    // ----------------------------
 
     window.onload = function() {
         const savedUser = localStorage.getItem('sch_saved_user');
@@ -313,13 +307,13 @@
         if (!userInput || userInput.trim().length === 0) return;
 
         try {
-            // Call Google Apps Script backend with CORS support
-            const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbx8siNYQ34zz95NPHNda5tvSqEKIhoLW6e2pcE_SNc/dev';
+            // Pointing to deployment production /exec URL
+            const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbx8siNYQ34zz95NPHNda5tvSqEKIhoLW6e2pcE_SNc/exec';
             
             const response = await fetch(BACKEND_URL, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'text/plain',  // Use text/plain for CORS
+                    'Content-Type': 'text/plain',
                 },
                 body: JSON.stringify({
                     password: userInput.trim()
@@ -328,22 +322,17 @@
 
             const data = await response.json();
 
-            if (response.ok && data.success) {
-                // Password was verified and deleted
+            // Explicit verification logic checking server content structures directly
+            if (data && data.success) {
                 showToast("✓ Password verified and deleted");
                 
-                // Logout user after short delay
                 setTimeout(() => {
                     localStorage.removeItem('sch_saved_user');
                     location.reload();
                 }, 1500);
                 
-            } else if (response.status === 401) {
-                // Invalid password
-                showError("❌ Password is invalid, incorrect, or has expired");
             } else {
-                // Server error
-                showError(data.error || "Error processing request");
+                showError("❌ " + (data.error || "Password is invalid, incorrect, or has expired"));
             }
         } catch (e) {
             showError("Network error: " + e.message);
@@ -445,4 +434,16 @@
 
         const netWorkTotal = logs.reduce((a, b) => a + b.duration, 0).toFixed(2);
         doc.setFontSize(10);
-        do
+        doc.text(`Total Logged Hours: ${netWorkTotal}h`, 105, 56, { align: 'center' });
+
+        // AutoTable Generation Block
+        const tableBody = logs.map(l => [l.date, l.proj, `${l.start} - ${l.end}`, `${l.breakTime * 60}m`, `${l.duration.toFixed(1)}h`]);
+        doc.autoTable({
+            startY: 65,
+            head: [['Date', 'Project/Task', 'Time Frame', 'Break', 'Duration']],
+            body: tableBody,
+            headStyles: { fillColor: [36, 47, 62] },
+            theme: 'striped'
+        });
+
+        doc.save
