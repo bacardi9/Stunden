@@ -104,6 +104,374 @@
             z-index: 9999;
         }
 
+        .error-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ef4444;
+            color: white;
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            display: none;
+            z-index: 9999;
+        }
+
+        .dev-tag { font-size: 9px; font-weight: 800; color: #3b82f6; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="toggleNav()"></div>
+<div id="toast" class="save-toast">Entry Saved Successfully!</div>
+<div id="error-toast" class="error-toast"></div>
+
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h3 id="side-user-name" style="margin:0 0 10px 0;">User</h3>
+        <div class="brand-stack" style="text-align: left;">
+            <span class="brand-main">SCHÜRMANN</span>
+            <span class="brand-sub">GEBÄUDE + ENERGIE</span>
+        </div>
+    </div>
+    <div class="sidebar-content">
+        <div class="nav-item" onclick="showScreen('dash-screen')">📊 Dashboard</div>
+        <div class="nav-item" onclick="showScreen('log-screen')">✍️ Log Work</div>
+        <div class="nav-item" onclick="showScreen('hist-screen')">🕒 History</div>
+        <div class="nav-item" onclick="showScreen('settings-screen')">⚙️ Settings</div>
+    </div>
+    <div class="sidebar-footer">
+        <span class="dev-tag">Developed by Amran Hiluf</span>
+    </div>
+</nav>
+
+<div id="login-screen">
+    <div class="login-card">
+        <div class="brand-stack" style="margin-bottom: 20px;">
+            <span class="brand-main" style="font-size: 1.5rem;">SCHÜRMANN</span>
+            <span class="brand-sub" style="font-size: 0.8rem;">GEBÄUDE + ENERGIE</span>
+        </div>
+        <h2 style="margin:0 0 10px 0; font-weight:800;">Enterprise Portal</h2>
+        <p style="color:#6b7280; font-size: 0.85rem; margin-bottom: 25px;">Please sign in to continue</p>
+        <input type="text" id="name-field" class="login-input" placeholder="Enter full name">
+        <button class="login-btn" onclick="handleLogin()">Access Dashboard</button>
+        <div style="margin-top: 20px;"><span class="dev-tag">Developed by Amran Hiluf</span></div>
+    </div>
+</div>
+
+<div id="main-app">
+    <header>
+        <div class="menu-btn" onclick="toggleNav()">☰</div>
+        <div class="brand-stack">
+            <div id="sync-indicator"></div>
+            <span class="brand-main">SCHÜRMANN</span>
+            <span class="brand-sub">GEBÄUDE + ENERGIE</span>
+        </div>
+        <div style="width:30px"></div>
+    </header>
+
+    <div id="dash-screen" class="screen active">
+        <h1 id="user-welcome">Guten Tag</h1>
+        <div class="stat-grid">
+            <div class="stat-box"><span class="stat-label">Working Hours</span><span class="stat-val" id="val-hours">0.0</span></div>
+            <div class="stat-box" style="border-color: var(--status-green);"><span class="stat-label" style="color: var(--status-green);">Overtime</span><span class="stat-val" id="val-ot" style="color: var(--status-green);">+0.0</span></div>
+        </div>
+        <div id="recent-list" style="margin-top:20px;"></div>
+    </div>
+
+    <div id="log-screen" class="screen">
+        <h2>Log Work</h2>
+        <div class="card" style="cursor:default;">
+            <label>Date</label><input type="date" id="in-date">
+            <label style="display:block; margin-top:10px;">Project/Task</label><input type="text" id="in-proj" placeholder="Project Name">
+            
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <div style="flex:1;"><label>Start</label><input type="time" id="in-start" value="07:00"></div>
+                <div style="flex:1;"><label>End</label><input type="time" id="in-end" value="16:30"></div>
+            </div>
+            
+            <label style="display:block; margin-top:15px; color:var(--primary-red);">Break Selection</label>
+            <div style="display: flex; gap: 6px; margin-top: 8px;">
+                <button type="button" class="break-chip" id="chip-0" onclick="setQuickBreak(0, this)">None</button>
+                <button type="button" class="break-chip" onclick="setQuickBreak(0.25, this)">15m</button>
+                <button type="button" class="break-chip" onclick="setQuickBreak(0.5, this)">30m</button>
+                <button type="button" class="break-chip" onclick="setQuickBreak(0.75, this)">45m</button>
+                <button type="button" class="break-chip" onclick="setQuickBreak(1, this)">1h</button>
+            </div>
+            <input type="number" id="in-break" value="0" style="display:none;">
+
+            <label style="display:block; margin-top:15px;">Notes (Optional)</label>
+            <textarea id="in-notes" rows="2" placeholder="Private details..."></textarea>
+            
+            <button class="login-btn" style="margin-top:25px;" onclick="saveWork()">Save Record</button>
+        </div>
+    </div>
+
+    <div id="hist-screen" class="screen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+            <h2 style="margin:0;">History</h2>
+            <button onclick="exportToPDF()" style="padding:8px 15px; background:var(--primary-red); color:white; border:none; border-radius:8px; font-weight:700; font-size:0.7rem;">Export PDF</button>
+        </div>
+        <div id="full-history-list"></div>
+    </div>
+
+    <div id="settings-screen" class="screen">
+        <h2>Settings</h2>
+        <div class="card">
+            <p>Signed in as: <strong id="settings-user-name">...</strong></p>
+            <p style="font-size: 0.8rem; color: #6b7280; border-top: 1px solid var(--border); padding-top: 15px; margin-top: 15px;">
+                <strong>SECURITY</strong><br>
+                To log out and change the user on this device, enter your single-use password.
+            </p>
+            <button class="login-btn" style="background:#374151;" onclick="requestPasswordReset()">Enter Password & Logout</button>
+        </div>
+    </div>
+
+    <div class="app-footer">
+        <span class="dev-tag" style="color:#9ca3af;">Developed by Amran Hiluf</span>
+    </div>
+</div>
+
+<script>
+    let logs = [];
+    let currentUser = "";
+    let storageKey = "";
+    
+    // --- MASTER CONFIGURATION ---
+    // Paste your Private GitHub RAW link here (with token)
+    const CODES_FILE_URL = 'https://raw.githubusercontent.com/bacardi9/Codes/refs/heads/main/codes.txt?token=GHSAT0AAAAAAD5I3MPA4SLHEF3B3UJCWK2Q2QH2UUQ';
+    
+    // Your GitHub Token for API calls (to trigger workflow)
+    const GITHUB_TOKEN = 'ghp_YOUR_GITHUB_TOKEN_HERE'; // Replace with your actual token
+    
+    // ----------------------------
+
+    window.onload = function() {
+        const savedUser = localStorage.getItem('sch_saved_user');
+        if (savedUser) {
+            setupApp(savedUser);
+        } else {
+            document.getElementById('login-screen').style.display = 'flex';
+        }
+    };
+
+    function setSyncStatus(isSynced) {
+        const light = document.getElementById('sync-indicator');
+        if (isSynced) {
+            light.style.background = "#10b981";
+            light.style.boxShadow = "0 0 8px #10b981";
+        } else {
+            light.style.background = "#ef4444";
+            light.style.boxShadow = "0 0 8px #ef4444";
+        }
+    }
+
+    async function autoSync(data) {
+        try {
+            await new Promise(resolve => setTimeout(resolve, 800));
+            setSyncStatus(true);
+        } catch (error) {
+            setSyncStatus(false);
+        }
+    }
+
+    function toggleNav() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('overlay').classList.toggle('active');
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(document.getElementById('sidebar').classList.contains('open')) toggleNav();
+    }
+
+    function handleLogin() {
+        const name = document.getElementById('name-field').value.trim();
+        if (name !== "") {
+            localStorage.setItem('sch_saved_user', name);
+            setupApp(name);
+        }
+    }
+
+    function setupApp(name) {
+        currentUser = name;
+        storageKey = 'sch_logs_' + name.toLowerCase().replace(/\s/g, '_');
+        logs = JSON.parse(localStorage.getItem(storageKey)) || [];
+        
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'flex';
+        document.getElementById('user-welcome').innerText = "Guten Tag, " + name;
+        document.getElementById('side-user-name').innerText = name;
+        document.getElementById('settings-user-name').innerText = name;
+        document.getElementById('in-date').valueAsDate = new Date();
+        
+        updateUI();
+    }
+
+    async function requestPasswordReset() {
+        const userInput = prompt("Enter your single-use password to logout:");
+        if (!userInput || userInput.trim().length === 0) return;
+
+        try {
+            // 1. Fetch the password list from GitHub
+            const response = await fetch(CODES_FILE_URL, { cache: "no-store" });
+            if (!response.ok) {
+                showError("Could not connect to password server");
+                return;
+            }
+            
+            const text = await response.text();
+            
+            // Clean the file content into an array of passwords
+            const validPasswords = text.split(/\r?\n/).map(c => c.trim()).filter(c => c.length > 0);
+
+            // 2. Check if the password exists
+            if (validPasswords.includes(userInput)) {
+                
+                // 3. Trigger GitHub Actions to delete this specific password
+                try {
+                    await triggerPasswordDeletion(userInput);
+                    showToast("✓ Password verified and deleted");
+                } catch (error) {
+                    // Even if workflow trigger fails, still logout
+                    console.error("Workflow trigger error:", error);
+                    showError("Note: Could not delete password from server, but logging out...");
+                }
+                
+                // 4. Logout user
+                setTimeout(() => {
+                    localStorage.removeItem('sch_saved_user');
+                    location.reload();
+                }, 1500);
+                
+            } else {
+                showError("❌ Password is invalid, incorrect, or has expired");
+            }
+        } catch (e) {
+            showError("Network error: " + e.message);
+            console.error(e);
+        }
+    }
+
+    async function triggerPasswordDeletion(passwordToDelete) {
+        // Trigger your GitHub Actions workflow via repository_dispatch
+        const response = await fetch('https://api.github.com/repos/bacardi9/Codes/dispatches', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + GITHUB_TOKEN,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                event_type: 'remove-password',
+                client_payload: {
+                    password_to_remove: passwordToDelete
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Workflow trigger failed: ${response.statusText}`);
+        }
+        
+        return true;
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.innerText = message;
+        toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 3000);
+    }
+
+    function showError(message) {
+        const errorToast = document.getElementById('error-toast');
+        errorToast.innerText = message;
+        errorToast.style.display = 'block';
+        setTimeout(() => errorToast.style.display = 'none', 4000);
+    }
+
+    function setQuickBreak(value, el) {
+        document.getElementById('in-break').value = value;
+        document.querySelectorAll('.break-chip').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+    }
+
+    function saveWork() {
+        const date = document.getElementById('in-date').value;
+        const proj = document.getElementById('in-proj').value || "—";
+        const start = document.getElementById('in-start').value;
+        const end = document.getElementById('in-end').value;
+        const breakTime = parseFloat(document.getElementById('in-break').value) || 0;
+        const notes = document.getElementById('in-notes').value.trim();
+
+        const sTime = new Date(`2000-01-01T${start}`);
+        const eTime = new Date(`2000-01-01T${end}`);
+        let diff = ((eTime - sTime) / 1000 / 60 / 60) - breakTime;
+        let ot = diff > 8 ? diff - 8 : 0;
+
+        logs.unshift({ id: Date.now(), date, proj, start, end, duration: diff, ot, breakTime, notes });
+        localStorage.setItem(storageKey, JSON.stringify(logs));
+        
+        autoSync(logs);
+
+        document.getElementById('in-proj').value = "";
+        document.getElementById('in-notes').value = "";
+        document.querySelectorAll('.break-chip').forEach(c => c.classList.remove('selected'));
+        document.getElementById('chip-0').classList.add('selected');
+
+        showToast("Entry Saved Successfully!");
+
+        updateUI();
+    }
+
+    function updateUI() {
+        const totalHrs = logs.reduce((a, b) => a + b.duration, 0);
+        const totalOt = logs.reduce((a, b) => a + b.ot, 0);
+        document.getElementById('val-hours').innerText = totalHrs.toFixed(1);
+        document.getElementById('val-ot').innerText = "+" + totalOt.toFixed(1);
+
+        const logMap = l => `
+            <div class="card log-item" onclick="deleteWork(${l.id})">
+                <div style="flex:1;">
+                    <b>${l.proj}</b><br>
+                    <small>${l.date} | ${l.start}-${l.end}</small>
+                </div>
+                <b>${l.duration.toFixed(1)}h</b>
+            </div>`;
+        do            border: 1px solid #d1d5db;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            color: var(--primary-red);
+            flex: 1;
+            text-align: center;
+        }
+        .break-chip.selected { background: var(--primary-red); color: white; border-color: var(--primary-red); }
+
+        .log-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border); }
+        .app-footer { text-align: center; padding: 20px; width: 100%; }
+        
+        .save-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10b981;
+            color: white;
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            display: none;
+            z-index: 9999;
+        }
+
         .dev-tag { font-size: 9px; font-weight: 800; color: #3b82f6; text-transform: uppercase; }
     </style>
 </head>
