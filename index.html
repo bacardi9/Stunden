@@ -30,7 +30,6 @@
         .brand-main { color: var(--primary-red); font-weight: 800; font-size: 1.1rem; letter-spacing: 1px; display: block; }
         .brand-sub { color: var(--primary-red); font-weight: 600; font-size: 0.65rem; letter-spacing: 0.5px; display: block; }
 
-        /* Sync Indicator Style */
         #sync-indicator {
             position: absolute;
             left: -18px;
@@ -38,13 +37,13 @@
             transform: translateY(-50%);
             width: 10px;
             height: 10px;
-            background: #ef4444; /* Default Red */
+            background: #ef4444;
             border-radius: 50%;
             box-shadow: 0 0 5px #ef4444;
             transition: all 0.4s ease;
         }
 
-        #login-screen { position: fixed; inset: 0; z-index: 5000; display: flex; justify-content: center; align-items: center; padding: 20px; background: #242f3e; }
+        #login-screen { position: fixed; inset: 0; z-index: 5000; display: none; justify-content: center; align-items: center; padding: 20px; background: #242f3e; }
         .login-card { background: white; padding: 40px 30px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .login-input { width: 100%; padding: 14px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 1rem; margin-bottom: 15px; outline: none; }
         .login-btn { width: 100%; padding: 14px; background: var(--primary-blue); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; }
@@ -62,7 +61,7 @@
         .menu-btn { font-size: 28px; cursor: pointer; }
         .screen { display: none; padding: 20px; max-width: 600px; margin: 0 auto; width: 100%; }
         .screen.active { display: block; }
-        .card { background: var(--card-bg); padding: 16px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 15px; cursor: pointer; transition: 0.2s; }
+        .card { background: var(--card-bg); padding: 16px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 15px; }
         
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .stat-box { border-radius: 12px; padding: 15px; border: 1px solid var(--border); background: white; text-align: center; }
@@ -204,7 +203,14 @@
 
     <div id="settings-screen" class="screen">
         <h2>Settings</h2>
-        <button class="login-btn" style="background:#ef4444;" onclick="location.reload()">Logout / Switch User</button>
+        <div class="card">
+            <p>Signed in as: <strong id="settings-user-name">...</strong></p>
+            <p style="font-size: 0.8rem; color: #6b7280; border-top: 1px solid var(--border); padding-top: 15px; margin-top: 15px;">
+                <strong>ADMIN ACTION REQUIRED</strong><br>
+                To change the user name on this device, an administrator must provide a unique single-use token.
+            </p>
+            <button class="login-btn" style="background:#374151;" onclick="requestResetApproval()">Verify Token & Reset</button>
+        </div>
     </div>
 
     <div class="app-footer">
@@ -216,36 +222,40 @@
     let logs = [];
     let currentUser = "";
     let storageKey = "";
+    
+    // --- MASTER CONFIGURATION ---
+    // Paste your Private GitHub RAW link here
+    const CODES_FILE_URL = 'https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/codes.txt';
+    // ----------------------------
 
-    // --- AUTO-SYNC LOGIC ---
+    window.onload = function() {
+        const savedUser = localStorage.getItem('sch_saved_user');
+        if (savedUser) {
+            setupApp(savedUser);
+        } else {
+            document.getElementById('login-screen').style.display = 'flex';
+        }
+    };
+
     function setSyncStatus(isSynced) {
         const light = document.getElementById('sync-indicator');
         if (isSynced) {
-            light.style.background = "#10b981"; // Green
+            light.style.background = "#10b981";
             light.style.boxShadow = "0 0 8px #10b981";
         } else {
-            light.style.background = "#ef4444"; // Red
+            light.style.background = "#ef4444";
             light.style.boxShadow = "0 0 8px #ef4444";
         }
     }
 
     async function autoSync(data) {
-        // This simulates your "Firebox" outposting service
         try {
-            console.log("Auto-syncing data to online service...");
-            // Simulate network delay
             await new Promise(resolve => setTimeout(resolve, 800));
-            
-            // If we had a real URL, it would look like this:
-            // await fetch('YOUR_FIREBOX_URL', { method: 'POST', body: JSON.stringify(data) });
-            
-            setSyncStatus(true); // Success
+            setSyncStatus(true);
         } catch (error) {
-            console.error("Sync failed", error);
-            setSyncStatus(false); // Fail
+            setSyncStatus(false);
         }
     }
-    // -----------------------
 
     function toggleNav() {
         document.getElementById('sidebar').classList.toggle('open');
@@ -261,19 +271,52 @@
     function handleLogin() {
         const name = document.getElementById('name-field').value.trim();
         if (name !== "") {
-            currentUser = name;
-            storageKey = 'sch_logs_' + name.toLowerCase().replace(/\s/g, '_');
-            logs = JSON.parse(localStorage.getItem(storageKey)) || [];
+            localStorage.setItem('sch_saved_user', name);
+            setupApp(name);
+        }
+    }
+
+    function setupApp(name) {
+        currentUser = name;
+        storageKey = 'sch_logs_' + name.toLowerCase().replace(/\s/g, '_');
+        logs = JSON.parse(localStorage.getItem(storageKey)) || [];
+        
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'flex';
+        document.getElementById('user-welcome').innerText = "Guten Tag, " + name;
+        document.getElementById('side-user-name').innerText = name;
+        document.getElementById('settings-user-name').innerText = name;
+        document.getElementById('in-date').valueAsDate = new Date();
+        
+        updateUI();
+    }
+
+    async function requestResetApproval() {
+        const userInput = prompt("UNHACKABLE SECURITY: Enter your Single-Use Master Token:");
+        if (!userInput || userInput.length < 10) return;
+
+        try {
+            // 1. Fetch your secret master list from GitHub
+            const response = await fetch(CODES_FILE_URL, { cache: "no-store" });
+            const text = await response.text();
             
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('main-app').style.display = 'flex';
-            document.getElementById('user-welcome').innerText = "Guten Tag, " + name;
-            document.getElementById('side-user-name').innerText = name;
-            document.getElementById('in-date').valueAsDate = new Date();
-            
-            document.getElementById('in-start').value = "07:00";
-            
-            updateUI();
+            // Clean the file content into an array of codes
+            const validCodes = text.split(/\r?\n/).map(c => c.trim()).filter(c => c.length > 0);
+
+            // 2. Check if the token exists
+            if (validCodes.includes(userInput)) {
+                
+                // IMPORTANT: In your manual workflow, delete the used code from codes.txt now.
+                alert("TOKEN VERIFIED. Identity cleared from this device.");
+                
+                localStorage.removeItem('sch_saved_user');
+                location.reload();
+            } else {
+                alert("ACCESS DENIED: Token is invalid, mistyped, or has expired.");
+            }
+        } catch (e) {
+            alert("NETWORK ERROR: Could not connect to the security server.");
+            console.error(e);
         }
     }
 
@@ -299,12 +342,9 @@
         logs.unshift({ id: Date.now(), date, proj, start, end, duration: diff, ot, breakTime, notes });
         localStorage.setItem(storageKey, JSON.stringify(logs));
         
-        // TRIGGER AUTO-SYNC
         autoSync(logs);
 
-        document.getElementById('in-start').value = "07:00"; 
         document.getElementById('in-proj').value = "";
-        document.getElementById('in-break').value = 0;
         document.getElementById('in-notes').value = "";
         document.querySelectorAll('.break-chip').forEach(c => c.classList.remove('selected'));
         document.getElementById('chip-0').classList.add('selected');
@@ -339,7 +379,7 @@
             logs = logs.filter(l => l.id !== id);
             localStorage.setItem(storageKey, JSON.stringify(logs));
             updateUI();
-            autoSync(logs); // Sync again after deletion
+            autoSync(logs);
         }
     }
 
@@ -357,9 +397,7 @@
         doc.setTextColor(0);
         doc.setFontSize(14);
         doc.text("Work Report", 105, 40, { align: 'center' });
-        
         doc.setFontSize(11);
-        doc.setFont("helvetica", "bold"); 
         doc.text(`${currentUser}`, 105, 48, { align: 'center' });
 
         const netWorkTotal = logs.reduce((a, b) => a + b.duration, 0).toFixed(2);
@@ -375,7 +413,6 @@
 
         sortedLogs.forEach((l, index) => {
             const formattedDate = new Date(l.date).toLocaleDateString('de-DE', { weekday:'short', day:'2-digit', month:'long', year:'numeric'});
-            
             if (formattedDate !== currentDay) {
                 if (currentDay !== "") {
                     finalRows.push([{ 
@@ -388,11 +425,9 @@
                 dayWork = 0;
                 dayBreak = 0;
             }
-            
             finalRows.push([`${l.start} – ${l.end}`, l.proj, "Working", `${l.duration.toFixed(2)}h`]);
             dayWork += l.duration;
             dayBreak += l.breakTime;
-
             if (index === sortedLogs.length - 1) {
                 finalRows.push([{ 
                     content: `Daily Work: ${dayWork.toFixed(2)}h  |  Break: ${dayBreak.toFixed(2)}h`, 
