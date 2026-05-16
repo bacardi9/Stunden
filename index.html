@@ -3,478 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schürmann Portal - Cloud Synced</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
-    
+    <title>Campaign Login Portal</title>
     <style>
-        /* Modern Overlay for the Double-Input Invitation Gate */
-        #invite-gate {
-            position: fixed;
-            inset: 0;
-            background-color: #ffffff;
-            z-index: 9999;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            height: 100vh;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-family: 'Montserrat', sans-serif;
-            padding: 20px;
+            color: #333;
         }
-        .gate-card {
+
+        .login-container {
             background: #ffffff;
-            padding: 40px 30px;
+            padding: 40px;
             border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            text-align: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            width: 100%;
             max-width: 400px;
-            width: 100%;
-            border: 1px solid #f0f0f0;
-        }
-        .gate-title {
-            font-family: 'Cinzel', serif;
-            color: #1a1a1a;
-            font-size: 1.6rem;
-            margin-bottom: 10px;
-            letter-spacing: 1px;
-        }
-        .gate-subtitle {
-            color: #666666;
-            font-size: 0.9rem;
-            margin-bottom: 25px;
-            line-height: 1.5;
-        }
-        .gate-label {
-            display: block;
-            text-align: left;
-            font-size: 0.7rem;
-            font-weight: 700;
-            color: #6b7280;
-            text-transform: uppercase;
-            margin-top: 15px;
-            margin-bottom: 4px;
-            width: 100%;
-        }
-        .gate-text-input {
-            width: 100%;
-            padding: 12px;
-            font-size: 1rem;
-            border-radius: 8px;
-            border: 1px solid #d1d5db;
-            font-family: 'Montserrat', sans-serif;
-            outline: none;
-            transition: border-color 0.2s;
-            background: #f9fafb;
-        }
-        .gate-text-input:focus {
-            border-color: #1a1a1a;
-            background: #ffffff;
-        }
-        .gate-code-input {
-            width: 100%;
-            padding: 12px;
-            font-size: 1.2rem;
             text-align: center;
-            border-radius: 8px;
-            border: 1px solid #d1d5db;
-            font-family: 'Montserrat', sans-serif;
-            letter-spacing: 6px;
-            outline: none;
-            transition: border-color 0.2s;
-            background: #f9fafb;
         }
-        .gate-code-input:focus {
-            border-color: #1a1a1a;
-            background: #ffffff;
+
+        h2 {
+            margin-bottom: 10px;
+            color: #1e3c72;
+            font-size: 28px;
         }
-        .gate-button {
-            margin-top: 25px;
+
+        p.subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #444;
+        }
+
+        input[type="text"],
+        input[type="password"] {
             width: 100%;
-            padding: 14px;
-            font-size: 1rem;
-            background-color: #1a1a1a;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 600;
-            transition: background-color 0.2s;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
         }
-        .gate-button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: #2a5298;
+            outline: none;
         }
-        .gate-error {
-            color: #d9534f;
-            margin-top: 15px;
-            font-weight: 600;
-            font-size: 0.85rem;
+
+        #error-message {
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 14px;
             min-height: 20px;
         }
 
-        /* --- Application Styles --- */
-        .sidebar { position: fixed; left: -280px; top: 0; width: 260px; height: 100%; background: #ffffff; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 4000; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; }
-        .sidebar.open { left: 0; }
-        .sidebar-header { padding: 30px 20px; border-bottom: 1px solid #e5e7eb; }
-        .nav-item { padding: 16px 20px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #e5e7eb; transition: 0.2s; }
-        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 3500; }
-        .overlay.active { display: block; }
-        #main-app { display: flex; min-height: 100vh; flex-direction: column; background: #f3f4f6; }
-        header { background: #ffffff; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 2000; height: 70px; }
-        .menu-btn { font-size: 28px; cursor: pointer; }
-        .screen { display: none; padding: 20px; max-width: 600px; margin: 0 auto; width: 100%; }
-        .screen.active { display: block; }
-        .card { background: #ffffff; padding: 16px; border-radius: 15px; border: 1px solid #e5e7eb; margin-bottom: 15px; }
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .stat-box { border-radius: 12px; padding: 15px; border: 1px solid #e5e7eb; background: white; text-align: center; }
-        .stat-label { font-size: 0.65rem; font-weight: 700; color: #6b7280; text-transform: uppercase; display: block; margin-bottom: 5px; }
-        .stat-val { font-size: 1.2rem; font-weight: 800; color: #ef4444; }
-        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 5px; background: #f9fafb; font-size: 1rem; outline: none; }
-        label { font-size: 0.75rem; font-weight: 700; color: #6b7280; text-transform: uppercase; }
-        .break-chip { padding: 8px 12px; background: #e5e7eb; border: 1px solid #d1d5db; border-radius: 20px; font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: 0.2s; color: #ef4444; }
-        .break-chip.selected { background: #ef4444; color: white; border-color: #ef4444; }
-        .log-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e5e7eb; }
-        .app-footer { text-align: center; padding: 20px; width: 100%; }
-        .save-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 10px 25px; border-radius: 30px; font-weight: 700; font-size: 0.8rem; display: none; z-index: 9999; }
-        .error-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; padding: 10px 25px; border-radius: 30px; font-weight: 700; font-size: 0.8rem; display: none; z-index: 9999; }
-        .dev-tag { font-size: 9px; font-weight: 800; color: #3b82f6; text-transform: uppercase; }
-        .dot { transform: translateY(-50%); width: 10px; height: 10px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 5px #ef4444; transition: all 0.4s ease; }
+        .btn-submit {
+            width: 100%;
+            background-color: #2a5298;
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-submit:hover {
+            background-color: #1e3c72;
+        }
+
+        .btn-submit:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
 
-    <div id="invite-gate">
-        <div class="gate-card">
-            <h2 class="gate-title">Portal Verification</h2>
-            <p class="gate-subtitle">Please sign in with your full credentials to access your tracking panel.</p>
-            
-            <span class="gate-label">Full Name</span>
-            <input type="text" id="invite-name" placeholder="e.g. Amran Hiluf" class="gate-text-input">
-            
-            <span class="gate-label">6-Digit Access Code</span>
-            <input type="text" id="invite-code" maxlength="6" placeholder="123456" class="gate-code-input">
-            
-            <button id="submit-code-btn" onclick="verifyInvitationCode()" class="gate-button">
-                Verify Identity
-            </button>
-            
-            <p id="error-message" class="gate-error"></p>
+    <div class="login-container">
+        <h2>Identity Verification</h2>
+        <p class="subtitle">Enter your details to access the campaign dashboard</p>
+        
+        <div class="input-group">
+            <label for="invite-name">Full Name</label>
+            <input type="text" id="invite-name" placeholder="e.g. John Doe" autocomplete="off">
         </div>
+
+        <div class="input-group">
+            <label for="invite-code">6-Digit Verification Code</label>
+            <input type="password" id="invite-code" placeholder="••••••" maxlength="6" inputmode="numeric" autocomplete="off">
+        </div>
+
+        <div id="error-message"></div>
+
+        <button id="submit-code-btn" class="btn-submit" onclick="verifyInvitationCode()">Verify Identity</button>
     </div>
-
-    <div id="main-app">
-        <div class="overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
-        <nav class="sidebar" id="app-sidebar">
-            <div class="sidebar-header">
-                <h3>SCHÜRMANN GEBÄUDE + ENERGIE</h3>
-                <span class="dev-tag">Developed by Amran Hiluf</span>
-            </div>
-            <div class="nav-item" onclick="switchScreen('dashboard')">📊 Dashboard</div>
-            <div class="nav-item" onclick="switchScreen('log-work')">✍️ Log Work</div>
-            <div class="nav-item" onclick="switchScreen('history')">🕒 History</div>
-            <div class="nav-item" onclick="switchScreen('settings')">⚙️ Settings</div>
-        </nav>
-
-        <header>
-            <div class="menu-btn" onclick="toggleSidebar()">☰</div>
-            <div><strong>SCHÜRMANN GEBÄUDE + ENERGIE</strong></div>
-            <div class="dot"></div>
-        </header>
-
-        <div id="screen-dashboard" class="screen active">
-            <div class="card">
-                <h1 id="welcome-text">Guten Tag, User</h1>
-                <div class="stat-grid">
-                    <div class="stat-box">
-                        <span class="stat-label">Total Logged Entries</span>
-                        <span class="stat-val" id="total-hours-val">0</span>
-                    </div>
-                    <div class="stat-box">
-                        <span class="stat-label">Status</span>
-                        <span class="stat-val" style="color:#10b981;">Online</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="screen-log-work" class="screen">
-            <div class="card">
-                <h2>Log Work</h2>
-                <label>Date</label>
-                <input type="date" id="work-date" value="2026-05-16">
-
-                <label>Project/Task</label>
-                <input type="text" id="project-name" placeholder="Project Name">
-
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <div style="flex: 1;">
-                        <label>Start</label>
-                        <select id="start-time">
-                            <option value="07:00">07:00</option>
-                            <option value="08:00">08:00</option>
-                            <option value="09:00">09:00</option>
-                        </select>
-                    </div>
-                    <div style="flex: 1;">
-                        <label>End</label>
-                        <select id="end-time">
-                            <option value="12:30">12:30</option>
-                            <option value="16:30">16:30</option>
-                            <option value="17:00">17:00</option>
-                        </select>
-                    </div>
-                </div>
-
-                <label style="display:block; margin-top:15px;">Break Selection</label>
-                <div style="display:flex; gap:8px; margin-top:5px;" id="break-container">
-                    <button class="break-chip" onclick="selectBreak(this, 'None')">None</button>
-                    <button class="break-chip" onclick="selectBreak(this, '15m')">15m</button>
-                    <button class="break-chip" onclick="selectBreak(this, '30m')">30m</button>
-                    <button class="break-chip selected" onclick="selectBreak(this, '45m')">45m</button>
-                    <button class="break-chip" onclick="selectBreak(this, '1h')">1h</button>
-                </div>
-
-                <label style="display:block; margin-top:15px;">Notes (Optional)</label>
-                <textarea id="work-notes" placeholder="Private details..."></textarea>
-
-                <button id="save-record-btn" style="margin-top: 15px; width: 100%; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 700; cursor:pointer;" onclick="saveRecord()">Save to Cloud</button>
-            </div>
-        </div>
-
-        <div id="screen-history" class="screen">
-            <div class="card">
-                <h2>History</h2>
-                <div id="history-list">
-                    <p style="color:gray; font-size:0.9rem;">No history loaded yet.</p>
-                </div>
-            </div>
-        </div>
-
-        <div id="screen-settings" class="screen">
-            <div class="card">
-                <h2>Settings</h2>
-                <p>Signed in as: <strong id="settings-username">Loading...</strong></p>
-                <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;">
-                
-                <label>Change Profile Name</label>
-                <p style="font-size: 0.8rem; color: gray; margin-bottom: 5px;">Enter an alphanumeric code from your database to unlock name adjustments.</p>
-                <div style="display:flex; gap:8px; margin-bottom:15px;">
-                    <input type="text" id="name-change-code" placeholder="e.g. 0023C739BB" style="margin-top:0; flex:2;">
-                    <button onclick="requestNameChangeUnlock()" style="flex:1; background:#3b82f6; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Verify Code</button>
-                </div>
-                
-                <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;">
-                <label>Security</label>
-                <p style="font-size: 0.8rem; color: gray; margin-bottom: 10px;">To clear access data on this device, press below.</p>
-                <button style="width: 100%; padding: 12px; background: #242f3e; color: white; border: none; border-radius: 8px; cursor:pointer;" onclick="logout()">Lock Portal</button>
-            </div>
-        </div>
-
-        <footer class="app-footer">
-            <span style="color: gray; font-size: 0.8rem;">Developed by Amran Hiluf</span>
-        </footer>
-    </div>
-
-    <div id="toast-success" class="save-toast">Saved Successfully!</div>
-    <div id="toast-error" class="error-toast">Error Saving Record!</div>
 
     <script>
-        // PASTE YOUR COPIED GOOGLE WEB APP URL BETWEEN THE QUOTES BELOW:
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbywjEJqBZlQxf9qX9aP0QjbiopqRNPod7IQwf6ypPaTbetP0G4Eb3SK6shoxxraDK-C/exec"; 
-        
-        let currentUser = "";
-        let selectedBreakValue = "45m";
+        // CRITICAL: Replace this string with your exact Apps Script Executable URL!
+        const scriptUrl = "https://script.google.com/macros/s/.../exec";
 
-        function toggleSidebar() {
-            document.getElementById('app-sidebar').classList.toggle('open');
-            document.getElementById('sidebar-overlay').classList.toggle('active');
-        }
-        
-        function switchScreen(screenId) {
-            const screens = document.querySelectorAll('.screen');
-            screens.forEach(s => s.classList.remove('active'));
-            document.getElementById('screen-' + screenId).classList.add('active');
-            toggleSidebar();
+        // Clean up temporary script links from DOM dynamically
+        function clearTempScripts() {
+            const temps = document.querySelectorAll('.jsonp-temp');
+            temps.forEach(el => el.remove());
         }
 
-        function selectBreak(element, value) {
-            const chips = document.querySelectorAll('.break-chip');
-            chips.forEach(c => c.classList.remove('selected'));
-            element.classList.add('selected');
-            selectedBreakValue = value;
-        }
-
-        function showToast(id) {
-            const toast = document.getElementById(id);
-            toast.style.display = 'block';
-            setTimeout(() => { toast.style.display = 'none'; }, 3000);
-        }
-
-        function logout() {
-            currentUser = "";
-            document.getElementById("invite-name").value = "";
-            document.getElementById("invite-code").value = "";
-            document.getElementById("error-message").innerText = "";
-            document.getElementById("invite-gate").style.display = "flex";
-        }
-
-        // Global JSONP Response Handlers
-        window.handleAuthResponse = function(data) {
+        // 1. SEND DATA TO GOOGLE SHEETS
+        function verifyInvitationCode() {
+            // Trim whitespace and process string configurations gracefully
+            const nameInput = document.getElementById("invite-name").value.trim().toLowerCase();
+            const codeInput = document.getElementById("invite-code").value.trim();
             const errorMsg = document.getElementById("error-message");
             const submitBtn = document.getElementById("submit-code-btn");
-            submitBtn.disabled = false;
             
-            if (data.status === "valid") {
-                errorMsg.style.color = "#5cb85c";
-                errorMsg.innerText = "Access granted! Syncing profile...";
-                
-                currentUser = data.username;
-                document.getElementById("welcome-text").innerText = "Guten Tag, " + currentUser;
-                document.getElementById("settings-username").innerText = currentUser;
-                
-                renderHistory(data.history);
-                
-                setTimeout(() => {
-                  document.getElementById("invite-gate").style.display = "none";
-                }, 1000);
-            } else {
+            // Clean interface slate
+            errorMsg.innerText = "";
+            clearTempScripts();
+
+            if (!nameInput) {
                 errorMsg.style.color = "#d9534f";
-                errorMsg.innerText = data.message; 
+                errorMsg.innerText = "Please enter your full name.";
+                return;
             }
-            cleanOldScripts();
-        };
 
-        window.handleSaveResponse = function(data) {
-            const saveBtn = document.getElementById("save-record-btn");
-            saveBtn.disabled = false;
-            saveBtn.innerText = "Save to Cloud";
-            
-            if(data.status === "success") {
-                showToast('toast-success');
-                document.getElementById("project-name").value = "";
-                document.getElementById("work-notes").value = "";
-                alert("Log entry pushed to cloud securely! Please reload the page to refresh your history.");
-            } else {
-                showToast('toast-error');
-            }
-            cleanOldScripts();
-        };
-
-        window.handleNameChangeCodeResponse = function(data) {
-            if (data.status === "approved") {
-                const newName = prompt("Code accepted! Please type the new full name for this profile:");
-                if (newName && newName.trim() !== "") {
-                    currentUser = newName.trim();
-                    document.getElementById("welcome-text").innerText = "Guten Tag, " + currentUser;
-                    document.getElementById("settings-username").innerText = currentUser;
-                    alert("Profile name updated locally to: " + currentUser + ".\nRemember to update this spelling inside your spreadsheet!");
-                }
-            } else {
-                alert(data.message);
-            }
-            cleanOldScripts();
-        };
-
-        function cleanOldScripts() {
-            const scripts = document.querySelectorAll('.jsonp-temp');
-            scripts.forEach(s => s.remove());
-        }
-
-        // 1. VERIFY CREDENTIALS (NAME + 6-DIGIT CODE)
-        function verifyInvitationCode() {
-          const nameInput = document.getElementById("invite-name").value.trim();
-          const codeInput = document.getElementById("invite-code").value.trim();
-          const errorMsg = document.getElementById("error-message");
-          const submitBtn = document.getElementById("submit-code-btn");
-          
-          if (!nameInput) {
-            errorMsg.style.color = "#d9534f";
-            errorMsg.innerText = "Please enter your full name.";
-            return;
-          }
-
-          if (codeInput.length !== 6 || isNaN(codeInput)) {
-            errorMsg.style.color = "#d9534f";
-            errorMsg.innerText = "Please enter a valid 6-digit number.";
-            return;
-          }
-          
-          errorMsg.style.color = "#f0ad4e";
-          errorMsg.innerText = "Authenticating with database...";
-          submitBtn.disabled = true;
-          
-          const script = document.createElement('script');
-          script.className = 'jsonp-temp';
-          script.src = scriptUrl + "?action=verify&username=" + encodeURIComponent(nameInput) + "&code=" + codeInput + "&callback=handleAuthResponse";
-          document.body.appendChild(script);
-        }
-
-                // 2. REQUEST UNLOCK VIA ALPHANUMERIC CODE
-        function requestNameChangeUnlock() {
-            const enteredCode = document.getElementById("name-change-code").value.trim();
-            if (!enteredCode) {
-                alert("Please type an authorization code first.");
+            if (codeInput.length !== 6 || isNaN(codeInput)) {
+                errorMsg.style.color = "#d9534f";
+                errorMsg.innerText = "Please enter a valid 6-digit number.";
                 return;
             }
             
+            // Status update
+            errorMsg.style.color = "#f0ad4e";
+            errorMsg.innerText = "Authenticating with database...";
+            submitBtn.disabled = true;
+            
+            // JSONP Pipeline Engine construction
             const script = document.createElement('script');
             script.className = 'jsonp-temp';
-            script.src = scriptUrl + "?action=verifyNameChangeCode&changeCode=" + encodeURIComponent(enteredCode) + "&callback=handleNameChangeCodeResponse";
+            script.src = scriptUrl + "?action=verify&username=" + encodeURIComponent(nameInput) + "&code=" + codeInput + "&callback=handleAuthResponse";
+            
+            // Append and deploy call asynchronously
             document.body.appendChild(script);
         }
 
-        // 3. SAVE WORK RECORD
-        function saveRecord() {
-            if (!currentUser) {
-                alert("Error: No authorized user profile detected. Please refresh and log in again.");
-                return;
-            }
-            const date = document.getElementById("work-date").value;
-            const project = document.getElementById("project-name").value.trim();
-            const start = document.getElementById("start-time").value;
-            const end = document.getElementById("end-time").value;
-            const notes = document.getElementById("work-notes").value.trim();
-
-            if (!project) {
-                alert("Please fill out the Project/Task title before saving.");
-                return;
-            }
-
-            const saveBtn = document.getElementById("save-record-btn");
-            saveBtn.disabled = true;
-            saveBtn.innerText = "Saving...";
-
-            const script = document.createElement('script');
-            script.className = 'jsonp-temp';
-            script.src = scriptUrl + "?action=save&username=" + encodeURIComponent(currentUser) + "&date=" + encodeURIComponent(date) + "&project=" + encodeURIComponent(project) + "&start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end) + "&breakTime=" + encodeURIComponent(selectedBreakValue) + "&notes=" + encodeURIComponent(notes) + "&callback=handleSaveResponse";
-
-
-        // 4. RENDER HISTORY
-        function renderHistory(historyArray) {
-            const historyList = document.getElementById("history-list");
-            document.getElementById("total-hours-val").innerText = historyArray.length;
+        // 2. CATCH AND RESOLVE WEB APP RESPONSE
+        function handleAuthResponse(response) {
+            const errorMsg = document.getElementById("error-message");
+            const submitBtn = document.getElementById("submit-code-btn");
             
-            if (!historyArray || historyArray.length === 0) {
-                historyList.innerHTML = '<p style="color:gray; font-size:0.9rem;">No entries found for this profile.</p>';
-                return;
-            }
-            
-            let htmlContent = '';
-            for (let i = 0; i < historyArray.length; i++) {
-                let item = historyArray[i];
-                let projName = item.project || 'Unnamed Project';
-                let dateStr = item.date ? item.date.split('T')[0] : '';
+            // Unlock submit handling immediately upon handshake reply
+            if (submitBtn) submitBtn.disabled = false;
+            clearTempScripts();
+
+            if (response && response.success === true) {
+                errorMsg.style.color = "#5cb85c";
+                errorMsg.innerText = "Login successful! Redirecting...";
                 
-                htmlContent += '<div class="log-item"><div>';
-                htmlContent += '<strong>' + projName + '</strong>';
-                htmlContent += '<div style="font-size:0.75rem; color:gray;">' + dateStr + ' | ' + item.start + ' - ' + item.end + ' (Pause: ' + item.breakTime + ')</div>';
-                if (item.notes) {
-                    htmlContent += '<div style="font-size:0.75rem; color:#666; font-style:italic; margin-top:2px;">Note: ' + item.notes + '</div>';
-                }
-                htmlContent += '</div></div>';
+                // Keep local state active for active campaign tracking
+                localStorage.setItem("username", response.username);
+                
+                // Proceed directly to app landing page layout
+                setTimeout(() => {
+                    window.location.href = "dashboard.html";
+                }, 1200);
+                
+            } else {
+                // FALLBACK REJECTION TRAP - Explicitly fires requested text
+                errorMsg.style.color = "#d9534f";
+                errorMsg.innerText = "Login incorrect. Please check your name and code.";
             }
-            historyList.innerHTML = htmlContent;
         }
     </script>
 </body>
