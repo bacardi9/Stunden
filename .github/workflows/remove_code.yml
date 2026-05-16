@@ -1,1 +1,27 @@
+name: Remove Code
 
+on:
+  repository_dispatch:
+    types: [remove-code]
+
+jobs:
+  remove:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Remove code from file
+        run: |
+          # Replace 'codes.txt' with your actual filename if it's different
+          CODE_TO_REMOVE="${{ github.event.client_payload.code }}"
+          sed -i "/^$CODE_TO_REMOVE$/d" codes.txt
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add codes.txt
+          git commit -m "Automated removal of code: ${{ github.event.client_payload.code }}"
+          git push
+          
