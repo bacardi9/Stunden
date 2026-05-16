@@ -1,6 +1,5 @@
 name: Remove Used Code
-on:
-  workflow_dispatch:
+on:workflow_dispatch:
     inputs:
       code_to_remove:
         description: 'The code to remove from codesdx.txt'
