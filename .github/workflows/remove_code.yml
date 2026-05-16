@@ -1,27 +1,35 @@
-name: Remove Code
-
+name: Remove Used Code
 on:
-  repository_dispatch:
-    types: [remove-code]
+  workflow_dispatch:
+    inputs:
+      code_to_remove:
+        description: 'The code to remove from codesdx.txt'
+        required: true
 
 jobs:
-  remove:
+  remove-code:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout Private Codes Repo
         uses: actions/checkout@v4
+        with:
+          # This tells GitHub to use the secret you just created
+          repository: Bacardi9/Codes
+          token: ${{ secrets.CODES_REPO_TOKEN }}
+          path: codes-repo
 
       - name: Remove code from file
         run: |
-          # Replace 'codes.txt' with your actual filename if it's different
-          CODE_TO_REMOVE="${{ github.event.client_payload.code }}"
-          sed -i "/^$CODE_TO_REMOVE$/d" codes.txt
-
-      - name: Commit and push changes
+          cd codes-repo
+          # This searches for the code and removes that specific line
+          sed -i "/^${{ github.event.inputs.code_to_remove }}$/d" codesdx.txt
+          
+      - name: Commit and Push Changes
         run: |
+          cd codes-repo
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add codes.txt
-          git commit -m "Automated removal of code: ${{ github.event.client_payload.code }}"
+          git add codesdx.txt
+          git commit -m "Automated: Removed used code"
           git push
           
