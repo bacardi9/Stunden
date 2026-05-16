@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       code_to_remove:
-        description: 'The code to remove from codesdx.txt'
+        description: 'The code to remove from codes.txt'
         required: true
 
 jobs:
@@ -20,14 +20,14 @@ jobs:
       - name: Remove code from file
         run: |
           cd codes-repo
-          sed -i "/^${{ github.event.inputs.code_to_remove }}$/d" codesdx.txt
+          sed -i "/^${{ github.event.inputs.code_to_remove }}$/d" codes.txt
           
       - name: Commit and Push Changes
         run: |
           cd codes-repo
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add codesdx.txt
+          git add codes.txt
           git commit -m "Automated: Removed used code"
           git push
           
