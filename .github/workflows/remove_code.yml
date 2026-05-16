@@ -20,7 +20,7 @@ jobs:
       - name: Remove code from file
         run: |
           cd codes-repo
-          sed -i "/^${{ github.event.inputs.code_to_remove }}$/d" codes.txt
+          grep -v "^${{ github.event.inputs.code_to_remove }}$" codes.txt > codes.txt.tmp && mv codes.txt.tmp codes.txt
           
       - name: Commit and Push Changes
         run: |
