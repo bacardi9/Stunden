@@ -307,7 +307,7 @@
         if (!userInput || userInput.trim().length === 0) return;
 
         try {
-            // Pointing to deployment production /exec URL
+            // Google scripts url deployed as web immer
             const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwLRvVqgAxbt-VTMPYstJVA9r9zglAkUcGzRzczBnXS8MOqVRNfr8fqach4wTQ8bwOX/exec';
             
             const response = await fetch(BACKEND_URL, {
@@ -322,7 +322,7 @@
 
             const data = await response.json();
 
-            // Explicit verification logic checking server content structures directly
+            // verification logic checking server content structures directly, Dev by Amran.
             if (data && data.success) {
                 showToast("✓ Password verified and deleted");
                 
