@@ -1459,43 +1459,49 @@
     }
 
     return `
-      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color:#0f172a; background:#ffffff; padding:28px 32px;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:14px; border-bottom:3px solid #c0392b; margin-bottom:22px;">
-          <div>
-            <div style="font-size:22px; font-weight:800; letter-spacing:2px; color:#111827;">SCHÜRMANN</div>
-            <div style="font-size:11px; font-weight:700; color:#c0392b; letter-spacing:3px; margin-top:2px;">GEBÄUDE + ENERGIE</div>
-          </div>
-          <div style="text-align:right; font-size:10px; color:#64748b; line-height:1.5;">
-            <div style="font-size:13px; font-weight:700; color:#111827; letter-spacing:1px; text-transform:uppercase;">Arbeitsbericht</div>
-            <div style="margin-top:4px;">Ausstellungsdatum: <strong style="color:#0f172a;">${today}</strong></div>
-          </div>
-        </div>
+      <div style="font-family: Arial, Helvetica, sans-serif; color:#0f172a; background:#ffffff; padding:28px 32px; width:730px; box-sizing:border-box;">
+        <table style="width:100%; border-collapse:collapse; margin-bottom:18px; border-bottom:3px solid #c0392b;">
+          <tr>
+            <td style="padding-bottom:12px; vertical-align:top;">
+              <div style="font-size:22px; font-weight:800; letter-spacing:2px; color:#111827;">SCHÜRMANN</div>
+              <div style="font-size:11px; font-weight:700; color:#c0392b; letter-spacing:3px; margin-top:2px;">GEBÄUDE + ENERGIE</div>
+            </td>
+            <td style="padding-bottom:12px; text-align:right; vertical-align:top; font-size:10px; color:#64748b; line-height:1.5;">
+              <div style="font-size:13px; font-weight:700; color:#111827; letter-spacing:1px;">ARBEITSBERICHT</div>
+              <div style="margin-top:4px;">Ausstellungsdatum: <strong style="color:#0f172a;">${today}</strong></div>
+            </td>
+          </tr>
+        </table>
 
-        <div style="display:flex; justify-content:space-between; gap:14px; margin-bottom:20px;">
-          <div style="flex:1; padding:10px 14px; background:#f8fafc; border-left:3px solid #2c3e50;">
-            <div style="font-size:9px; color:#64748b; text-transform:uppercase; letter-spacing:1px; font-weight:600;">Mitarbeiter</div>
-            <div style="font-size:13px; color:#0f172a; font-weight:700; margin-top:2px;">${user || '—'}</div>
-          </div>
-          <div style="flex:1; padding:10px 14px; background:#f8fafc; border-left:3px solid #2c3e50;">
-            <div style="font-size:9px; color:#64748b; text-transform:uppercase; letter-spacing:1px; font-weight:600;">Einträge</div>
-            <div style="font-size:13px; color:#0f172a; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums;">${sessions.length}</div>
-          </div>
-          <div style="flex:1; padding:10px 14px; background:#f8fafc; border-left:3px solid #2c3e50;">
-            <div style="font-size:9px; color:#64748b; text-transform:uppercase; letter-spacing:1px; font-weight:600;">Pause gesamt</div>
-            <div style="font-size:13px; color:#0f172a; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums;">${totalBreak.toFixed(2)} h</div>
-          </div>
-          <div style="flex:1; padding:10px 14px; background:#2c3e50; border-left:3px solid #c0392b;">
-            <div style="font-size:9px; color:#cbd5e1; text-transform:uppercase; letter-spacing:1px; font-weight:600;">Gesamtarbeitszeit</div>
-            <div style="font-size:13px; color:#ffffff; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums;">${totalNet.toFixed(2)} h</div>
-          </div>
-        </div>
+        <table style="width:100%; border-collapse:separate; border-spacing:8px 0; margin-bottom:20px;">
+          <tr>
+            <td style="width:25%; padding:10px 14px; background:#f8fafc; border-left:3px solid #2c3e50; vertical-align:top;">
+              <div style="font-size:9px; color:#64748b; letter-spacing:1px; font-weight:700;">MITARBEITER</div>
+              <div style="font-size:13px; color:#0f172a; font-weight:700; margin-top:3px;">${(user || '—').replace(/</g,'&lt;')}</div>
+            </td>
+            <td style="width:25%; padding:10px 14px; background:#f8fafc; border-left:3px solid #2c3e50; vertical-align:top;">
+              <div style="font-size:9px; color:#64748b; letter-spacing:1px; font-weight:700;">EINTRÄGE</div>
+              <div style="font-size:13px; color:#0f172a; font-weight:700; margin-top:3px;">${sessions.length}</div>
+            </td>
+            <td style="width:25%; padding:10px 14px; background:#f8fafc; border-left:3px solid #2c3e50; vertical-align:top;">
+              <div style="font-size:9px; color:#64748b; letter-spacing:1px; font-weight:700;">PAUSE GESAMT</div>
+              <div style="font-size:13px; color:#0f172a; font-weight:700; margin-top:3px;">${totalBreak.toFixed(2)} h</div>
+            </td>
+            <td style="width:25%; padding:10px 14px; background:#2c3e50; border-left:3px solid #c0392b; vertical-align:top;">
+              <div style="font-size:9px; color:#cbd5e1; letter-spacing:1px; font-weight:700;">GESAMTARBEITSZEIT</div>
+              <div style="font-size:13px; color:#ffffff; font-weight:700; margin-top:3px;">${totalNet.toFixed(2)} h</div>
+            </td>
+          </tr>
+        </table>
 
         ${dayBlocks}
 
-        <div style="margin-top:28px; padding-top:12px; border-top:1px solid #e5e7eb; display:flex; justify-content:space-between; font-size:9px; color:#94a3b8;">
-          <span>Schürmann Gebäude + Energie</span>
-          <span>Erstellt am ${today}</span>
-        </div>
+        <table style="width:100%; border-collapse:collapse; margin-top:28px; border-top:1px solid #e5e7eb;">
+          <tr>
+            <td style="padding-top:10px; font-size:9px; color:#94a3b8;">Schürmann Gebäude + Energie</td>
+            <td style="padding-top:10px; font-size:9px; color:#94a3b8; text-align:right;">Erstellt am ${today}</td>
+          </tr>
+        </table>
       </div>
     `;
   }
@@ -1503,22 +1509,22 @@
   function triggerPDFExportEngine() {
     const user = authenticatedUserGlobal || 'mitarbeiter';
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:absolute; left:-10000px; top:0; width:794px; background:#ffffff; z-index:-1;';
+    // Render on-screen but invisible — off-screen/negative-z elements often produce blank canvases
+    wrap.style.cssText = 'position:fixed; top:0; left:0; width:794px; background:#ffffff; opacity:0; pointer-events:none; z-index:0;';
     wrap.innerHTML = buildWorkReportHTML();
     document.body.appendChild(wrap);
-    // Allow layout/fonts to settle before rasterizing — fixes white-page issue
     setTimeout(() => {
       html2pdf().set({
         margin: [10, 10, 10, 10],
         filename: `Arbeitsbericht_${user}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 794 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 794, scrollX: 0, scrollY: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        pagebreak: { mode: ['css', 'legacy'] }
       }).from(wrap).save()
         .then(() => wrap.remove())
         .catch((e) => { console.error('PDF export failed:', e); wrap.remove(); });
-    }, 250);
+    }, 300);
   }
 
   // ── Feedback ───────────────────────────────────────────────────────────────
