@@ -6,6 +6,11 @@
  <title>Schürmann Gebäude + Energie - Enterprise Work Portal</title>
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+ 
+ <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+ <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+ <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
  <style>
     :root {
         --primary-red: #e11d48;
@@ -16,19 +21,19 @@
         --text-main: #334155;
         --text-muted: #64748b;
         
-        /* Premium Admin Theme Colors */
-        --admin-dark: #0b0f19;
-        --admin-card: #111827;
+        /* Premium Admin Executive Palette Consts */
+        --admin-dark: #0f172a;
+        --admin-card: #1e293b;
         --admin-gold: #fbbf24;
-        --admin-gold-hover: #f59e0b;
-        --admin-border: #1f2937;
-        --admin-text-main: #f3f4f6;
-        --admin-text-muted: #9ca3af;
+        --admin-gold-hover: #d97706;
+        --admin-border: #334155;
+        --admin-text-main: #f8fafc;
+        --admin-text-muted: #94a3b8;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     body { background-color: var(--light-bg); color: var(--text-main); padding-bottom: 20px; -webkit-font-smoothing: antialiased; }
     
-    /* Login Shell */
+    /* Login Window Styling */
     .login-container { 
         display: flex;
         flex-direction: column;
@@ -38,297 +43,210 @@
         padding: 24px; 
         position: relative;
         background-color: #0b0f19;
-        overflow: hidden;
     }
     .login-container::before {
         content: "";
         position: absolute;
-        top: -50%;
-        left: -50%;
-        right: -50%;
-        bottom: -50%;
-        width: 200%;
-        height: 200%;
-        background: 
-            radial-gradient(circle at 20% 30%, rgba(225, 29, 72, 0.45) 0%, rgba(225, 29, 72, 0.1) 35%, transparent 60%),
-            radial-gradient(circle at 80% 70%, rgba(2, 89, 182, 0.35) 0%, rgba(2, 89, 182, 0.05) 30%, transparent 55%),
-            radial-gradient(circle at 50% 50%, #0f172a 0%, #000000 80%);
-        filter: blur(60px);
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: radial-gradient(circle at 50% 50%, #1e293b 0%, #000000 100%);
         z-index: 1;
         pointer-events: none;
     }
     .login-card { 
         background: rgba(255, 255, 255, 0.98);
-        padding: 40px 32px 28px 32px; 
+        padding: 40px 32px; 
         border-radius: 16px; 
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
         width: 100%; 
         max-width: 420px;
         position: relative;
         z-index: 2;
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
-    /* Brand Identity Typography */
-    .brand-logo-container {
-        text-align: center;
-        margin-bottom: 6px;
-        cursor: pointer;
-    }
-    .brand-title {
-        font-weight: 800;
-        font-size: 26px;
-        letter-spacing: -0.5px;
-        color: #1e293b;
-        line-height: 1;
-    }
-    .brand-subtitle {
-        font-size: 10px;
-        font-weight: 700;
-        color: var(--primary-red);
-        letter-spacing: 1.5px;
-        margin-top: 3px;
-        text-transform: uppercase;
-    }
-    .portal-context-caption {
-        font-size: 13px;
-        color: var(--text-muted);
-        font-weight: 500;
-        margin-bottom: 28px;
-        text-align: center;
-        letter-spacing: -0.1px;
-    }
+    /* Corporate Branding Typography */
+    .brand-logo-container { text-align: center; margin-bottom: 6px; cursor: pointer; }
+    .brand-title { font-weight: 800; font-size: 26px; letter-spacing: -0.5px; color: #1e293b; line-height: 1; }
+    .brand-subtitle { font-size: 10px; font-weight: 700; color: var(--primary-red); letter-spacing: 1.5px; margin-top: 3px; text-transform: uppercase; }
+    .portal-context-caption { font-size: 13px; color: var(--text-muted); font-weight: 500; margin-bottom: 28px; text-align: center; }
     
-    /* Navigation Drawer Layout */
-    .app-header { display: flex; align-items: center; justify-content: space-between; background: white; padding: 14px 20px; border-bottom: 1px solid var(--card-border); position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+    /* Structural Top Header & Navigation Drawer Styles */
+    .app-header { display: flex; align-items: center; justify-content: space-between; background: white; padding: 14px 20px; border-bottom: 1px solid var(--card-border); position: sticky; top: 0; z-index: 100; }
     .menu-trigger-btn { background: none; border: none; font-size: 22px; color: var(--dark-slate); cursor: pointer; padding: 4px; }
     
-    /* Language Selector Styles */
     .lang-selector-wrapper { display: flex; gap: 4px; background: #e2e8f0; padding: 2px; border-radius: 6px; margin-right: 14px; }
-    .lang-btn { background: none; border: none; padding: 5px 9px; font-size: 11px; font-weight: 700; color: #475569; cursor: pointer; border-radius: 4px; transition: all 0.15s; }
+    .lang-btn { background: none; border: none; padding: 5px 9px; font-size: 11px; font-weight: 700; color: #475569; cursor: pointer; border-radius: 4px; }
     .lang-btn.active { background: white; color: var(--primary-blue); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
-    .sidebar-drawer { position: fixed; top: 0; left: -280px; width: 280px; height: 100vh; background: white; z-index: 200; box-shadow: 5px 0 30px rgba(0,0,0,0.15); transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; }
+    .sidebar-drawer { position: fixed; top: 0; left: -280px; width: 280px; height: 100vh; background: white; z-index: 200; box-shadow: 5px 0 30px rgba(0,0,0,0.15); transition: left 0.3s ease; display: flex; flex-direction: column; }
     .sidebar-drawer.open { left: 0; }
-    .drawer-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.3); backdrop-filter: blur(2px); z-index: 150; display: none; }
+    .drawer-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.3); z-index: 150; display: none; }
     .drawer-backdrop.show { display: block; }
     
     .drawer-user-section { padding: 32px 24px 20px; border-bottom: 1px solid var(--card-border); }
-    .drawer-user-section h3 { font-size: 18px; margin-bottom: 2px; font-weight: 700; color: var(--dark-slate); }
-    .drawer-user-section p { font-size: 10px; font-weight: 800; color: var(--primary-red); letter-spacing: 0.6px; text-transform: uppercase; }
+    .drawer-user-section h3 { font-size: 18px; color: var(--dark-slate); }
+    .drawer-user-section p { font-size: 10px; font-weight: 800; color: var(--primary-red); text-transform: uppercase; }
     
     .drawer-nav-list { list-style: none; padding: 12px 0; flex: 1; overflow-y: auto; }
-    .nav-item { display: flex; align-items: center; gap: 14px; padding: 12px 24px; color: #475569; text-decoration: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
-    .nav-item i { width: 20px; font-size: 16px; color: #94a3b8; text-align: center; }
+    .nav-item { display: flex; align-items: center; gap: 14px; padding: 12px 24px; color: #475569; text-decoration: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .nav-item i { width: 20px; text-align: center; color: #94a3b8; }
     .nav-item:hover, .nav-item.active { background: #f1f5f9; color: var(--primary-blue); }
     .nav-item:hover i, .nav-item.active i { color: var(--primary-blue); }
-    
-    .nav-item.disabled { color: #94a3b8; cursor: not-allowed; background: none; }
-    .nav-item.disabled:hover { background: none; color: #94a3b8; }
-    .nav-item.disabled i { color: #cbd5e1; }
-    
-    /* Main Application Viewports */
+    .nav-item.disabled { color: #94a3b8; cursor: not-allowed; }
+
+    /* Viewport Workspace Grid Content Elements */
     main { padding: 20px; max-width: 600px; margin: 0 auto; min-height: calc(100vh - 120px); display: flex; flex-direction: column; }
-    main.admin-layout-active { max-width: 1200px !important; }
+    main.admin-layout-widescreen { max-width: 1200px !important; }
     .content-panel { display: none; flex: 1; }
     .content-panel.active { display: flex; flex-direction: column; }
     .panel-scroll-content { flex: 1; }
-    .view-title { font-size: 20px; font-weight: 700; color: var(--dark-slate); margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; letter-spacing: -0.3px; }
+    .view-title { font-size: 20px; font-weight: 700; color: var(--dark-slate); margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; }
     
-    /* Centered Logo Dashboard Viewport */
-    .dash-centered-logo-wrapper { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 12px auto 28px auto; text-align: center; cursor: pointer; }
-    .backup-status-dot { width: 9px; height: 9px; background-color: #94a3b8; border-radius: 50%; display: inline-block; transition: background-color 0.3s ease, box-shadow 0.3s ease; }
+    .dash-centered-logo-wrapper { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 28px; }
+    .backup-status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; background-color: #cbd5e1; }
     .backup-status-dot.online { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
-    .backup-status-dot.offline { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
     
-    /* Dashboard Analytics UI */
+    /* Operational Analytics Cards Layout */
     .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
-    .metric-card { background: white; padding: 18px 16px; border-radius: 12px; border: 1px solid var(--card-border); border-top: 4px solid #cbd5e1; transition: transform 0.15s, box-shadow 0.15s; cursor: pointer; }
-    .metric-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
-    .metric-card label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.3px; pointer-events: none; }
-    .metric-card .value { font-size: 22px; font-weight: 700; color: var(--dark-slate); letter-spacing: -0.5px; pointer-events: none; }
+    .metric-card { background: white; padding: 18px 16px; border-radius: 12px; border: 1px solid var(--card-border); border-top: 4px solid #cbd5e1; cursor: pointer; }
+    .metric-card label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+    .metric-card .value { font-size: 22px; font-weight: 700; color: var(--dark-slate); }
     
-    /* Dynamic Standard Panels */
-    .app-card { background: white; padding: 22px; border-radius: 12px; border: 1px solid var(--card-border); box-shadow: 0 1px 3px rgba(0,0,0,0.01); margin-bottom: 16px; }
+    .app-card { background: white; padding: 22px; border-radius: 12px; border: 1px solid var(--card-border); margin-bottom: 16px; }
     .form-group { margin-bottom: 18px; }
-    .form-group label { display: block; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.4px; }
-    input[type="text"], input[type="date"], input[type="password"], input[type="number"], select, textarea { width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; color: var(--dark-slate); background-color: #fff; transition: border-color 0.15s, box-shadow 0.15s; }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 3px rgba(2, 89, 182, 0.15); }
+    .form-group label { display: block; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 6px; }
+    input[type="text"], input[type="date"], input[type="password"], input[type="number"], select, textarea { width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; color: var(--dark-slate); }
     
-    /* Toggle Segment Button Filter System */
     .toggle-switch-row { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 20px; }
-    .toggle-switch-btn { flex: 1; text-align: center; border: none; background: none; padding: 9px; font-size: 13px; font-weight: 700; color: #475569; cursor: pointer; border-radius: 6px; transition: all 0.2s; }
+    .toggle-switch-btn { flex: 1; text-align: center; border: none; background: none; padding: 9px; font-size: 13px; font-weight: 700; color: #475569; cursor: pointer; border-radius: 6px; }
     .toggle-switch-btn.active { background: white; color: var(--primary-blue); box-shadow: 0 2px 4px rgba(0,0,0,0.06); }
 
-    /* Time/Break Selection Pill Rows */
     .break-options-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
-    .break-pill { background: #e2e8f0; border: none; padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; color: #475569; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+    .break-pill { background: #e2e8f0; border: none; padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; color: #475569; cursor: pointer; }
     .break-pill.active { background: #fee2e2; color: var(--primary-red); border: 1px solid #fca5a5; }
     
-    /* System Buttons */
-    .primary-btn { display: block; width: 100%; background: var(--primary-blue); color: white; border: none; padding: 13px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; text-align: center; }
-    .primary-btn:hover { opacity: 0.92; }
+    .primary-btn { display: block; width: 100%; background: var(--primary-blue); color: white; border: none; padding: 13px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; }
     .primary-btn.red-btn { background: var(--primary-red); }
-    .primary-btn:disabled { background: #94a3b8; cursor: not-allowed; opacity: 0.7; }
     
-    /* Row Log Elements */
     .history-item { background: white; padding: 16px; border-radius: 10px; border: 1px solid var(--card-border); border-left: 4px solid var(--primary-red); margin-bottom: 12px; }
     .item-main-row { display: flex; justify-content: space-between; align-items: center; }
-    .hist-left h5 { font-size: 14px; font-weight: 700; margin-bottom: 3px; color: var(--dark-slate); }
-    .hist-left p { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+    .hist-left h5 { font-size: 14px; font-weight: 700; color: var(--dark-slate); }
+    .hist-left p { font-size: 12px; color: var(--text-muted); }
     .hist-right { font-size: 15px; font-weight: 700; text-align: right; }
+    .action-icon-btn { background: none; border: none; color: #94a3b8; font-size: 15px; cursor: pointer; padding: 6px; }
     
-    /* Premium Enterprise Admin Shell Styling */
-    .admin-viewport-wrapper {
+    /* PREMIUM ENTERPRISE EXECUTIVE CONSOLE THEME */
+    .premium-admin-wrapper {
         background: var(--admin-dark);
         color: var(--admin-text-main);
-        border-radius: 16px;
-        padding: 28px;
+        border-radius: 14px;
+        padding: 30px;
         border: 1px solid var(--admin-border);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
     }
-    .admin-header-badge {
+    .admin-gold-badge {
         background: rgba(251, 191, 36, 0.1);
         color: var(--admin-gold);
-        padding: 4px 10px;
+        padding: 5px 12px;
         border-radius: 6px;
         font-size: 11px;
-        font-weight: 700;
+        font-weight: 800;
         text-transform: uppercase;
-        border: 1px solid rgba(251, 191, 36, 0.2);
+        border: 1px solid rgba(251, 191, 36, 0.25);
         display: inline-block;
-        margin-bottom: 12px;
+        margin-bottom: 14px;
     }
-    .admin-stats-grid {
+    .admin-metrics-row {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 16px;
         margin-bottom: 24px;
     }
-    .admin-stats-card {
+    .admin-metric-tile {
         background: var(--admin-card);
         border: 1px solid var(--admin-border);
         padding: 20px;
-        border-radius: 12px;
-        position: relative;
-        overflow: hidden;
+        border-radius: 10px;
+        border-left: 4px solid var(--admin-gold);
     }
-    .admin-stats-card::before {
-        content: ""; position: absolute; top:0; left:0; width:3px; height:100%; background: var(--admin-gold);
+    .admin-metric-tile label {
+        font-size: 11px; color: var(--admin-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 6px;
     }
-    .admin-stats-card label {
-        font-size: 11px; color: var(--admin-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 4px;
+    .admin-metric-tile .number-callout {
+        font-size: 26px; font-weight: 800; color: #ffffff;
     }
-    .admin-stats-card .count {
-        font-size: 24px; font-weight: 800; color: #ffffff;
-    }
-    .admin-filter-bar {
+    .admin-query-control-panel {
         background: var(--admin-card);
         border: 1px solid var(--admin-border);
         padding: 16px;
-        border-radius: 12px;
+        border-radius: 10px;
         margin-bottom: 20px;
         display: flex;
         gap: 14px;
         align-items: center;
     }
-    .admin-filter-bar select, .admin-filter-bar input {
-        background: #1f2937 !important;
-        border: 1px solid #374151 !important;
+    .admin-query-control-panel select {
+        background: #334155 !important;
+        border: 1px solid #475569 !important;
         color: #ffffff !important;
         flex: 1;
     }
-    .admin-table-container {
+    .admin-table-scroll-shield {
         background: var(--admin-card);
         border: 1px solid var(--admin-border);
-        border-radius: 12px;
+        border-radius: 10px;
         overflow-x: auto;
     }
-    .admin-table {
+    .admin-enterprise-table {
         width: 100%;
         border-collapse: collapse;
         text-align: left;
-        font-size: 13px;
+        font-size: 13.5px;
     }
-    .admin-table th {
-        background: #1f2937;
-        color: var(--admin-text-muted);
+    .admin-enterprise-table th {
+        background: #334155;
+        color: #f1f5f9;
         font-weight: 700;
         padding: 14px 18px;
         text-transform: uppercase;
         font-size: 11px;
-        border-bottom: 1px solid var(--admin-border);
     }
-    .admin-table td {
+    .admin-enterprise-table td {
         padding: 14px 18px;
         border-bottom: 1px solid var(--admin-border);
-        color: #e5e7eb;
+        color: #e2e8f0;
     }
-    .admin-table tr:hover {
-        background: rgba(255,255,255,0.02);
-    }
-    .badge-admin-work {
-        background: rgba(2, 89, 182, 0.2); color: #60a5fa; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px;
-    }
-    .badge-admin-vacation {
-        background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px;
-    }
-    .badge-admin-sick {
-        background: rgba(225, 29, 72, 0.2); color: #f87171; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px;
-    }
+    .admin-enterprise-table tr:hover { background: rgba(255,255,255,0.03); }
+    
+    .badge-type-w { background: rgba(2, 89, 182, 0.25); color: #60a5fa; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
+    .badge-type-v { background: rgba(16, 185, 129, 0.25); color: #34d399; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
+    .badge-type-s { background: rgba(225, 29, 72, 0.25); color: #f87171; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
 
-    /* Inline Form Workspace */
-    .inline-edit-box { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px; margin-top: 12px; }
-    .inline-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-    .inline-btn { border: none; padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
-    
-    .action-icon-btn { background: none; border: none; color: #94a3b8; font-size: 15px; cursor: pointer; padding: 6px; margin-left: 4px; transition: color 0.15s; }
-    .action-icon-btn:hover { color: var(--primary-blue); }
-    .action-icon-btn.delete-hover:hover { color: var(--primary-red); }
-    
-    .restore-btn { background: #e2e8f0; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; color: #334155; cursor: pointer; }
-    .restore-btn:hover { background: #cbd5e1; }
-    
-    .developer-signature { font-size: 9px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; color: #cbd5e1; text-align: center; margin-top: auto; padding-top: 25px; }
-    .login-card .developer-signature { color: #a4b5c6; padding-top: 16px; margin-top: 16px; border-top: 1px solid var(--card-border); }
-    .message { margin-top: 14px; font-size: 13px; font-weight: 600; text-align: center; display: none; }
-    .message.error { color: #dc2626; display: block; }
-    .message.success { color: #16a34a; display: block; }
-
-    /* Modals */
-    .custom-modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; transition: opacity 0.2s ease; }
+    /* Modals & Layout Mechanics */
+    .custom-modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
     .custom-modal-backdrop.show { display: flex; }
-    .custom-report-modal { background: #ffffff; width: 100%; max-width: 440px; border-radius: 14px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; border: 1px solid var(--card-border); animation: modalEntrance 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+    .custom-report-modal { background: #ffffff; width: 100%; max-width: 440px; border-radius: 14px; overflow: hidden; border: 1px solid var(--card-border); }
     .modal-report-header { background: var(--dark-slate); padding: 18px 22px; color: #ffffff; display: flex; align-items: center; justify-content: space-between; }
-    .modal-report-header h4 { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
     .modal-report-body { padding: 22px; max-height: 340px; overflow-y: auto; }
     .modal-report-row { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px dashed var(--card-border); font-size: 13px; }
-    .modal-report-row:last-child { border-bottom: none; }
-    .modal-report-row .report-date { font-weight: 600; color: #475569; }
-    .modal-report-row .report-val { font-weight: 700; color: #10b981; }
     .modal-report-footer { padding: 14px 22px; background: #f8fafc; border-top: 1px solid var(--card-border); display: flex; justify-content: flex-end; }
     .modal-close-btn { background: var(--primary-blue); color: white; border: none; padding: 9px 20px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .statement-summary-box { background: #f1f5f9; padding: 14px; border-radius: 8px; margin-bottom: 14px; font-size: 12px; font-weight: 600; }
+    .statement-summary-box div { display: flex; justify-content: space-between; margin-bottom: 4px; }
 
-    .statement-summary-box { background: #f1f5f9; padding: 14px; border-radius: 8px; margin-bottom: 14px; font-size: 12px; font-weight: 600; color: #334155; }
-    .statement-summary-box div { margin-bottom: 5px; display: flex; justify-content: space-between; }
-    .statement-summary-box div:last-child { margin-bottom: 0; }
-
-    @keyframes modalEntrance {
-        from { opacity: 0; transform: scale(0.95) translateY(10px); }
-        to { opacity: 1; transform: scale(1) translateY(0); }
-    }
+    .developer-signature { font-size: 9px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; color: #cbd5e1; text-align: center; margin-top: auto; padding-top: 25px; }
+    .login-card .developer-signature { color: #94a3b8; border-top: 1px solid var(--card-border); margin-top: 20px; padding-top: 14px; }
+    .message { margin-top: 14px; font-size: 13px; font-weight: 600; text-align: center; display: none; }
+    .message.error { color: #dc2626; display: block; }
     
-    /* Export Document Layout */
     #pdf-custom-header { display: none; padding-bottom: 15px; border-bottom: 2px dashed #000; margin-bottom: 20px; }
-    .pdf-meta-line { font-size: 12px; margin-top: 4px; color: #444; }
+    .pdf-meta-line { font-size: 12px; margin-top: 4px; }
  </style>
 </head>
 <body>
 
  <div id="login-view" class="login-container">
     <div class="login-card">
-       <div class="brand-logo-container" onclick="routeToMainDashboard()">
+       <div class="brand-logo-container">
           <div class="brand-title">SCHÜRMANN</div>
           <div class="brand-subtitle">GEBÄUDE + ENERGIE</div>
        </div>
@@ -337,7 +255,7 @@
        <form id="login-form">
           <div class="form-group" style="text-align: left;">
              <label id="lbl-login-user" for="username">Mitarbeitername</label>
-             <input type="text" id="username" placeholder="Name eingeben" required>
+             <input type="text" id="username" placeholder="Name oder Email eingenen" required>
           </div>
           <div class="form-group" style="text-align: left;">
              <label id="lbl-login-pass" for="passcode">Kennwort / PIN</label>
@@ -359,8 +277,8 @@
              <button type="button" id="lang-btn-de" class="lang-btn active" onclick="setApplicationLanguage('de')">DE</button>
           </div>
           <div style="text-align: right; cursor: pointer;" onclick="routeToMainDashboard()">
-             <div style="font-weight: 800; font-size: 15px; letter-spacing: -0.3px; color: #1e293b;">SCHÜRMANN</div>
-             <div style="font-size: 8px; font-weight: 700; color: var(--primary-red); letter-spacing: 0.6px; margin-top: -2px;">GEBÄUDE + ENERGIE</div>
+             <div style="font-weight: 800; font-size: 15px; color: #1e293b;">SCHÜRMANN</div>
+             <div style="font-size: 8px; font-weight: 700; color: var(--primary-red); text-transform: uppercase; margin-top: -2px;">GEBÄUDE + ENERGIE</div>
           </div>
        </div>
     </header>
@@ -384,13 +302,13 @@
              <i class="fa-solid fa-umbrella-beach"></i><span id="nav-lbl-vac">Urlaubs- & Fehlzeitenmanagement</span>
           </li>
           <li class="nav-item disabled">
-             <i class="fa-solid fa-brain"></i><span>KI-integriertes Berichtsheft <span id="nav-lbl-soon">(Bald verfügbar)</span></span>
+             <i class="fa-solid fa-brain"></i><span>Berichtsheft <span style="font-size:10px; color:var(--primary-red);">(Bald)</span></span>
           </li>
           <li class="nav-item" onclick="switchActiveView('history', this)">
              <i class="fa-solid fa-clock-rotate-left"></i><span id="nav-lbl-hist">Stundenzettel-Historie</span>
           </li>
           
-          <li id="nav-admin-link" class="nav-item" onclick="switchActiveView('admin-panel', this)" style="display: none; border-left: 4px solid var(--admin-gold); background: #fdfaf2;">
+          <li id="nav-admin-link" class="nav-item" onclick="switchActiveView('admin-panel', this)" style="display: none; border-left: 4px solid var(--admin-gold); background: #fffbeb;">
              <i class="fa-solid fa-shield-halved" style="color: #b45309;"></i><span style="font-weight:700; color:#b45309;">Admin-Zentrale</span>
           </li>
           
@@ -401,11 +319,7 @@
              <i class="fa-solid fa-right-from-bracket" style="color: var(--primary-red);"></i><span id="nav-lbl-logout" style="color: var(--primary-red);">Abmelden</span>
           </li>
        </ul>
-       
-       <div style="border-top: 1px solid #f1f5f9; padding: 12px 0; text-align: center; line-height: 1.4;">
-          <div style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Version 2.0.0</div>
-          <div style="font-size: 9px; font-weight: 500; color: #cbd5e1; letter-spacing: 0.3px;">Developed by Amran Hiluf</div>
-       </div>
+       <div style="padding: 12px; text-align: center; font-size: 9px; color: #cbd5e1; font-weight:700;">v2.0.1 • Developed by Amran Hiluf</div>
     </nav>
 
     <main id="main-content-layout">
@@ -413,13 +327,13 @@
           <div class="panel-scroll-content">
              <div class="dash-centered-logo-wrapper" onclick="routeToMainDashboard()">
                 <div style="text-align: center;">
-                   <div style="font-weight: 900; font-size: 24px; letter-spacing: -0.5px; color: #1e293b; line-height: 1;">SCHÜRMANN</div>
-                   <div style="font-size: 10px; font-weight: 800; color: var(--primary-red); letter-spacing: 1.2px; margin-top: 2px;">GEBÄUDE + ENERGIE</div>
+                   <div style="font-weight: 900; font-size: 24px; color: #1e293b; line-height: 1;">SCHÜRMANN</div>
+                   <div style="font-size: 10px; font-weight: 800; color: var(--primary-red); margin-top: 2px;">GEBÄUDE + ENERGIE</div>
                 </div>
-                <span id="dash-backup-indicator" class="backup-status-dot online" title="Cloud Backup Sync Active"></span>
+                <span id="dash-backup-indicator" class="backup-status-dot online"></span>
              </div>
 
-             <div id="dash-user-welcome" style="font-size: 15px; font-weight: 600; color: #475569; text-align: center; margin-bottom: 24px;">
+             <div style="font-size: 15px; font-weight: 600; color: #475569; text-align: center; margin-bottom: 24px;">
                 <span id="lbl-dash-welcome">Willkommen zurück,</span> <span id="dash-profile-username" style="color: var(--primary-blue); font-weight: 700;">User</span>
              </div>
 
@@ -485,12 +399,10 @@
        <div id="view-vacation" class="content-panel">
           <div class="panel-scroll-content">
              <div class="view-title" id="lbl-vac-title">Urlaubs- & Fehlzeitenmanagement</div>
-             
              <div class="toggle-switch-row">
                 <button type="button" id="toggle-leave-vacation" class="toggle-switch-btn active" onclick="setLeaveManagementType('vacation')">Erholungsurlaub</button>
                 <button type="button" id="toggle-leave-sick" class="toggle-switch-btn" onclick="setLeaveManagementType('sick')">Arbeitsunfähigkeit (AU)</button>
              </div>
-
              <div class="app-card">
                 <form id="vacation-entry-form" onsubmit="handleVacationDayLogSubmission(event)">
                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -509,15 +421,9 @@
                    </div>
                    <button type="submit" id="leave-submit-btn" class="primary-btn" style="background:#3b82f6; margin-bottom: 14px;">Urlaubszeit einbuchen</button>
                 </form>
-                
-                <hr style="border:0; border-top: 1px solid var(--card-border); margin: 16px 0;">
-                
-                <button type="button" id="btn-leave-statement" class="primary-btn" style="background: #475569;" onclick="displayLeaveStatementBalancesSummary()">
-                   <i class="fa-solid fa-file-invoice" style="margin-right: 8px;"></i>Kontoauszug Resturlaub & AU einsehen
-                </button>
+                <button type="button" class="primary-btn" style="background: #475569;" onclick="displayLeaveStatementBalancesSummary()">Kontoauszug Resturlaub & AU einsehen</button>
              </div>
-             
-             <div id="vacation-days-list-container" style="margin-top: 15px;"></div>
+             <div id="vacation-days-list-container"></div>
           </div>
           <div class="developer-signature">Developed by Amran Hiluf</div>
        </div>
@@ -526,13 +432,12 @@
           <div class="panel-scroll-content">
              <div class="view-title">
                 <span id="lbl-hist-title">Stundenzettel-Historie</span>
-                <button class="primary-btn red-btn" id="btn-hist-export" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="triggerPDFExportEngine()">PDF exportieren</button>
+                <button class="primary-btn red-btn" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="triggerPDFExportEngine()">PDF exportieren</button>
              </div>
              <div id="pdf-render-target">
                 <div id="pdf-custom-header">
-                   <h2 style="font-weight: 800; text-transform: uppercase;">SCHÜRMANN GEBÄUDE + ENERGIE</h2>
+                   <h2>SCHÜRMANN GEBÄUDE + ENERGIE</h2>
                    <div id="pdf-user-metadata" class="pdf-meta-line">Elektronischer Stundenzettel-Nachweis</div>
-                   <div class="pdf-meta-line" id="pdf-lbl-sub" style="font-size: 10px; color: #666;">Generiert via Automated Core Metrics Engine</div>
                 </div>
                 <div id="history-items-container"></div>
              </div>
@@ -542,62 +447,60 @@
 
        <div id="view-admin-panel" class="content-panel">
           <div class="panel-scroll-content">
-             <div class="admin-viewport-wrapper">
-                <div class="admin-header-badge"><i class="fa-solid fa-crown" style="margin-right:6px;"></i>Enterprise Management Core</div>
-                <h2 style="font-size: 24px; font-weight: 800; color: #ffffff; margin-bottom: 4px; letter-spacing:-0.5px;">Corporate Administration Dashboard</h2>
-                <p style="font-size: 13px; color: var(--admin-text-muted); margin-bottom: 24px;">Global cross-user sync engine monitoring active logs across all corporate departments.</p>
+             <div class="premium-admin-wrapper">
+                <div class="admin-gold-badge"><i class="fa-solid fa-crown" style="margin-right:6px;"></i> Enterprise Management Node</div>
+                <h2 style="font-size:24px; font-weight:800; color:#ffffff; margin-bottom:4px;">Corporate Administration Control</h2>
+                <p style="font-size:13px; color:var(--admin-text-muted); margin-bottom:24px;">Global secure trace tracking logs of all staff accounts saved in firestore.</p>
                 
-                <div class="admin-stats-grid">
-                   <div class="admin-stats-card">
-                       <label>Total Log entries</label>
-                       <div id="admin-stat-total-logs" class="count">0</div>
+                <div class="admin-metrics-row">
+                   <div class="admin-metric-tile">
+                       <label>Total Aggregated Entries</label>
+                       <div id="admin-stat-total-logs" class="number-callout">0</div>
                    </div>
-                   <div class="admin-stats-card">
-                       <label>Active Working Staff</label>
-                       <div id="admin-stat-active-staff" class="count">0</div>
+                   <div class="admin-metric-tile">
+                       <label>Active Employee Profiles</label>
+                       <div id="admin-stat-active-staff" class="number-callout">0</div>
                    </div>
-                   <div class="admin-stats-card">
-                       <label>Total Processed Hours</label>
-                       <div id="admin-stat-total-hours" class="count">0.00 hrs</div>
+                   <div class="admin-metric-tile">
+                       <label>Cumulated Operational Hours</label>
+                       <div id="admin-stat-total-hours" class="number-callout">0.00 hrs</div>
                    </div>
                 </div>
 
-                <div class="admin-filter-bar">
-                   <div style="display:flex; align-items:center; gap:8px; color:#ffffff; font-size:12px; font-weight:700;">
-                       <i class="fa-solid fa-filter" style="color:var(--admin-gold);"></i> FILTER:
-                   </div>
+                <div class="admin-query-control-panel">
+                   <div style="color:#ffffff; font-size:12px; font-weight:700;"><i class="fa-solid fa-filter" style="color:var(--admin-gold); margin-right:4px;"></i> SELECT SCOPE:</div>
                    <select id="admin-user-filter" onchange="renderAdminGlobalLogsTable()">
-                       <option value="ALL">Show All Employees (Alle Mitarbeiter)</option>
+                       <option value="ALL">All Company Employees (Alle Mitarbeiter)</option>
                    </select>
                    <select id="admin-type-filter" onchange="renderAdminGlobalLogsTable()">
-                       <option value="ALL">All Event Types (Alle Log-Typen)</option>
-                       <option value="WORK">Standard Work Logs Only</option>
-                       <option value="VACATION">Vacation Bookings Only</option>
-                       <option value="SICK">Sick Days Only</option>
+                       <option value="ALL">All Categories (Alle Log-Typen)</option>
+                       <option value="WORK">Standard Shifts Only</option>
+                       <option value="VACATION">Vacation Blocks Only</option>
+                       <option value="SICK">Sick Medical Windows</option>
                    </select>
                 </div>
 
-                <div class="admin-table-container">
-                   <table class="admin-table">
+                <div class="admin-table-scroll-shield">
+                   <table class="admin-enterprise-table">
                        <thead>
                            <tr>
-                               <th>Employee / Mitarbeiter</th>
-                               <th>Date / Datum</th>
-                               <th>Category / Typ</th>
-                               <th>Project & Operational Details</th>
-                               <th style="text-align:right;">Duration / Hours</th>
+                               <th>Mitarbeiter / Staff</th>
+                               <th>Datum / Date</th>
+                               <th>Kategorie / Type</th>
+                               <th>Operational Description & Target Context</th>
+                               <th style="text-align:right;">Duration</th>
                            </tr>
                        </thead>
                        <tbody id="admin-global-table-body">
                            <tr>
-                               <td colspan="5" style="text-align:center; color:var(--admin-text-muted); padding:30px;">Loading global firestore sync streams...</td>
+                               <td colspan="5" style="text-align:center; padding:30px; color:var(--admin-text-muted);">Syncing secure environment tracks...</td>
                            </tr>
                        </tbody>
                    </table>
                 </div>
              </div>
           </div>
-          <div class="developer-signature" style="color:#475569;">Admin Secure Console Workspace V2</div>
+          <div class="developer-signature" style="color:#475569;">Admin Secure Console Workspace</div>
        </div>
 
        <div id="view-settings" class="content-panel">
@@ -612,1105 +515,467 @@
                    <label id="lbl-set-constraint">Standard Shift Target Constraint</label>
                    <input type="number" step="0.1" id="shift-target-constraint" value="8.5" oninput="runGlobalApplicationMetricsEngine()">
                 </div>
-                <div class="form-group">
-                   <label id="lbl-set-threshold">Automatic Break Rule Rate Threshold</label>
-                   <input type="number" step="0.1" id="break-rule-threshold" value="6.0" oninput="runGlobalApplicationMetricsEngine()">
-                </div>
-                <p id="lbl-set-disclaimer" style="font-size: 12px; color: #64748b; line-height: 1.5; margin-top: 12px;"> Altering these operational constants is blocked by administrative role controls. Current thresholds enforce localized system calculations. </p>
-                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-                <label id="lbl-set-admin" style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 8px;">System-Administration</label> 
-                <button type="button" id="btn-set-trash" class="primary-btn" style="background: #475569;" onclick="openHiddenTrashView()">Papierkorb öffnen (Gelöschte Datensätze)</button> 
-             </div> 
-             <div class="view-title" id="lbl-feedback-title" style="margin-top: 32px;">System-Feedback hinterlassen</div> 
-             <div class="app-card" style="border-top: 4px solid var(--primary-blue);"> 
-                <form id="developer-feedback-form" onsubmit="handleFeedbackSubmissionEngine(event)"> 
-                   <div class="form-group"> 
-                      <label id="lbl-feedback-input-desc" for="feedback-message">Mitteilung an die IT-Entwicklung</label> 
-                      <textarea id="feedback-message" rows="3" placeholder="Teilen Sie uns Vorschläge, Fehler oder Änderungswünsche mit..." required></textarea> 
-                      <span id="lbl-feedback-routing-note" style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 6px;"> 
-                         <i class="fa-solid fa-circle-info" style="margin-right: 4px; color: #94a3b8;"></i> Ihre Nachricht wird direkt an den Entwickler weitergeleitet. 
-                      </span> 
-                   </div> 
-                   <button type="submit" id="btn-feedback-submit" class="primary-btn">Feedback senden</button> 
-                </form> 
-                <div id="feedback-status-box" class="message"></div> 
-             </div> 
-          </div> 
-          <div class="developer-signature">Developed by Amran Hiluf</div> 
-       </div> 
-       
-       <div id="view-deleted" class="content-panel"> 
-          <div class="panel-scroll-content"> 
-             <div class="view-title" id="lbl-trash-title">Zuletzt gelöschte Einträge</div> 
-             <p id="lbl-trash-disclaimer" style="color: #64748b; font-size: 13px; margin-bottom: 15px;"> Gelöschte Datensätze werden temporär zwischengespeichert und nach Ablauf einer 12-Stunden-Frist endgültig bereinigt. </p> 
-             <div id="deleted-items-bin-container"></div> 
-          </div> 
-          <div class="developer-signature">Developed by Amran Hiluf</div> 
-       </div> 
-    </main> 
- </div> 
+             </div>
+          </div>
+          <div class="developer-signature">Developed by Amran Hiluf</div>
+       </div>
+    </main>
+ </div>
 
- <div id="custom-report-modal-backdrop" class="custom-modal-backdrop" onclick="closeCustomReportModal()"> 
-    <div class="custom-report-modal" onclick="event.stopPropagation()"> 
-       <div class="modal-report-header"> 
-          <h4 id="custom-modal-title-header">Kontoauszug</h4> 
-          <i id="custom-modal-icon-header" class="fa-solid fa-clock" style="color: #94a3b8;"></i> 
-       </div> 
-       <div id="modal-report-content-body" class="modal-report-body"></div> 
-       <div class="modal-report-footer"> 
-          <button type="button" class="modal-close-btn" id="btn-modal-close" onclick="closeCustomReportModal()">Bestätigen</button> 
-       </div> 
-    </div> 
- </div> 
+ <div id="custom-report-modal-backdrop" class="custom-modal-backdrop" onclick="closeCustomReportModal()">
+    <div class="custom-report-modal" onclick="event.stopPropagation()">
+       <div class="modal-report-header">
+          <h4 id="custom-modal-title-header">Kontoauszug</h4>
+          <i class="fa-solid fa-clock"></i>
+       </div>
+       <div id="modal-report-content-body" class="modal-report-body"></div>
+       <div class="modal-report-footer">
+          <button type="button" class="modal-close-btn" onclick="closeCustomReportModal()">Schließen</button>
+       </div>
+    </div>
+ </div>
 
- <script> 
-    // ── Firebase Configuration REST Layer ───────────────────────────────────
-    const firebaseConfig = { 
-        apiKey: 'AIzaSyBbBMWCPlE-TNauiJgn3SeOgM9usMXUEJA', 
-        authDomain: 'logins-fa136.firebaseapp.com', 
-        projectId: 'logins-fa136', 
-        storageBucket: 'logins-fa136.firebasestorage.app', 
-        messagingSenderId: '624142930319', 
-        appId: '1:624142930319:web:f4e0c97ee517b848cf3bfa' 
-    }; 
+ <script>
+    // ── Authentic Core Rest Database Engine Initialization ─────────────────
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const databaseReferenceEngine = firebase.firestore();
 
-    // ── Firestore REST Converter Functions ──────────────────────────────────
-    function toFSValue(v) { 
-        if (v === null || v === undefined) return { nullValue: null }; 
-        if (typeof v === 'boolean') return { booleanValue: v }; 
-        if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v }; 
-        if (typeof v === 'string') return { stringValue: v }; 
-        if (Array.isArray(v)) return { arrayValue: { values: v.map(toFSValue) } }; 
-        if (typeof v === 'object') { 
-            const fields = {}; 
-            for (const [k, val] of Object.entries(v)) fields[k] = toFSValue(val); 
-            return { mapValue: { fields } }; 
-        } 
-        return { stringValue: String(v) }; 
-    } 
-
-    function fromFSValue(v) { 
-        if (!v) return null; 
-        if (v.nullValue !== undefined) return null; 
-        if (v.booleanValue !== undefined) return v.booleanValue; 
-        if (v.integerValue !== undefined) return parseInt(v.integerValue, 10); 
-        if (v.doubleValue !== undefined) return parseFloat(v.doubleValue); 
-        if (v.stringValue !== undefined) return v.stringValue; 
-        if (v.arrayValue !== undefined) { 
-            return (v.arrayValue.values || []).map(fromFSValue); 
-        } 
-        if (v.mapValue !== undefined) { 
-            const obj = {}; 
-            const fields = v.mapValue.fields || {}; 
-            for (const [k, fv] of Object.entries(fields)) { 
-                obj[k] = fromFSValue(fv); 
-            } 
-            return obj; 
-        } 
-        return null; 
-    } 
-
-    // ── Global System Data State ───────────────────────────────────────────
-    let authenticatedUserGlobal = ''; 
-    let activeLanguageGlobal = 'de'; 
-    let selectedBreakOptionMinutesGlobal = 0; 
-    let currentLeaveTypeGlobal = 'vacation'; 
+    // ── Local Runtime Variables State ──────────────────────────────────────
+    let authenticatedUserGlobal = '';
+    let activeLanguageGlobal = 'de';
+    let selectedBreakOptionMinutesGlobal = 0;
+    let currentLeaveTypeGlobal = 'vacation';
     
-    let applicationMemoryWorkLogs = []; 
-    let applicationMemoryVacations = []; 
-    let applicationMemoryDeletedTrash = []; 
-    let adminGlobalCorporateLogs = []; // Global dataset for admin viewing
+    let applicationMemoryWorkLogs = [];
+    let applicationMemoryVacations = [];
+    let adminGlobalCorporateLogs = []; 
 
-    // Translation Reference Mapping Matrix
-    const lexiconDictionaryTable = { 
-        en: { 
-            welcome: "Welcome back,", 
-            grossHours: "Net Work Time", 
-            overtimeBank: "Overtime Balance", 
-            loginSub: "Employee Portal | Time Tracking", 
-            loginUser: "Employee Username", 
-            loginPass: "Password / PIN", 
-            loginBtn: "Sign In", 
-            logTitle: "Log Working Hours", 
-            formDate: "Select Booking Date", 
-            formProject: "Construction Site / Client", 
-            formStart: "Work Start (Check-In)", 
-            formEnd: "Work End (Check-Out)", 
-            formBreak: "Rest Breaks (Deduction)", 
-            formNotes: "Activity Report / Notes (Optional)", 
-            formSave: "Save Record Entry", 
-            vacTitle: "Vacation & Absence Management", 
-            vacFrom: "From", 
-            vacTo: "To", 
-            histTitle: "Timesheet History", 
-            setTitle: "System Constants Control", 
-            setAllowed: "Allowed Annual Vacation Allotment", 
-            setConstraint: "Daily Shift Target Constraint (Hours)", 
-            setThreshold: "Automatic Break Enforcement Threshold" 
-        }, 
-        de: { 
-            welcome: "Willkommen zurück,", 
-            grossHours: "Nettoarbeitszeit", 
-            overtimeBank: "Überstundenkonto", 
-            loginSub: "Mitarbeiter-Portal | Zeiterfassung", 
-            loginUser: "Mitarbeitername", 
-            loginPass: "Kennwort / PIN", 
-            loginBtn: "Anmelden", 
-            logTitle: "Arbeitszeit erfassen", 
-            formDate: "Buchungstag auswählen", 
-            formProject: "Baustelle/Kunde", 
-            formStart: "Arbeitsbeginn (Kommen)", 
-            formEnd: "Arbeitsende (Gehen)", 
-            formBreak: "Ruhepausen (Abzug)", 
-            formNotes: "Tätigkeitsbericht / Notizen (Optional)", 
-            formSave: "Eintrag speichern", 
-            vacTitle: "Urlaubs- & Fehlzeitenmanagement", 
-            vacFrom: "Von", 
-            vacTo: "Bis", 
-            histTitle: "Stundenzettel-Historie", 
-            setTitle: "Systemparameter", 
-            setAllowed: "Erlaubtes Urlaubskontingent (Tage)", 
-            setConstraint: "Soll-Arbeitszeit Standard (Stunden)", 
-            setThreshold: "Pausenregel-Schwellenwert (Stunden)" 
-        } 
-    }; 
+    const lexiconDictionaryTable = {
+        en: { welcome: "Welcome back,", grossHours: "Net Work Time", overtimeBank: "Overtime Balance", loginSub: "Employee Portal | Time Tracking", loginUser: "Employee Username", loginPass: "Password / PIN", loginBtn: "Sign In", logTitle: "Log Working Hours", formDate: "Select Booking Date", formProject: "Construction Site / Client", formStart: "Work Start (Check-In)", formEnd: "Work End (Check-Out)", formBreak: "Rest Breaks (Deduction)", formNotes: "Activity Report (Optional)", formSave: "Save Record Entry", vacTitle: "Vacation & Absence Management", vacFrom: "From", vacTo: "To", histTitle: "Timesheet History", setTitle: "System Constants Control", setAllowed: "Allowed Annual Vacation Allotment", setConstraint: "Daily Shift Target Constraint (Hours)" },
+        de: { welcome: "Willkommen zurück,", grossHours: "Nettoarbeitszeit", overtimeBank: "Überstundenkonto", loginSub: "Mitarbeiter-Portal | Zeiterfassung", loginUser: "Mitarbeitername", loginPass: "Kennwort / PIN", loginBtn: "Anmelden", logTitle: "Arbeitszeit erfassen", formDate: "Buchungstag auswählen", formProject: "Baustelle/Kunde", formStart: "Arbeitsbeginn (Kommen)", formEnd: "Arbeitsende (Gehen)", formBreak: "Ruhepausen (Abzug)", formNotes: "Tätigkeitsbericht (Optional)", formSave: "Eintrag speichern", vacTitle: "Urlaubs- & Fehlzeitenmanagement", vacFrom: "Von", vacTo: "Bis", histTitle: "Stundenzettel-Historie", setTitle: "Systemparameter", setAllowed: "Erlaubtes Urlaubskontingent (Tage)", setConstraint: "Soll-Arbeitszeit Standard (Stunden)" }
+    };
 
-    // ── Initialize Core DOM UI Hooks on Startup ─────────────────────────────
-    document.addEventListener('DOMContentLoaded', () => { 
-        buildTimeDropdownSelectionMenus(); 
-        initializeDateInputPickersToCurrentDate(); 
-        
-        document.getElementById('login-form').addEventListener('submit', handleUserSecureAuthenticationRequest); 
-    }); 
+    document.addEventListener('DOMContentLoaded', () => {
+        buildTimeDropdownSelectionMenus();
+        initializeDateInputPickersToCurrentDate();
+        document.getElementById('login-form').addEventListener('submit', handleUserSecureAuthenticationRequest);
+    });
 
-    function buildTimeDropdownSelectionMenus() { 
-        const startMenuNode = document.getElementById('log-start-time'); 
-        const endMenuNode = document.getElementById('log-end-time'); 
-        
-        startMenuNode.innerHTML = ''; 
-        endMenuNode.innerHTML = ''; 
+    function buildTimeDropdownSelectionMenus() {
+        const startMenuNode = document.getElementById('log-start-time');
+        const endMenuNode = document.getElementById('log-end-time');
+        startMenuNode.innerHTML = ''; endMenuNode.innerHTML = '';
 
-        for (let continuousHourIndex = 0; continuousHourIndex < 24; continuousHourIndex++) { 
-            for (let minuteStepVal = 0; minuteStepVal < 60; minuteStepVal += 15) { 
-                const formattedHourString = String(continuousHourIndex).padStart(2, '0'); 
-                const formattedMinuteString = String(minuteStepVal).padStart(2, '0'); 
-                const stringTimeToken = `${formattedHourString}:${formattedMinuteString}`; 
-                
-                const selectOptionNodeStart = document.createElement('option'); 
-                selectOptionNodeStart.value = stringTimeToken; 
-                selectOptionNodeStart.textContent = stringTimeToken; 
-                if (stringTimeToken === "07:00") selectOptionNodeStart.selected = true; 
-                startMenuNode.appendChild(selectOptionNodeStart); 
-
-                const selectOptionNodeEnd = document.createElement('option'); 
-                selectOptionNodeEnd.value = stringTimeToken; 
-                selectOptionNodeEnd.textContent = stringTimeToken; 
-                if (stringTimeToken === "16:00") selectOptionNodeEnd.selected = true; 
-                endMenuNode.appendChild(selectOptionNodeEnd); 
-            } 
-        } 
-    } 
-
-    function initializeDateInputPickersToCurrentDate() { 
-        const currentCalendarDateISOString = new Date().toISOString().split('T')[0]; 
-        document.getElementById('log-date-picker').value = currentCalendarDateISOString; 
-        document.getElementById('vacation-from-date-input').value = currentCalendarDateISOString; 
-        document.getElementById('vacation-to-date-input').value = currentCalendarDateISOString; 
-    } 
-
-    // ── Authentic Firebase Authentication Layer ─────────────────────────────
-    async function handleUserSecureAuthenticationRequest(event) { 
-        event.preventDefault(); 
-        const userIdentifierInput = document.getElementById('username').value.trim(); 
-        const passcodeInputString = document.getElementById('passcode').value.trim(); 
-        const messageContainerBox = document.getElementById('message-box'); 
-
-        messageContainerBox.className = 'message'; 
-        messageContainerBox.style.display = 'none'; 
-
-        try { 
-            // Formulate matching call exactly to Firebase Auth endpoint framework
-            const authEndpointTargetUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseConfig.apiKey}`; 
-            const userCredentialsPayload = { 
-                email: `${userIdentifierInput.toLowerCase().replace(/[^a-z0-9]/g, '')}@schuermann-portal.de`, 
-                password: passcodeInputString, 
-                returnSecureToken: true 
-            }; 
-
-            const rawServerResponse = await fetch(authEndpointTargetUrl, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(userCredentialsPayload) 
-            }); 
-
-            const parseTokenizedJsonResult = await rawServerResponse.json(); 
-
-            if (!rawServerResponse.ok) { 
-                throw new Error(parseTokenizedJsonResult.error ? parseTokenizedJsonResult.error.message : 'Authentication Failed'); 
-            } 
-
-            // Success context setting
-            authenticatedUserGlobal = userIdentifierInput; 
-            document.getElementById('user-profile-title').textContent = authenticatedUserGlobal; 
-            document.getElementById('dash-profile-username').textContent = authenticatedUserGlobal; 
-
-            // Toggle Admin Tab instantly if admin user is matched
-            const navAdminTabButton = document.getElementById('nav-admin-link');
-            if (authenticatedUserGlobal.toLowerCase() === 'admin') {
-                navAdminTabButton.style.display = 'flex';
-            } else {
-                navAdminTabButton.style.display = 'none';
+        for (let continuousHourIndex = 0; continuousHourIndex < 24; continuousHourIndex++) {
+            for (let minuteStepVal = 0; minuteStepVal < 60; minuteStepVal += 15) {
+                const timeStr = `${String(continuousHourIndex).padStart(2, '0')}:${String(minuteStepVal).padStart(2, '0')}`;
+                const optStart = new Option(timeStr, timeStr, timeStr === "07:00", timeStr === "07:00");
+                const optEnd = new Option(timeStr, timeStr, timeStr === "16:00", timeStr === "16:00");
+                startMenuNode.add(optStart); endMenuNode.add(optEnd);
             }
+        }
+    }
 
-            document.getElementById('login-view').style.display = 'none'; 
-            document.getElementById('app-view').style.display = 'block'; 
+    function initializeDateInputPickersToCurrentDate() {
+        const isoStr = new Date().toISOString().split('T')[0];
+        document.getElementById('log-date-picker').value = isoStr;
+        document.getElementById('vacation-from-date-input').value = isoStr;
+        document.getElementById('vacation-to-date-input').value = isoStr;
+    }
 
-            // Fire high speed background cloud pull
-            await triggerCloudFirestoreSynchronizationPipeline(); 
+    // ── FIXED: Real Authenticated Native SDK Connection ─────────────────────
+    function handleUserSecureAuthenticationRequest(event) {
+        event.preventDefault();
+        const userIdentifierInput = document.getElementById('username').value.trim();
+        const passcodeInputString = document.getElementById('passcode').value.trim();
+        const messageContainerBox = document.getElementById('message-box');
 
-        } catch (runtimeExceptionError) { 
-            console.error("Authentication Error: ", runtimeExceptionError); 
-            messageContainerBox.textContent = activeLanguageGlobal === 'de' ? 
-                "Fehler: Ungültiger Mitarbeitername oder PIN-Kennwort." : 
-                "Error: Invalid credentials or authentication timeout."; 
-            messageContainerBox.className = 'message error'; 
-        } 
-    } 
+        messageContainerBox.className = 'message';
+        messageContainerBox.style.display = 'none';
 
-    function handleSecureSignOutRequest() { 
-        authenticatedUserGlobal = ''; 
-        document.getElementById('username').value = ''; 
-        document.getElementById('passcode').value = ''; 
-        document.getElementById('message-box').style.display = 'none'; 
-        
-        // Clear layouts
-        document.getElementById('main-content-layout').classList.remove('admin-layout-active');
-        
-        document.getElementById('app-view').style.display = 'none'; 
-        document.getElementById('login-view').style.display = 'flex'; 
-        switchActiveView('dashboard', document.getElementById('nav-dash-link')); 
-    } 
+        // Format targeted email reference wrapper matching your Firebase engine mapping
+        const cleanEmailIdentity = `${userIdentifierInput.toLowerCase().replace(/[^a-z0-9]/g, '')}@schuermann-portal.de`;
 
-    // ── Master Cloud Engine Synchronization Pipelines ───────────────────────
-    async function triggerCloudFirestoreSynchronizationPipeline() { 
-        const indicatorSyncDotNode = document.getElementById('dash-backup-indicator'); 
-        try { 
-            // Query direct operational streams from Firebase Cloud Datastore Core Rest Engine
-            const getDocumentTargetUrl = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/work_entries?pageSize=1000`; 
-            const remoteConnectionStream = await fetch(getDocumentTargetUrl); 
-            
-            if (!remoteConnectionStream.ok) { 
-                throw new Error("Firestore read request denied."); 
-            } 
+        firebase.auth().signInWithEmailAndPassword(cleanEmailIdentity, passcodeInputString)
+            .then((userCredential) => {
+                authenticatedUserGlobal = userIdentifierInput;
+                document.getElementById('user-profile-title').textContent = authenticatedUserGlobal;
+                document.getElementById('dash-profile-username').textContent = authenticatedUserGlobal;
 
-            const completeQueryCollectionPayload = await remoteConnectionStream.json(); 
-            const rawDatabaseDocumentsArray = completeQueryCollectionPayload.documents || []; 
+                // Real-time workspace route view toggle checks
+                const adminTab = document.getElementById('nav-admin-link');
+                if (authenticatedUserGlobal.toLowerCase() === 'admin') {
+                    adminTab.style.display = 'flex';
+                } else {
+                    adminTab.style.display = 'none';
+                }
 
-            // Reset memory arrays
-            applicationMemoryWorkLogs = []; 
-            applicationMemoryVacations = []; 
-            applicationMemoryDeletedTrash = []; 
-            adminGlobalCorporateLogs = [];
+                document.getElementById('login-view').style.display = 'none';
+                document.getElementById('app-view').style.display = 'block';
 
-            rawDatabaseDocumentsArray.forEach(doc => { 
-                const rawIdentityPath = doc.name; 
-                const absoluteDocumentIdToken = rawIdentityPath.substring(rawIdentityPath.lastIndexOf('/') + 1); 
-                
-                const compiledDataStructureFields = doc.fields || {}; 
-                const extractedUnifiedRecordObject = {}; 
-                
-                for (const [key, valObj] of Object.entries(compiledDataStructureFields)) { 
-                    extractedUnifiedRecordObject[key] = fromFSValue(valObj); 
-                } 
-                extractedUnifiedRecordObject.id = absoluteDocumentIdToken; 
+                triggerCloudFirestoreSynchronizationPipeline();
+            })
+            .catch((error) => {
+                console.error("Login Exception Structure: ", error);
+                messageContainerBox.textContent = activeLanguageGlobal === 'de' ? 
+                    "Fehler: Ungültiger Mitarbeitername oder Kennwort-PIN." : 
+                    "Authentication failed. Verified workspace mismatch.";
+                messageContainerBox.className = 'message error';
+            });
+    }
 
-                // Save to global admin pipeline tracking structure
-                adminGlobalCorporateLogs.push(extractedUnifiedRecordObject);
+    function handleSecureSignOutRequest() {
+        firebase.auth().signOut().then(() => {
+            authenticatedUserGlobal = '';
+            document.getElementById('username').value = '';
+            document.getElementById('passcode').value = '';
+            document.getElementById('main-content-layout').classList.remove('admin-layout-widescreen');
+            document.getElementById('app-view').style.display = 'none';
+            document.getElementById('login-view').style.display = 'flex';
+            switchActiveView('dashboard', document.getElementById('nav-dash-link'));
+        });
+    }
 
-                // Distribute record items into safe runtime arrays by filtering logged execution owner context
-                if (extractedUnifiedRecordObject.owner === authenticatedUserGlobal) { 
-                    if (extractedUnifiedRecordObject.isDeleted === true) { 
-                        applicationMemoryDeletedTrash.push(extractedUnifiedRecordObject); 
-                    } else if (extractedUnifiedRecordObject.recordType === 'vacation' || extractedUnifiedRecordObject.recordType === 'sick') { 
-                        applicationMemoryVacations.push(extractedUnifiedRecordObject); 
-                    } else { 
-                        applicationMemoryWorkLogs.push(extractedUnifiedRecordObject); 
-                    } 
-                } 
-            }); 
+    // ── Live Stream Synchronizers ──────────────────────────────────────────
+    function triggerCloudFirestoreSynchronizationPipeline() {
+        databaseReferenceEngine.collection('work_entries')
+            .onSnapshot((querySnapshot) => {
+                applicationMemoryWorkLogs = [];
+                applicationMemoryVacations = [];
+                adminGlobalCorporateLogs = [];
 
-            // Sort local views by data chronology
-            applicationMemoryWorkLogs.sort((alpha, beta) => new Date(beta.date) - new Date(alpha.date)); 
-            applicationMemoryVacations.sort((alpha, beta) => new Date(beta.fromDate) - new Date(alpha.fromDate)); 
-            applicationMemoryDeletedTrash.sort((alpha, beta) => new Date(beta.deletedAt || '') - new Date(alpha.deletedAt || '')); 
+                querySnapshot.forEach((doc) => {
+                    const item = doc.data();
+                    item.id = doc.id;
 
-            // Populate dropdown lists inside Premium Admin panel
-            populateAdminUserFilterOptions();
+                    adminGlobalCorporateLogs.push(item);
 
-            // Update layouts
-            indicatorSyncDotNode.className = 'backup-status-dot online'; 
-            runGlobalApplicationMetricsEngine(); 
-            renderUserTimesheetHistoryWorkspace(); 
-            renderVacationAbsenceGridTracker(); 
-            renderAdminGlobalLogsTable();
+                    if (item.owner === authenticatedUserGlobal && !item.isDeleted) {
+                        if (item.recordType === 'vacation' || item.recordType === 'sick') {
+                            applicationMemoryVacations.push(item);
+                        } else {
+                            applicationMemoryWorkLogs.push(item);
+                        }
+                    }
+                });
 
-        } catch (networkSyncException) { 
-            console.error("Cloud Synch Failure: ", networkSyncException); 
-            indicatorSyncDotNode.className = 'backup-status-dot offline'; 
-        } 
-    } 
+                applicationMemoryWorkLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+                applicationMemoryVacations.sort((a, b) => new Date(b.fromDate) - new Date(a.fromDate));
 
-    async function dispatchWriteTransactionToCloudFirestore(targetDocumentId, multiDataPayloadObject) { 
-        try { 
-            const saveEndpointTargetUrl = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/work_entries/${targetDocumentId}`; 
-            
-            const mappedFSFields = {}; 
-            for (const [k, v] of Object.entries(multiDataPayloadObject)) { 
-                mappedFSFields[k] = toFSValue(v); 
-            } 
+                populateAdminUserFilterOptions();
+                runGlobalApplicationMetricsEngine();
+                renderUserTimesheetHistoryWorkspace();
+                renderVacationAbsenceGridTracker();
+                renderAdminGlobalLogsTable();
+            }, (error) => {
+                console.error("Snapshot pipeline constraint: ", error);
+            });
+    }
 
-            const serverRawResponse = await fetch(saveEndpointTargetUrl, { 
-                method: 'PATCH', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ fields: mappedFSFields }) 
-            }); 
-
-            if (!serverRawResponse.ok) throw new Error("Firestore post error occurred."); 
-            
-            await triggerCloudFirestoreSynchronizationPipeline(); 
-        } catch (writeError) { 
-            console.error("Cloud Write Fault: ", writeError); 
-            alert("Cloud Sync Write Failure - Local operation temporary cache exception."); 
-        } 
-    } 
-
-    // ── Premium Admin Corporate View Control Processing Engines ─────────────
+    // ── Premium Enterprise Cross-User Admin Monitoring System ────────────────
     function populateAdminUserFilterOptions() {
         const selectNode = document.getElementById('admin-user-filter');
-        const currentSelection = selectNode.value;
-        
-        // Filter out distinct employee usernames from global firestore stream mapping
-        const distinctUsersMap = new Set();
-        adminGlobalCorporateLogs.forEach(item => {
-            if (item.owner) distinctUsersMap.add(item.owner);
+        const currentVal = selectNode.value;
+        const sets = new Set();
+        adminGlobalCorporateLogs.forEach(i => { if(i.owner) sets.add(i.owner); });
+
+        selectNode.innerHTML = '<option value="ALL">All Company Employees (Alle Mitarbeiter)</option>';
+        sets.forEach(u => {
+            selectNode.options.add(new Option(`Staff Account: ${u}`, u));
         });
-        
-        selectNode.innerHTML = '<option value="ALL">Show All Employees (Alle Mitarbeiter)</option>';
-        distinctUsersMap.forEach(username => {
-            const elementOption = document.createElement('option');
-            elementOption.value = username;
-            elementOption.textContent = `Staff: ${username}`;
-            selectNode.appendChild(elementOption);
-        });
-        
-        if (currentSelection && [...distinctUsersMap].includes(currentSelection)) {
-            selectNode.value = currentSelection;
-        }
+        if ([...sets].includes(currentVal)) selectNode.value = currentVal;
     }
 
     function renderAdminGlobalLogsTable() {
-        const tableBody = document.getElementById('admin-global-table-body');
-        const userFilterValue = document.getElementById('admin-user-filter').value;
-        const typeFilterValue = document.getElementById('admin-type-filter').value;
-        
-        // Analytics summary states
-        let matchTotalCount = 0;
-        let accumulatedCalculatedHours = 0;
-        const distinctActiveUsersSet = new Set();
+        const tbody = document.getElementById('admin-global-table-body');
+        const filterUser = document.getElementById('admin-user-filter').value;
+        const filterType = document.getElementById('admin-type-filter').value;
 
-        // Clear table elements
-        tableBody.innerHTML = '';
+        let logCount = 0, hourCount = 0;
+        const uniqueUsers = new Set();
+        tbody.innerHTML = '';
 
-        // Compile filtered dataset matches
-        const filteredAdminDataset = adminGlobalCorporateLogs.filter(item => {
-            if (item.isDeleted === true) return false; // Filter out removed logs from core enterprise view
-            
-            // User matching constraint
-            if (userFilterValue !== 'ALL' && item.owner !== userFilterValue) return false;
-            
-            // Category Type matching constraint
-            if (typeFilterValue === 'WORK' && (item.recordType === 'vacation' || item.recordType === 'sick')) return false;
-            if (typeFilterValue === 'VACATION' && item.recordType !== 'vacation') return false;
-            if (typeFilterValue === 'SICK' && item.recordType !== 'sick') return false;
-
+        const targetData = adminGlobalCorporateLogs.filter(item => {
+            if (item.isDeleted) return false;
+            if (filterUser !== 'ALL' && item.owner !== filterUser) return false;
+            if (filterType === 'WORK' && (item.recordType === 'vacation' || item.recordType === 'sick')) return false;
+            if (filterType === 'VACATION' && item.recordType !== 'vacation') return false;
+            if (filterType === 'SICK' && item.recordType !== 'sick') return false;
             return true;
         });
 
-        // Sort filtered elements sequentially by latest activity dates
-        filteredAdminDataset.sort((a,b) => {
-            const dateA = a.date || a.fromDate || '';
-            const dateB = b.date || b.fromDate || '';
-            return new Date(dateB) - new Date(dateA);
-        });
+        targetData.sort((a, b) => new Date(b.date || b.fromDate) - new Date(a.date || a.fromDate));
 
-        if (filteredAdminDataset.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--admin-text-muted); padding:30px;">No operational logs matched the current search scope filters.</td></tr>`;
-            document.getElementById('admin-stat-total-logs').textContent = '0';
-            document.getElementById('admin-stat-active-staff').textContent = '0';
-            document.getElementById('admin-stat-total-hours').textContent = '0.00 hrs';
+        if(targetData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--admin-text-muted);">No entries match the corporate filter parameters.</td></tr>`;
             return;
         }
 
-        // Iterative node string rendering execution loop
-        filteredAdminDataset.forEach(logItem => {
-            matchTotalCount++;
-            if (logItem.owner) distinctActiveUsersSet.add(logItem.owner);
+        targetData.forEach(item => {
+            logCount++;
+            if(item.owner) uniqueUsers.add(item.owner);
 
-            const rowNode = document.createElement('tr');
-            
-            // Base category categorization metrics
-            let badgeLabelText = 'WORK';
-            let badgeClassName = 'badge-admin-work';
-            let descriptionTextString = logItem.projectName || 'Operational Duty';
-            let computedDurationValue = 0;
+            let badge = '<span class="badge-type-w">WORK</span>';
+            let desc = item.projectName || 'General Field Assignment';
+            let hrs = 0;
 
-            if (logItem.recordType === 'vacation') {
-                badgeLabelText = 'VACATION';
-                badgeClassName = 'badge-admin-vacation';
-                descriptionTextString = `Holiday Window: ${logItem.notes || 'Granted Leave'}`;
-                computedDurationValue = calculateExclusiveDaysDifferenceSpan(logItem.fromDate, logItem.toDate) * 8.5;
-            } else if (logItem.recordType === 'sick') {
-                badgeLabelText = 'SICK DAY';
-                badgeClassName = 'badge-admin-sick';
-                descriptionTextString = `Absence Certificate Notes: ${logItem.notes || 'Medical AU'}`;
-                computedDurationValue = calculateExclusiveDaysDifferenceSpan(logItem.fromDate, logItem.toDate) * 8.5;
+            if (item.recordType === 'vacation') {
+                badge = '<span class="badge-type-v">VACATION</span>';
+                desc = `Corporate Leave Frame: ${item.notes || ''}`;
+                hrs = calculateExclusiveDaysDifferenceSpan(item.fromDate, item.toDate) * 8.5;
+            } else if (item.recordType === 'sick') {
+                badge = '<span class="badge-type-s">SICK LEAVE</span>';
+                desc = `Absence Note Statement: ${item.notes || ''}`;
+                hrs = calculateExclusiveDaysDifferenceSpan(item.fromDate, item.toDate) * 8.5;
             } else {
-                // Standard work shift hourly metrics compilation
-                const numericDecimalDuration = evaluateShiftDurationDifferenceInHours(logItem.startTime, logItem.endTime);
-                const numericBreakHoursDeduction = (logItem.breakMinutesDeduction || 0) / 60;
-                computedDurationValue = Math.max(0, numericDecimalDuration - numericBreakHoursDeduction);
-                if (logItem.notes) {
-                    descriptionTextString += ` — (${logItem.notes})`;
-                }
+                hrs = Math.max(0, evaluateShiftDurationDifferenceInHours(item.startTime, item.endTime) - ((item.breakMinutesDeduction || 0)/60));
+                if(item.notes) desc += ` (${item.notes})`;
             }
 
-            accumulatedCalculatedHours += computedDurationValue;
+            hourCount += hrs;
 
-            // Populate table elements row strings html safely
-            rowNode.innerHTML = `
-                <td style="font-weight:700; color:#ffffff;"><i class="fa-solid fa-user-tie" style="color:var(--admin-gold); margin-right:8px;"></i>${logItem.owner || 'Unknown'}</td>
-                <td><i class="fa-solid fa-calendar-day" style="color:var(--admin-text-muted); margin-right:6px;"></i>${logItem.date || logItem.fromDate || 'N/A'}</td>
-                <td><span class="${badgeClassName}">${badgeLabelText}</span></td>
-                <td style="max-width:320px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${descriptionTextString}">${descriptionTextString}</td>
-                <td style="text-align:right; font-weight:700; color:${badgeLabelText === 'SICK DAY' ? '#f87171' : 'var(--admin-gold)'};">${computedDurationValue.toFixed(2)} hrs</td>
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td style="font-weight:700; color:#ffffff;"><i class="fa-solid fa-user-tie" style="color:var(--admin-gold); margin-right:8px;"></i>${item.owner}</td>
+                <td>${item.date || item.fromDate}</td>
+                <td>${badge}</td>
+                <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${desc}</td>
+                <td style="text-align:right; font-weight:700; color:var(--admin-gold);">${hrs.toFixed(2)} hrs</td>
             `;
-            tableBody.appendChild(rowNode);
         });
 
-        // Push global counts updates back safely to upper level executive dashboards widgets
-        document.getElementById('admin-stat-total-logs').textContent = matchTotalCount;
-        document.getElementById('admin-stat-active-staff').textContent = distinctActiveUsersSet.size;
-        document.getElementById('admin-stat-total-hours').textContent = `${accumulatedCalculatedHours.toFixed(2)} hrs`;
+        document.getElementById('admin-stat-total-logs').textContent = logCount;
+        document.getElementById('admin-stat-active-staff').textContent = uniqueUsers.size;
+        document.getElementById('admin-stat-total-hours').textContent = `${hourCount.toFixed(2)} hrs`;
     }
 
-    // ── Local Application Metrics Computation Processing Engines ───────────
-    function runGlobalApplicationMetricsEngine() { 
-        let netTotalAccumulatedHours = 0; 
-        let totalCalculatedOvertimeHours = 0; 
+    // ── System Form Calculators ────────────────────────────────────────────
+    function runGlobalApplicationMetricsEngine() {
+        let net = 0, overtime = 0;
+        const limit = parseFloat(document.getElementById('shift-target-constraint').value) || 8.5;
+
+        applicationMemoryWorkLogs.forEach(i => {
+            const hrs = Math.max(0, evaluateShiftDurationDifferenceInHours(i.startTime, i.endTime) - ((i.breakMinutesDeduction || 0)/60));
+            net += hrs;
+            overtime += (hrs - limit);
+        });
+
+        document.getElementById('dash-gross-hours').textContent = `${net.toFixed(2)} hrs`;
+        const ovNode = document.getElementById('dash-overtime-hours');
+        ovNode.textContent = `${overtime >= 0 ? '+' : ''}${overtime.toFixed(2)} hrs`;
+        ovNode.style.color = overtime >= 0 ? '#10b981' : '#ef4444';
+    }
+
+    function evaluateShiftDurationDifferenceInHours(s, e) {
+        if (!s || !e) return 0;
+        const [sh, sm] = s.split(':').map(Number);
+        const [eh, em] = e.split(':').map(Number);
+        let m = (eh * 60 + em) - (sh * 60 + sm);
+        if (m < 0) m += 1440;
+        return m / 60;
+    }
+
+    function calculateExclusiveDaysDifferenceSpan(f, t) {
+        if (!f || !t) return 0;
+        const delta = new Date(t) - new Date(f);
+        return delta < 0 ? 0 : (delta / 86400000) + 1;
+    }
+
+    // ── Main Layout View Routers ───────────────────────────────────────────
+    function switchActiveView(viewId, navBtn) {
+        const panels = document.getElementsByClassName('content-panel');
+        for (let i = 0; i < panels.length; i++) panels[i].className = 'content-panel';
         
-        const baseStandardShiftTargetConstraint = parseFloat(document.getElementById('shift-target-constraint').value) || 8.5; 
+        const target = document.getElementById(`view-${viewId}`);
+        if (target) target.className = 'content-panel active';
 
-        applicationMemoryWorkLogs.forEach(item => { 
-            const deltaHoursRaw = evaluateShiftDurationDifferenceInHours(item.startTime, item.endTime); 
-            const breakDeductionHours = (item.breakMinutesDeduction || 0) / 60; 
-            const finalCalculatedNetShiftHours = Math.max(0, deltaHoursRaw - breakDeductionHours); 
-            
-            netTotalAccumulatedHours += finalCalculatedNetShiftHours; 
-            
-            const netOvertimeHoursOfShift = finalCalculatedNetShiftHours - baseStandardShiftTargetConstraint; 
-            totalCalculatedOvertimeHours += netOvertimeHoursOfShift; 
-        }); 
+        const items = document.getElementsByClassName('nav-item');
+        for (let i = 0; i < items.length; i++) items[i].classList.remove('active');
+        if (navBtn) navBtn.classList.add('active');
 
-        document.getElementById('dash-gross-hours').textContent = `${netTotalAccumulatedHours.toFixed(2)} hrs`; 
-        
-        const targetOvertimeNode = document.getElementById('dash-overtime-hours'); 
-        targetOvertimeNode.textContent = `${totalCalculatedOvertimeHours >= 0 ? '+' : ''}${totalCalculatedOvertimeHours.toFixed(2)} hrs`; 
-        targetOvertimeNode.style.color = totalCalculatedOvertimeHours >= 0 ? '#10b981' : '#ef4444'; 
-    } 
-
-    function evaluateShiftDurationDifferenceInHours(startTimeStr, endTimeStr) { 
-        if (!startTimeStr || !endTimeStr) return 0; 
-        const [startHourToken, startMinuteToken] = startTimeStr.split(':').map(Number); 
-        const [endHourToken, endMinuteToken] = endTimeStr.split(':').map(Number); 
-        
-        let differenceInDecimalMinutes = (endHourToken * 60 + endMinuteToken) - (startHourToken * 60 + startMinuteToken); 
-        if (differenceInDecimalMinutes < 0) { 
-            differenceInDecimalMinutes += 24 * 60; 
-        } 
-        return differenceInDecimalMinutes / 60; 
-    } 
-
-    function calculateExclusiveDaysDifferenceSpan(fromDateStr, toDateStr) { 
-        if (!fromDateStr || !toDateStr) return 0; 
-        const dateStartReference = new Date(fromDateStr); 
-        const dateEndReference = new Date(toDateStr); 
-        const millisecondDeltaSpan = dateEndReference - dateStartReference; 
-        if (millisecondDeltaSpan < 0) return 0; 
-        return (millisecondDeltaSpan / (1000 * 60 * 60 * 24)) + 1; 
-    } 
-
-    // ── Main UI View Router Mechanism ───────────────────────────────────────
-    function switchActiveView(targetPanelIdToken, alternativeNavElementClicked) { 
-        const contentPanelsList = document.getElementsByClassName('content-panel'); 
-        for (let loopIndex = 0; loopIndex < contentPanelsList.length; loopIndex++) { 
-            contentPanelsList[loopIndex].className = 'content-panel'; 
-        } 
-
-        const activePanelNode = document.getElementById(`view-${targetPanelIdToken}`); 
-        if (activePanelNode) { 
-            activePanelNode.className = 'content-panel active'; 
-        } 
-
-        const activeNavItemsList = document.getElementsByClassName('nav-item'); 
-        for (let idx = 0; idx < activeNavItemsList.length; idx++) { 
-            activeNavItemsList[idx].classList.remove('active'); 
-        } 
-        if (alternativeNavElementClicked) { 
-            alternativeNavElementClicked.classList.add('active'); 
-        } 
-
-        // Control page bounds width adaptation for multi column administrative monitoring rows layout
-        const layoutTargetFrame = document.getElementById('main-content-layout');
-        if (targetPanelIdToken === 'admin-panel') {
-            layoutTargetFrame.classList.add('admin-layout-active');
+        const layout = document.getElementById('main-content-layout');
+        if (viewId === 'admin-panel') {
+            layout.classList.add('admin-layout-widescreen');
             renderAdminGlobalLogsTable();
         } else {
-            layoutTargetFrame.classList.remove('admin-layout-active');
+            layout.classList.remove('admin-layout-widescreen');
+        }
+        toggleSidebarDrawer(false);
+    }
+
+    function toggleSidebarDrawer(open) {
+        document.getElementById('sidebar-drawer').className = open ? 'sidebar-drawer open' : 'sidebar-drawer';
+        document.getElementById('menu-backdrop').className = open ? 'drawer-backdrop show' : 'drawer-backdrop';
+    }
+
+    function routeToMainDashboard() {
+        switchActiveView('dashboard', document.getElementById('nav-dash-link'));
+    }
+
+    // ── Local User Workspace Render Tasks ──────────────────────────────────
+    function renderUserTimesheetHistoryWorkspace() {
+        const container = document.getElementById('history-items-container');
+        container.innerHTML = '';
+
+        if(applicationMemoryWorkLogs.length === 0) {
+            container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">No logged data available.</p>`;
+            return;
         }
 
-        toggleSidebarDrawer(false); 
-    } 
-
-    function toggleSidebarDrawer(shouldOpenDrawer) { 
-        const drawerSidebarNode = document.getElementById('sidebar-drawer'); 
-        const backdropOverlayNode = document.getElementById('menu-backdrop'); 
-        if (shouldOpenDrawer) { 
-            drawerSidebarNode.className = 'sidebar-drawer open'; 
-            backdropOverlayNode.className = 'drawer-backdrop show'; 
-        } else { 
-            drawerSidebarNode.className = 'sidebar-drawer'; 
-            backdropOverlayNode.className = 'drawer-backdrop'; 
-        } 
-    } 
-
-    function routeToMainDashboard() { 
-        switchActiveView('dashboard', document.getElementById('nav-dash-link')); 
-    } 
-
-    // ── Multilingual Localization Engine Matrix ─────────────────────────────
-    function setApplicationLanguage(targetLangToken) { 
-        activeLanguageGlobal = targetLangToken; 
-        
-        document.getElementById('lang-btn-en').classList.toggle('active', targetLangToken === 'en'); 
-        document.getElementById('lang-btn-de').classList.toggle('active', targetLangToken === 'de'); 
-
-        const dictionary = lexiconDictionaryTable[targetLangToken]; 
-
-        // Local labels mapping processing
-        document.getElementById('lbl-login-sub').textContent = dictionary.loginSub; 
-        document.getElementById('lbl-login-user').textContent = dictionary.loginUser; 
-        document.getElementById('lbl-login-pass').textContent = dictionary.loginPass; 
-        document.getElementById('btn-login-submit').textContent = dictionary.loginBtn; 
-        document.getElementById('lbl-dash-title').textContent = activeLanguageGlobal === 'de' ? 'Betriebliche Kennzahlen' : 'Operational Balance Indicators'; 
-        document.getElementById('lbl-card-gross').textContent = dictionary.grossHours; 
-        document.getElementById('lbl-card-overtime').textContent = dictionary.overtimeBank; 
-        document.getElementById('lbl-log-title').textContent = dictionary.logTitle; 
-        document.getElementById('lbl-form-date').textContent = dictionary.formDate; 
-        document.getElementById('lbl-form-project').textContent = dictionary.formProject; 
-        document.getElementById('lbl-form-start').textContent = dictionary.formStart; 
-        document.getElementById('lbl-form-end').textContent = dictionary.formEnd; 
-        document.getElementById('lbl-form-break').textContent = dictionary.formBreak; 
-        document.getElementById('lbl-form-notes').textContent = dictionary.formNotes; 
-        document.getElementById('btn-form-save').textContent = dictionary.formSave; 
-        document.getElementById('lbl-vac-title').textContent = dictionary.vacTitle; 
-        document.getElementById('lbl-vac-from-date').textContent = dictionary.vacFrom; 
-        document.getElementById('lbl-vac-to-date').textContent = dictionary.vacTo; 
-        document.getElementById('lbl-hist-title').textContent = dictionary.histTitle; 
-        document.getElementById('lbl-set-title').textContent = dictionary.setTitle; 
-        document.getElementById('lbl-set-allowed').textContent = dictionary.setAllowed; 
-        document.getElementById('lbl-set-constraint').textContent = dictionary.setConstraint; 
-        document.getElementById('lbl-set-threshold').textContent = dictionary.setThreshold; 
-
-        // Sidebar text tags matching updates
-        document.getElementById('nav-lbl-dash').textContent = activeLanguageGlobal === 'de' ? 'Übersicht' : 'Dashboard Core'; 
-        document.getElementById('nav-lbl-log').textContent = activeLanguageGlobal === 'de' ? 'Arbeitszeitbuchen' : 'Log Shift Hours'; 
-        document.getElementById('nav-lbl-vac').textContent = activeLanguageGlobal === 'de' ? 'Urlaubs- & Fehlzeitenmanagement' : 'Vacation & Leave'; 
-        document.getElementById('nav-lbl-hist').textContent = activeLanguageGlobal === 'de' ? 'Stundenzettel-Historie' : 'Timesheet Records'; 
-        document.getElementById('nav-lbl-set').textContent = activeLanguageGlobal === 'de' ? 'Systemparameter' : 'System Parameters'; 
-        document.getElementById('nav-lbl-logout').textContent = activeLanguageGlobal === 'de' ? 'Abmelden' : 'Secure Sign Out'; 
-        document.getElementById('lbl-sidebar-subtext').textContent = activeLanguageGlobal === 'de' ? 'Schürmann Log Portal' : 'Corporate Log Subsystem'; 
-        document.getElementById('lbl-dash-welcome').textContent = dictionary.welcome; 
-
-        runGlobalApplicationMetricsEngine(); 
-        renderUserTimesheetHistoryWorkspace(); 
-        renderVacationAbsenceGridTracker(); 
-    } 
-
-    // ── Standard Action Handlers & Form Log Submissions ───────────────────
-    function selectBreakOption(minutesDeductionAmount, alternativeButtonSelectorClicked) { 
-        selectedBreakOptionMinutesGlobal = minutesDeductionAmount; 
-        const siblingPillButtonsList = alternativeButtonSelectorClicked.parentNode.children; 
-        for (let loopIdx = 0; loopIdx < siblingPillButtonsList.length; loopIdx++) { 
-            siblingPillButtonsList[loopIdx].classList.remove('active'); 
-        } 
-        alternativeButtonSelectorClicked.classList.add('active'); 
-    } 
-
-    function setLeaveManagementType(targetTypeToken) { 
-        currentLeaveTypeGlobal = targetTypeToken; 
-        
-        const tabVacationBtn = document.getElementById('toggle-leave-vacation'); 
-        const tabSickBtn = document.getElementById('toggle-leave-sick'); 
-        const submitButtonNode = document.getElementById('leave-submit-btn'); 
-        const notesInputNode = document.getElementById('vacation-notes-input'); 
-
-        if (targetTypeToken === 'vacation') { 
-            tabVacationBtn.className = 'toggle-switch-btn active'; 
-            tabSickBtn.className = 'toggle-switch-btn'; 
-            submitButtonNode.style.background = '#3b82f6'; 
-            submitButtonNode.textContent = activeLanguageGlobal === 'de' ? 'Urlaubszeit einbuchen' : 'Book Vacation Window'; 
-            notesInputNode.placeholder = activeLanguageGlobal === 'de' ? 'Urlaubsantrag / Freistellung' : 'Annual rest vacation description'; 
-        } else { 
-            tabVacationBtn.className = 'toggle-switch-btn'; 
-            tabSickBtn.className = 'toggle-switch-btn active'; 
-            submitButtonNode.style.background = '#e11d48'; 
-            submitButtonNode.textContent = activeLanguageGlobal === 'de' ? 'AU-Krankheitstag einbuchen' : 'Log Sick Day Leave'; 
-            notesInputNode.placeholder = activeLanguageGlobal === 'de' ? 'Arbeitsunfähigkeit Grund / Attest' : 'Medical note confirmation'; 
-        } 
-    } 
-
-    async function handleNewRecordSubmission(event) { 
-        event.preventDefault(); 
-        const trackingCalendarDate = document.getElementById('log-date-picker').value; 
-        const assignedProjectName = document.getElementById('log-project-name').value.trim(); 
-        const chosenStartTimeToken = document.getElementById('log-start-time').value; 
-        const chosenEndTimeToken = document.getElementById('log-end-time').value; 
-        const clientNotesTextString = document.getElementById('log-notes').value.trim(); 
-
-        const uniqueGeneratedDocumentId = 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5); 
-
-        const cleanUnifiedDataPayload = { 
-            owner: authenticatedUserGlobal, 
-            recordType: 'work', 
-            date: trackingCalendarDate, 
-            projectName: assignedProjectName, 
-            startTime: chosenStartTimeToken, 
-            endTime: chosenEndTimeToken, 
-            breakMinutesDeduction: selectedBreakOptionMinutesGlobal, 
-            notes: clientNotesTextString, 
-            isDeleted: false, 
-            timestamp: Date.now() 
-        }; 
-
-        await dispatchWriteTransactionToCloudFirestore(uniqueGeneratedDocumentId, cleanUnifiedDataPayload); 
-        
-        // Form Reset processing 
-        document.getElementById('log-project-name').value = ''; 
-        document.getElementById('log-notes').value = ''; 
-        selectBreakOption(0, document.querySelector('.break-options-row .break-pill')); 
-        switchActiveView('history', document.getElementById('nav-history-link')); 
-    } 
-
-    async function handleVacationDayLogSubmission(event) { 
-        event.preventDefault(); 
-        const calendarDateFrom = document.getElementById('vacation-from-date-input').value; 
-        const calendarDateTo = document.getElementById('vacation-to-date-input').value; 
-        const generalExplanationNotes = document.getElementById('vacation-notes-input').value.trim(); 
-
-        if (new Date(calendarDateTo) < new Date(calendarDateFrom)) { 
-            alert(activeLanguageGlobal === 'de' ? "Fehler: Das Enddatum liegt vor dem Startdatum." : "Validation Error: End date cannot be chronologically prior to start date."); 
-            return; 
-        } 
-
-        const recordIdentityStringToken = 'vac_' + Date.now(); 
-        
-        const vacationFormObjectPayload = { 
-            owner: authenticatedUserGlobal, 
-            recordType: currentLeaveTypeGlobal, 
-            fromDate: calendarDateFrom, 
-            toDate: calendarDateTo, 
-            notes: generalExplanationNotes, 
-            isDeleted: false, 
-            timestamp: Date.now() 
-        }; 
-
-        await dispatchWriteTransactionToCloudFirestore(recordIdentityStringToken, vacationFormObjectPayload); 
-
-        document.getElementById('vacation-notes-input').value = ''; 
-        renderVacationAbsenceGridTracker(); 
-    } 
-
-    // ── Local Runtime Screen Renders ────────────────────────────────────────
-    function renderUserTimesheetHistoryWorkspace() { 
-        const targetListContainerNode = document.getElementById('history-items-container'); 
-        targetListContainerNode.innerHTML = ''; 
-
-        if (applicationMemoryWorkLogs.length === 0) { 
-            targetListContainerNode.innerHTML = ` 
-                <p style="text-align:center; padding:32px; color:var(--text-muted); font-size:13px; font-weight:600;"> 
-                    ${activeLanguageGlobal === 'de' ? 'Keine Arbeitszeitbuchungen vorhanden.' : 'No recorded work logs discovered in cloud scope.'} 
-                </p> `; 
-            return; 
-        } 
-
-        applicationMemoryWorkLogs.forEach(item => { 
-            const calculatedHoursDifference = evaluateShiftDurationDifferenceInHours(item.startTime, item.endTime); 
-            const breakDeductionHoursAmount = (item.breakMinutesDeduction || 0) / 60; 
-            const netFinalShiftHours = Math.max(0, calculatedHoursDifference - breakDeductionHoursAmount); 
-
-            const rawHistoryCardItemElement = document.createElement('div'); 
-            rawHistoryCardItemElement.className = 'history-item'; 
-            rawHistoryCardItemElement.style.borderLeftColor = 'var(--primary-blue)'; 
-
-            rawHistoryCardItemElement.innerHTML = ` 
-                <div class="item-main-row"> 
-                    <div class="hist-left"> 
-                        <h5>${item.projectName}</h5> 
-                        <p><i class="fa-solid fa-calendar" style="margin-right:5px;"></i>${item.date}  •  <i class="fa-solid fa-clock" style="margin-right:3px;"></i> ${item.startTime} - ${item.endTime} (${item.breakMinutesDeduction}m break)</p> 
-                        ${item.notes ? `<p style="margin-top:6px; font-style:italic; color:#475569; font-size:11px;">Note: ${item.notes}</p>` : ''} 
-                    </div> 
-                    <div class="hist-right"> 
-                        <div>${netFinalShiftHours.toFixed(2)} hrs</div> 
-                        <div style="margin-top: 8px;"> 
-                            <button class="action-icon-btn" onclick="initiateInlineFieldEditorRow('${item.id}', '${item.projectName}', '${item.notes || ''}')"><i class="fa-solid fa-pen-to-square"></i></button> 
-                            <button class="action-icon-btn delete-hover" onclick="executeSoftDeleteTransactionPayload('${item.id}', 'work')"><i class="fa-solid fa-trash-can"></i></button> 
-                        </div> 
-                    </div> 
-                </div> 
-                <div id="inline-editor-zone-${item.id}"></div> 
-            `; 
-            targetListContainerNode.appendChild(rawHistoryCardItemElement); 
-        }); 
-    } 
-
-    function renderVacationAbsenceGridTracker() { 
-        const parentContainerNode = document.getElementById('vacation-days-list-container'); 
-        parentContainerNode.innerHTML = ''; 
-
-        if (applicationMemoryVacations.length === 0) { 
-            return; 
-        } 
-
-        applicationMemoryVacations.forEach(item => { 
-            const calculatedDaysCountSpan = calculateExclusiveDaysDifferenceSpan(item.fromDate, item.toDate); 
-            const isSickElementFlag = (item.recordType === 'sick'); 
-
-            const absenceRecordCardNode = document.createElement('div'); 
-            absenceRecordCardNode.className = 'history-item'; 
-            absenceRecordCardNode.style.borderLeftColor = isSickElementFlag ? 'var(--primary-red)' : '#10b981'; 
-
-            absenceRecordCardNode.innerHTML = ` 
-                <div class="item-main-row"> 
-                    <div class="hist-left"> 
-                        <h5>${isSickElementFlag ? (activeLanguageGlobal === 'de' ? 'Arbeitsunfähigkeit (AU)':'Medical Sick Leave') : (activeLanguageGlobal === 'de' ? 'Erholungsurlaub':'Paid Vacation Granted')}</h5> 
-                        <p><i class="fa-solid fa-calendar-days" style="margin-right:6px;"></i>${item.fromDate} ${activeLanguageGlobal === 'de'?'bis':'to'} ${item.toDate}</p> 
-                        <p style="margin-top:4px; font-size:11px; color:#475569;">${item.notes}</p> 
-                    </div> 
-                    <div class="hist-right"> 
-                        <span style="background:${isSickElementFlag ? '#fee2e2':'#d1fae5'}; color:${isSickElementFlag ? 'var(--primary-red)':'#065f46'}; padding:4px 10px; border-radius:12px; font-size:11px; font-weight:700;"> 
-                            ${calculatedDaysCountSpan} ${activeLanguageGlobal === 'de' ? 'Tage' : 'Days'} 
-                        </span> 
-                        <div style="margin-top:10px;"> 
-                            <button class="action-icon-btn delete-hover" onclick="executeSoftDeleteTransactionPayload('${item.id}', 'vacation')"><i class="fa-solid fa-trash-can"></i></button> 
-                        </div> 
-                    </div> 
-                </div> 
-            `; 
-            parentContainerNode.appendChild(absenceRecordCardNode); 
-        }); 
-    } 
-
-    function openHiddenTrashView() { 
-        switchActiveView('deleted', null); 
-        const trashBinContainer = document.getElementById('deleted-items-bin-container'); 
-        trashBinContainer.innerHTML = ''; 
-
-        if (applicationMemoryDeletedTrash.length === 0) { 
-            trashBinContainer.innerHTML = `<p style="text-align:center; padding:24px; color:var(--text-muted); font-size:12px; font-weight:600;">Der Papierkorb ist leer.</p>`; 
-            return; 
-        } 
-
-        applicationMemoryDeletedTrash.forEach(item => { 
-            const card = document.createElement('div'); 
-            card.className = 'history-item'; 
-            card.style.opacity = '0.75'; 
-            card.style.borderLeftColor = '#64748b'; 
-
-            const isWork = (item.recordType === 'work' || !item.recordType); 
-            let title = isWork ? item.projectName : (item.recordType === 'sick' ? 'Krankheitstag / AU' : 'Erholungsurlaub'); 
-
-            card.innerHTML = ` 
-                <div class="item-main-row"> 
-                    <div class="hist-left"> 
-                        <h5 style="text-decoration:line-through;">${title}</h5> 
-                        <p style="font-size:11px;">Logged Frame: ${item.date || item.fromDate}</p> 
-                    </div> 
-                    <div class="hist-right"> 
-                        <button class="restore-btn" onclick="executeRestoreTrashTransaction('${item.id}')"><i class="fa-solid fa-trash-arrow-up" style="margin-right:5px;"></i> Wiederherstellen</button> 
-                    </div> 
-                </div> 
-            `; 
-            trashBinContainer.appendChild(card); 
-        }); 
-    } 
-
-    // ── Local Workspace Actions Management Controls ───────────────────────
-    function initiateInlineFieldEditorRow(recordId, currentProject, currentNotes) { 
-        const targetsContainerNode = document.getElementById(`inline-editor-zone-${recordId}`); 
-        targetsContainerNode.innerHTML = ` 
-            <div class="inline-edit-box"> 
-                <div class="form-group"> 
-                    <label style="font-size:9px;">Project / Customer</label> 
-                    <input type="text" id="inline-edit-project-${recordId}" value="${currentProject}"> 
-                </div> 
-                <div class="form-group" style="margin-bottom:0;"> 
-                    <label style="font-size:9px;">Notes</label> 
-                    <textarea id="inline-edit-notes-${recordId}" rows="2">${currentNotes}</textarea> 
-                </div> 
-                <div class="inline-edit-actions"> 
-                    <button class="inline-btn" style="background:#e2e8f0; color:#334155;" onclick="closeInlineEditorZone('${recordId}')">Cancel</button> 
-                    <button class="inline-btn" style="background:var(--primary-blue); color:white;" onclick="saveInlineEditorChangesDataStream('${recordId}')">Save Changes</button> 
-                </div> 
-            </div> 
-        `; 
-    } 
-
-    function closeInlineEditorZone(recordId) { 
-        document.getElementById(`inline-editor-zone-${recordId}`).innerHTML = ''; 
-    } 
-
-    async function saveInlineEditorChangesDataStream(recordId) { 
-        const updatedProjectString = document.getElementById(`inline-edit-project-${recordId}`).value.trim(); 
-        const updatedNotesString = document.getElementById(`inline-edit-notes-${recordId}`).value.trim(); 
-
-        if (!updatedProjectString) { 
-            alert("Project name cannot be empty."); 
-            return; 
-        } 
-
-        const referenceBaseRecord = applicationMemoryWorkLogs.find(x => x.id === recordId); 
-        if (!referenceBaseRecord) return; 
-
-        const mergedPayloadChangesMap = { 
-            ...referenceBaseRecord, 
-            projectName: updatedProjectString, 
-            notes: updatedNotesString 
-        }; 
-        delete mergedPayloadChangesMap.id; 
-
-        await dispatchWriteTransactionToCloudFirestore(recordId, mergedPayloadChangesMap); 
-    } 
-
-    async function executeSoftDeleteTransactionPayload(recordId, partitionType) { 
-        if (!confirm(activeLanguageGlobal === 'de' ? "Datensatz temporär in den Papierkorb verschieben?" : "Are you sure you want to move this record to the system trash bin?")) return; 
-        
-        const matchingTargetObject = (partitionType === 'work') ? 
-            applicationMemoryWorkLogs.find(x => x.id === recordId) : 
-            applicationMemoryVacations.find(x => x.id === recordId); 
-
-        if (!matchingTargetObject) return; 
-
-        const updatedDeletedObjectPayload = { 
-            ...matchingTargetObject, 
-            isDeleted: true, 
-            deletedAt: new Date().toISOString() 
-        }; 
-        delete updatedDeletedObjectPayload.id; 
-
-        await dispatchWriteTransactionToCloudFirestore(recordId, updatedDeletedObjectPayload); 
-    } 
-
-    async function executeRestoreTrashTransaction(recordId) { 
-        const matchingTrashObject = applicationMemoryDeletedTrash.find(x => x.id === recordId); 
-        if (!matchingTrashObject) return; 
-
-        const restoredDataPayloadObject = { 
-            ...matchingTrashObject, 
-            isDeleted: false 
-        }; 
-        delete restoredDataPayloadObject.id; 
-        delete restoredDataPayloadObject.deletedAt; 
-
-        await dispatchWriteTransactionToCloudFirestore(recordId, restoredDataPayloadObject); 
-        openHiddenTrashView(); 
-    } 
-
-    // ── Summary Metrics Breakdown Component Modals ──────────────────────────
-    function displayWorkTimeBreakdownSummary() { 
-        const bodyNode = document.getElementById('modal-report-content-body'); 
-        document.getElementById('custom-modal-title-header').textContent = activeLanguageGlobal === 'de' ? 'Aufschlüsselung Nettoarbeitszeit' : 'Work Hour Log Breakdown'; 
-        bodyNode.innerHTML = ''; 
-
-        if (applicationMemoryWorkLogs.length === 0) { 
-            bodyNode.innerHTML = `<p style="color:var(--text-muted); font-size:12px;">No logged elements discovered.</p>`; 
-        } else { 
-            applicationMemoryWorkLogs.forEach(item => { 
-                const delta = evaluateShiftDurationDifferenceInHours(item.startTime, item.endTime); 
-                const deduction = (item.breakMinutesDeduction || 0) / 60; 
-                const netHours = Math.max(0, delta - deduction); 
-
-                const itemRow = document.createElement('div'); 
-                itemRow.className = 'modal-report-row'; 
-                itemRow.innerHTML = ` 
-                    <span class="report-date">${item.date} <span style="font-weight:500; font-size:11px; color:var(--text-muted);">(${item.projectName})</span></span> 
-                    <span class="report-val">${netHours.toFixed(2)} hrs</span> 
-                `; 
-                bodyNode.appendChild(itemRow); 
-            }); 
-        } 
-        document.getElementById('custom-report-modal-backdrop').className = 'custom-modal-backdrop show'; 
-    } 
-
-    function displayOvertimeBreakdownSummary() { 
-        const bodyNode = document.getElementById('modal-report-content-body'); 
-        document.getElementById('custom-modal-title-header').textContent = activeLanguageGlobal === 'de' ? 'Überstundenkonto-Auszug' : 'Overtime Balance Ledger'; 
-        bodyNode.innerHTML = ''; 
-
-        const baseConstraint = parseFloat(document.getElementById('shift-target-constraint').value) || 8.5; 
-
-        if (applicationMemoryWorkLogs.length === 0) { 
-            bodyNode.innerHTML = `<p style="color:var(--text-muted); font-size:12px;">No logged data available.</p>`; 
-        } else { 
-            applicationMemoryWorkLogs.forEach(item => { 
-                const delta = evaluateShiftDurationDifferenceInHours(item.startTime, item.endTime); 
-                const deduction = (item.breakMinutesDeduction || 0) / 60; 
-                const netHours = Math.max(0, delta - deduction); 
-                const diff = netHours - baseConstraint; 
-
-                const itemRow = document.createElement('div'); 
-                itemRow.className = 'modal-report-row'; 
-                itemRow.innerHTML = ` 
-                    <span class="report-date">${item.date} <span style="font-weight:500; font-size:11px; color:#475569;">(Soll: ${baseConstraint})</span></span> 
-                    <span class="report-val" style="color:${diff >= 0 ? '#10b981':'#dc2626'};">${diff >= 0 ? '+':''}${diff.toFixed(2)} hrs</span> 
-                `; 
-                bodyNode.appendChild(itemRow); 
-            }); 
-        } 
-        document.getElementById('custom-report-modal-backdrop').className = 'custom-modal-backdrop show'; 
-    } 
-
-    function displayLeaveStatementBalancesSummary() { 
-        const bodyNode = document.getElementById('modal-report-content-body'); 
-        document.getElementById('custom-modal-title-header').textContent = activeLanguageGlobal === 'de' ? 'Kontoauszug Urlaub & Fehlzeiten' : 'Absence Statement Overview'; 
-        bodyNode.innerHTML = ''; 
-
-        const initialAllowedBankValue = parseInt(document.getElementById('vacation-allowed-bank').value, 10) || 30; 
-        
-        let totalVacationDaysDeducted = 0; 
-        let totalSickDaysCounted = 0; 
-
-        applicationMemoryVacations.forEach(item => { 
-            const days = calculateExclusiveDaysDifferenceSpan(item.fromDate, item.toDate); 
-            if (item.recordType === 'sick') { 
-                totalSickDaysCounted += days; 
-            } else { 
-                totalVacationDaysDeducted += days; 
-            } 
-        }); 
-
-        const netRemainingVacationDaysLeft = Math.max(0, initialAllowedBankValue - totalVacationDaysDeducted); 
-
-        const summaryBoxHeaderNode = document.createElement('div'); 
-        summaryBoxHeaderNode.className = 'statement-summary-box'; 
-        summaryBoxHeaderNode.innerHTML = ` 
-            <div><span>Annual Allotment Bank (Gesamtanspruch):</span> <span>${initialAllowedBankValue} Tage</span></div> 
-            <div><span>Vacation Booked (Genommener Urlaub):</span> <span style="color:#2563eb;">-${totalVacationDaysDeducted} Tage</span></div> 
-            <hr style="border:0; border-top:1px dashed #cbd5e1; margin:6px 0;"> 
-            <div style="font-weight:700; font-size:13px; color:#0f172a;"> 
-                <span>Current Balance (Resturlaub):</span> <span style="color:#16a34a;">${netRemainingVacationDaysLeft} Tage</span> 
-            </div> 
-            <div style="margin-top:6px; font-weight:500; color:#dc2626;"> 
-                <span>Total Absent Sick Days (Krankheitstage gesamt):</span> <span>${totalSickDaysCounted} AU-Tage</span> 
-            </div> 
-        `; 
-        bodyNode.appendChild(summaryBoxHeaderNode); 
-
-        if (applicationMemoryVacations.length > 0) { 
-            applicationMemoryVacations.forEach(item => { 
-                const deltaDays = calculateExclusiveDaysDifferenceSpan(item.fromDate, item.toDate); 
-                const isSick = (item.recordType === 'sick'); 
-
-                const itemRow = document.createElement('div'); 
-                itemRow.className = 'modal-report-row'; 
-                itemRow.innerHTML = ` 
-                    <span class="report-date">${item.fromDate} bis ${item.toDate}</span> 
-                    <span class="report-val" style="color:${isSick ? 'var(--primary-red)':'#2563eb'}; font-weight:700;"> 
-                        ${deltaDays}  ${isSick ? (activeLanguageGlobal === 'de' ? 'AU-Tag':'Sick Day') : (activeLanguageGlobal === 'de' ? 'Urlaub':'Vacation')} 
-                    </span> 
-                `; 
-                bodyNode.appendChild(itemRow); 
-            }); 
-        } 
-
-        document.getElementById('custom-report-modal-backdrop').className = 'custom-modal-backdrop show'; 
-    } 
-
-    function closeCustomReportModal() { 
-        document.getElementById('custom-report-modal-backdrop').className = 'custom-modal-backdrop'; 
-    } 
-
-    async function handleFeedbackSubmissionEngine(event) { 
-        event.preventDefault(); 
-        const feedbackText = document.getElementById('feedback-message').value.trim(); 
-        const statusBox = document.getElementById('feedback-status-box'); 
-        
-        statusBox.className = 'message'; 
-        statusBox.style.display = 'none'; 
-        
-        const feedbackDocumentId = 'feedback_' + Date.now(); 
-        const feedbackPayload = { 
-            sender: authenticatedUserGlobal, 
-            message: feedbackText, 
-            timestamp: Date.now(), 
-            systemVersion: '2.0.0' 
-        }; 
-
-        try { 
-            const feedbackUrl = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/developer_feedback/${feedbackDocumentId}`; 
-            
-            const mappedFields = {}; 
-            for (const [k, v] of Object.entries(feedbackPayload)) { 
-                mappedFields[k] = toFSValue(v); 
-            } 
-
-            const response = await fetch(feedbackUrl, { 
-                method: 'PATCH', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ fields: mappedFields }) 
-            }); 
-
-            if (!response.ok) throw new Error("Firestore feedback submission error."); 
-
-            statusBox.textContent = activeLanguageGlobal === 'de' ? "Vielen Dank! Ihr Feedback wurde erfolgreich übermittelt." : "Thank you! Your feedback has been transmitted securely."; 
-            statusBox.className = 'message success'; 
-            document.getElementById('feedback-message').value = ''; 
-        } catch (err) { 
-            console.error(err); 
-            statusBox.textContent = activeLanguageGlobal === 'de' ? "Fehler beim Senden des Feedbacks." : "Error routing system feedback log."; 
-            statusBox.className = 'message error'; 
-        } 
-    } 
-
-    function triggerPDFExportEngine() { 
-        const targetElement = document.getElementById('pdf-render-target'); 
-        const headerBannerElement = document.getElementById('pdf-custom-header'); 
-        headerBannerElement.style.display = 'block'; 
-
-        const conversionOptionsMap = { 
-            margin: [15, 15, 15, 15], 
-            filename: `Stundenzettel_Report_${authenticatedUserGlobal.replace(/\s+/g, '_')}.pdf`, 
-            image: { type: 'jpeg', quality: 0.98 }, 
-            html2canvas: { scale: 2, useCORS: true, logging: false }, 
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
-        }; 
-
-        html2pdf().set(conversionOptionsMap).from(targetElement).save().then(() => { 
-            headerBannerElement.style.display = 'none'; 
-        }).catch(err => { 
-            console.error("PDF Export failed: ", err); 
-            headerBannerElement.style.display = 'none'; 
-        }); 
-    } 
+        applicationMemoryWorkLogs.forEach(i => {
+            const hrs = Math.max(0, evaluateShiftDurationDifferenceInHours(i.startTime, i.endTime) - ((i.breakMinutesDeduction || 0)/60));
+            const card = document.createElement('div');
+            card.className = 'history-item';
+            card.style.borderLeftColor = 'var(--primary-blue)';
+            card.innerHTML = `
+                <div class="item-main-row">
+                    <div class="hist-left">
+                        <h5>${i.projectName}</h5>
+                        <p><i class="fa-solid fa-calendar"></i> ${i.date}  •  ${i.startTime} - ${i.endTime} (${i.breakMinutesDeduction}m Break)</p>
+                        ${i.notes ? `<p style="font-style:italic; margin-top:4px; font-size:11px;">${i.notes}</p>` : ''}
+                    </div>
+                    <div class="hist-right">
+                        <div>${hrs.toFixed(2)} hrs</div>
+                        <button class="action-icon-btn" style="color:var(--primary-red);" onclick="executeSoftDeleteRecord('${i.id}')"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function renderVacationAbsenceGridTracker() {
+        const container = document.getElementById('vacation-days-list-container');
+        container.innerHTML = '';
+
+        applicationMemoryVacations.forEach(i => {
+            const d = calculateExclusiveDaysDifferenceSpan(i.fromDate, i.toDate);
+            const isS = i.recordType === 'sick';
+            const card = document.createElement('div');
+            card.className = 'history-item';
+            card.style.borderLeftColor = isS ? 'var(--primary-red)' : '#10b981';
+            card.innerHTML = `
+                <div class="item-main-row">
+                    <div class="hist-left">
+                        <h5>${isS ? 'Arbeitsunfähigkeit (AU)' : 'Erholungsurlaub'}</h5>
+                        <p>${i.fromDate} bis ${i.toDate}</p>
+                        <p style="font-size:11px; color:var(--text-muted);">${i.notes || ''}</p>
+                    </div>
+                    <div class="hist-right">
+                        <span style="background:${isS?'#fee2e2':'#d1fae5'}; color:${isS?'var(--primary-red)':'#065f46'}; padding:4px 8px; border-radius:8px; font-size:11px;">${d} Tage</span>
+                        <button class="action-icon-btn" style="display:block; margin-top:6px; margin-left:auto;" onclick="executeSoftDeleteRecord('${i.id}')"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    async function handleNewRecordSubmission(e) {
+        e.preventDefault();
+        const data = {
+            owner: authenticatedUserGlobal,
+            recordType: 'work',
+            date: document.getElementById('log-date-picker').value,
+            projectName: document.getElementById('log-project-name').value.trim(),
+            startTime: document.getElementById('log-start-time').value,
+            endTime: document.getElementById('log-end-time').value,
+            breakMinutesDeduction: selectedBreakOptionMinutesGlobal,
+            notes: document.getElementById('log-notes').value.trim(),
+            isDeleted: false,
+            timestamp: Date.now()
+        };
+        await databaseReferenceEngine.collection('work_entries').add(data);
+        document.getElementById('log-project-name').value = '';
+        document.getElementById('log-notes').value = '';
+        switchActiveView('history', document.getElementById('nav-lbl-hist').parentNode);
+    }
+
+    async function handleVacationDayLogSubmission(e) {
+        e.preventDefault();
+        const data = {
+            owner: authenticatedUserGlobal,
+            recordType: currentLeaveTypeGlobal,
+            fromDate: document.getElementById('vacation-from-date-input').value,
+            toDate: document.getElementById('vacation-to-date-input').value,
+            notes: document.getElementById('vacation-notes-input').value.trim(),
+            isDeleted: false,
+            timestamp: Date.now()
+        };
+        await databaseReferenceEngine.collection('work_entries').add(data);
+        document.getElementById('vacation-notes-input').value = '';
+    }
+
+    function executeSoftDeleteRecord(id) {
+        if(!confirm("Eintrag löschen?")) return;
+        databaseReferenceEngine.collection('work_entries').doc(id).update({ isDeleted: true });
+    }
+
+    function selectBreakOption(m, btn) {
+        selectedBreakOptionMinutesGlobal = m;
+        const pills = btn.parentNode.children;
+        for (let i = 0; i < pills.length; i++) pills[i].classList.remove('active');
+        btn.classList.add('active');
+    }
+
+    function setLeaveManagementType(t) {
+        currentLeaveTypeGlobal = t;
+        document.getElementById('toggle-leave-vacation').classList.toggle('active', t === 'vacation');
+        document.getElementById('toggle-leave-sick').classList.toggle('active', t === 'sick');
+    }
+
+    function displayWorkTimeBreakdownSummary() { switchActiveView('history', null); }
+    function displayOvertimeBreakdownSummary() { switchActiveView('history', null); }
+
+    function displayLeaveStatementBalancesSummary() {
+        const body = document.getElementById('modal-report-content-body');
+        document.getElementById('custom-modal-title-header').textContent = 'Kontoauszug';
+        body.innerHTML = '';
+        let vDays = 0, sDays = 0;
+
+        applicationMemoryVacations.forEach(i => {
+            const d = calculateExclusiveDaysDifferenceSpan(i.fromDate, i.toDate);
+            if(i.recordType === 'sick') sDays += d; else vDays += d;
+        });
+
+        body.innerHTML = `
+            <div class="statement-summary-box">
+                <div><span>Eingebuchter Urlaub:</span> <span>${vDays} Tage</span></div>
+                <div><span>Krankheitstage gesamt:</span> <span>${sDays} Tage</span></div>
+            </div>
+        `;
+        document.getElementById('custom-report-modal-backdrop').classList.add('show');
+    }
+
+    function closeCustomReportModal() {
+        document.getElementById('custom-report-modal-backdrop').classList.remove('show');
+    }
+
+    function setApplicationLanguage(l) {
+        activeLanguageGlobal = l;
+        document.getElementById('lang-btn-en').classList.toggle('active', l === 'en');
+        document.getElementById('lang-btn-de').classList.toggle('active', l === 'de');
+    }
+
+    function triggerPDFExportEngine() {
+        const targetElement = document.getElementById('pdf-render-target');
+        const headerBannerElement = document.getElementById('pdf-custom-header');
+        headerBannerElement.style.display = 'block';
+
+        const conversionOptionsMap = {
+            margin: [15, 15, 15, 15],
+            filename: `Stundenzettel_Report_${authenticatedUserGlobal}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(conversionOptionsMap).from(targetElement).save().then(() => {
+            headerBannerElement.style.display = 'none';
+        });
+    }
  </script>
 </body>
 </html>
