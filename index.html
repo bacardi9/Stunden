@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Schürmann Gebäude + Energie - Enterprise Work Portal</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -154,6 +155,63 @@
   .badge-type-v { background: rgba(16,185,129,0.25); color: #34d399; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
   .badge-type-s { background: rgba(225,29,72,0.25); color: #f87171; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
 
+  /* ── Full-Screen Admin Layout ── */
+  #admin-full-view { display: none; min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); }
+  .admin-layout { display: flex; min-height: 100vh; }
+  .admin-sidebar { width: 280px; background: linear-gradient(180deg, #0c1322 0%, #1a2332 100%); border-right: 1px solid rgba(212,175,55,0.15); display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 100; }
+  .admin-sidebar-header { padding: 28px 24px; border-bottom: 1px solid rgba(212,175,55,0.2); background: linear-gradient(135deg, rgba(212,175,55,0.08) 0%, transparent 100%); }
+  .admin-sidebar-brand { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+  .admin-sidebar-subtitle { font-size: 9px; font-weight: 700; color: var(--admin-gold); letter-spacing: 2px; margin-top: 2px; }
+  .admin-sidebar-user { margin-top: 16px; padding: 12px 14px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.2); border-radius: 10px; }
+  .admin-sidebar-user-label { font-size: 9px; color: var(--admin-gold); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .admin-sidebar-user-name { font-size: 15px; color: #fff; font-weight: 700; margin-top: 2px; }
+  .admin-sidebar-nav { flex: 1; padding: 20px 16px; overflow-y: auto; }
+  .admin-nav-section { margin-bottom: 24px; }
+  .admin-nav-section-title { font-size: 10px; color: #64748b; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; padding: 0 12px; margin-bottom: 10px; }
+  .admin-nav-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 10px; color: #94a3b8; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-bottom: 4px; }
+  .admin-nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+  .admin-nav-item.active { background: linear-gradient(135deg, rgba(212,175,55,0.2) 0%, rgba(212,175,55,0.05) 100%); color: var(--admin-gold); border: 1px solid rgba(212,175,55,0.3); }
+  .admin-nav-item i { width: 20px; text-align: center; font-size: 14px; }
+  .admin-nav-item.danger { color: #f87171; }
+  .admin-nav-item.danger:hover { background: rgba(239,68,68,0.15); }
+  .admin-sidebar-footer { padding: 20px 24px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .admin-sidebar-footer-text { font-size: 10px; color: #475569; text-align: center; }
+  .admin-main { flex: 1; margin-left: 280px; min-height: 100vh; display: flex; flex-direction: column; }
+  .admin-header { background: rgba(15,23,42,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(212,175,55,0.15); padding: 0 32px; height: 70px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .admin-header-title { display: flex; align-items: center; gap: 16px; }
+  .admin-header-title h1 { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+  .admin-header-badge { background: linear-gradient(135deg, var(--admin-gold) 0%, #b8860b 100%); color: #0f172a; padding: 6px 14px; border-radius: 6px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+  .admin-header-actions { display: flex; align-items: center; gap: 12px; }
+  .admin-header-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: #e2e8f0; padding: 10px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+  .admin-header-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
+  .admin-header-btn.primary { background: var(--admin-gold); border: none; color: #0f172a; font-weight: 700; }
+  .admin-header-btn.primary:hover { background: #e6c545; }
+  .admin-content { flex: 1; padding: 32px; overflow-y: auto; }
+  .admin-content-inner { max-width: 1400px; margin: 0 auto; }
+
+  @media (max-width: 1024px) {
+    .admin-sidebar { width: 240px; }
+    .admin-main { margin-left: 240px; }
+  }
+  @media (max-width: 768px) {
+    .admin-sidebar { transform: translateX(-100%); transition: transform 0.3s; position: fixed; width: 280px; }
+    .admin-sidebar.open { transform: translateX(0); }
+    .admin-main { margin-left: 0; }
+    .admin-mobile-toggle { display: flex !important; }
+  }
+  .admin-mobile-toggle { display: none; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 10px 12px; border-radius: 8px; cursor: pointer; }
+  .admin-sidebar-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 99; backdrop-filter: blur(2px); }
+  .admin-sidebar-backdrop.show { display: block; }
+  /* Enterprise polish: fade-in for admin sections */
+  .admin-section { animation: adminFadeIn 0.25s ease; }
+  @keyframes adminFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  /* Gold shimmer on metric tiles */
+  .admin-metric-tile { position: relative; overflow: hidden; }
+  .admin-metric-tile::after { content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%; background: linear-gradient(90deg, transparent, rgba(212,175,55,0.06), transparent); animation: shimmer 3s infinite; }
+  @keyframes shimmer { 0% { left: -100%; } 100% { left: 200%; } }
+  /* Smooth sidebar open transition */
+  .admin-sidebar { transition: transform 0.3s cubic-bezier(0.16,1,0.3,1); }
+
   /* ── Modals ── */
   .custom-modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
   .custom-modal-backdrop.show { display: flex; }
@@ -218,6 +276,269 @@
     </form>
     <div id="message-box" class="message"></div>
     <div class="developer-signature">Developed by Amran Hiluf</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ ADMIN FULL-SCREEN VIEW ═══════════════════════════════════════ -->
+<div id="admin-full-view">
+  <div class="admin-layout">
+    <!-- Admin Mobile Backdrop -->
+    <div class="admin-sidebar-backdrop" id="admin-sidebar-backdrop" onclick="toggleAdminSidebar()"></div>
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="admin-sidebar-header">
+        <div class="admin-sidebar-brand">SCHÜRMANN</div>
+        <div class="admin-sidebar-subtitle">GEBÄUDE + ENERGIE</div>
+        <div class="admin-sidebar-user">
+          <div class="admin-sidebar-user-label">Angemeldet als</div>
+          <div class="admin-sidebar-user-name" id="admin-user-display">Administrator</div>
+        </div>
+      </div>
+      <nav class="admin-sidebar-nav">
+        <div class="admin-nav-section">
+          <div class="admin-nav-section-title">Hauptmenü</div>
+          <div class="admin-nav-item active" onclick="switchAdminSection('overview')" id="admin-nav-overview">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>Übersicht</span>
+          </div>
+          <div class="admin-nav-item" onclick="switchAdminSection('employees')" id="admin-nav-employees">
+            <i class="fa-solid fa-users"></i>
+            <span>Mitarbeiter</span>
+          </div>
+        </div>
+        <div class="admin-nav-section">
+          <div class="admin-nav-section-title">Berichte</div>
+          <div class="admin-nav-item" onclick="switchAdminSection('reports')" id="admin-nav-reports">
+            <i class="fa-solid fa-file-pdf"></i>
+            <span>PDF Exporte</span>
+          </div>
+        </div>
+        <div class="admin-nav-section">
+          <div class="admin-nav-section-title">System</div>
+          <div class="admin-nav-item" onclick="switchAdminSection('settings')" id="admin-nav-settings">
+            <i class="fa-solid fa-gear"></i>
+            <span>Einstellungen</span>
+          </div>
+          <div class="admin-nav-item danger" onclick="handleAdminSignOut()">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Abmelden</span>
+          </div>
+        </div>
+      </nav>
+      <div class="admin-sidebar-footer">
+        <div class="admin-sidebar-footer-text">Version 2.1.0 | Enterprise Edition</div>
+        <div class="admin-sidebar-footer-text" style="margin-top:4px;">Developed by Amran Hiluf</div>
+      </div>
+    </aside>
+
+    <!-- Admin Main Content -->
+    <main class="admin-main">
+      <header class="admin-header">
+        <div class="admin-header-title">
+          <button class="admin-mobile-toggle" onclick="toggleAdminSidebar()">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <h1 id="admin-page-title">Unternehmens-Dashboard</h1>
+          <span class="admin-header-badge">Enterprise</span>
+        </div>
+        <div class="admin-header-actions">
+          <button class="admin-header-btn" onclick="refreshAdminData()">
+            <i class="fa-solid fa-rotate-right"></i>
+            <span>Aktualisieren</span>
+          </button>
+          <div style="color:#64748b; font-size:12px;" id="admin-last-update">Letzte Aktualisierung: --</div>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-content-inner">
+
+          <!-- Overview Section -->
+          <section id="admin-section-overview" class="admin-section">
+            <div class="admin-metrics-row" style="margin-bottom:28px;">
+              <div class="admin-metric-tile">
+                <label>Gesamteinträge</label>
+                <div class="number-callout" id="admin-stat-total">0</div>
+              </div>
+              <div class="admin-metric-tile">
+                <label>Aktive Mitarbeiter</label>
+                <div class="number-callout" id="admin-stat-users">0</div>
+              </div>
+              <div class="admin-metric-tile">
+                <label>Gesamtstunden (Netto)</label>
+                <div class="number-callout" id="admin-stat-hours">0.00</div>
+              </div>
+            </div>
+
+            <div style="background:var(--admin-card); border:1px solid var(--admin-border); border-radius:12px; padding:24px; margin-bottom:24px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+                <h3 style="font-size:16px; font-weight:700; color:#fff; margin:0;">
+                  <i class="fa-solid fa-clock-rotate-left" style="color:var(--admin-gold); margin-right:10px;"></i>Neueste Einträge
+                </h3>
+                <div style="display:flex; gap:10px; align-items:center;">
+                  <select id="admin-user-filter-dropdown" onchange="runAdminTableRender()" style="background:#334155; border:1px solid #475569; color:#fff; padding:8px 12px; border-radius:6px; font-size:12px;">
+                    <option value="ALL">Alle Mitarbeiter</option>
+                  </select>
+                  <select id="admin-type-filter" onchange="runAdminTableRender()" style="background:#334155; border:1px solid #475569; color:#fff; padding:8px 12px; border-radius:6px; font-size:12px;">
+                    <option value="ALL">Alle Typen</option>
+                    <option value="WORK">Arbeitsstunden</option>
+                    <option value="VACATION">Urlaub</option>
+                    <option value="SICK">Krankmeldungen</option>
+                  </select>
+                </div>
+              </div>
+              <div class="admin-table-scroll-shield">
+                <table class="admin-enterprise-table">
+                  <thead>
+                    <tr>
+                      <th>Mitarbeiter</th>
+                      <th>Datum</th>
+                      <th>Typ</th>
+                      <th>Beschreibung</th>
+                      <th style="text-align:right;">Dauer</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-global-table-body">
+                    <tr><td colspan="5" style="text-align:center; padding:40px; color:var(--admin-text-muted);">
+                      <i class="fa-solid fa-circle-notch fa-spin" style="margin-right:8px;"></i>Lade Unternehmensdaten...
+                    </td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- Employees Section -->
+          <section id="admin-section-employees" class="admin-section" style="display:none;">
+            <div style="background:var(--admin-card); border:1px solid var(--admin-border); border-radius:12px; padding:24px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+                <h3 style="font-size:16px; font-weight:700; color:#fff; margin:0;">
+                  <i class="fa-solid fa-user-tie" style="color:var(--admin-gold); margin-right:10px;"></i>Mitarbeiter Einzelansicht
+                </h3>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                  <select id="admin-employee-select" onchange="renderEmployeeDetail()" style="background:#334155; border:1px solid #475569; color:#fff; padding:10px 14px; border-radius:6px; font-size:12px; min-width:180px;">
+                    <option value="">-- Mitarbeiter auswählen --</option>
+                  </select>
+                  <button type="button" onclick="exportEmployeePDF()" id="btn-export-employee-pdf" style="background:var(--admin-gold); border:none; color:#0f172a; padding:10px 16px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; opacity:0.5;" disabled>
+                    <i class="fa-solid fa-file-pdf" style="margin-right:6px;"></i>PDF Export
+                  </button>
+                </div>
+              </div>
+
+              <!-- Employee Stats Cards -->
+              <div id="employee-stats-cards" style="display:none; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px;">
+                <div style="background:linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05)); border:1px solid rgba(212,175,55,0.3); border-radius:10px; padding:18px;">
+                  <div style="font-size:10px; color:var(--admin-gold); font-weight:700; letter-spacing:1px; margin-bottom:6px;">MITARBEITER</div>
+                  <div id="emp-stat-name" style="font-size:18px; color:#fff; font-weight:800;">-</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05); border:1px solid var(--admin-border); border-radius:10px; padding:18px;">
+                  <div style="font-size:10px; color:var(--admin-text-muted); font-weight:700; letter-spacing:1px; margin-bottom:6px;">ARBEITSSTUNDEN</div>
+                  <div id="emp-stat-hours" style="font-size:18px; color:var(--admin-gold); font-weight:800;">0.00 h</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05); border:1px solid var(--admin-border); border-radius:10px; padding:18px;">
+                  <div style="font-size:10px; color:var(--admin-text-muted); font-weight:700; letter-spacing:1px; margin-bottom:6px;">URLAUBSTAGE</div>
+                  <div id="emp-stat-vacation" style="font-size:18px; color:#3b82f6; font-weight:800;">0</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05); border:1px solid var(--admin-border); border-radius:10px; padding:18px;">
+                  <div style="font-size:10px; color:var(--admin-text-muted); font-weight:700; letter-spacing:1px; margin-bottom:6px;">KRANKTAGE</div>
+                  <div id="emp-stat-sick" style="font-size:18px; color:#ef4444; font-weight:800;">0</div>
+                </div>
+              </div>
+
+              <div class="admin-table-scroll-shield">
+                <table class="admin-enterprise-table">
+                  <thead>
+                    <tr>
+                      <th>Datum</th>
+                      <th>Typ</th>
+                      <th>Projekt/Beschreibung</th>
+                      <th>Startzeit</th>
+                      <th>Endzeit</th>
+                      <th style="text-align:right;">Dauer</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-employee-table-body">
+                    <tr><td colspan="6" style="text-align:center; padding:40px; color:var(--admin-text-muted);">
+                      <i class="fa-solid fa-user-clock" style="margin-right:8px; font-size:16px;"></i>Bitte wählen Sie einen Mitarbeiter aus.
+                    </td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- Reports Section -->
+          <section id="admin-section-reports" class="admin-section" style="display:none;">
+            <div style="background:var(--admin-card); border:1px solid var(--admin-border); border-radius:12px; padding:24px;">
+              <h3 style="font-size:16px; font-weight:700; color:#fff; margin:0 0 20px 0;">
+                <i class="fa-solid fa-file-export" style="color:var(--admin-gold); margin-right:10px;"></i>PDF Berichte exportieren
+              </h3>
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+                <div style="background:rgba(255,255,255,0.03); border:1px solid var(--admin-border); border-radius:10px; padding:20px;">
+                  <div style="font-size:13px; font-weight:700; color:#fff; margin-bottom:8px;">
+                    <i class="fa-solid fa-user" style="color:var(--admin-gold); margin-right:8px;"></i>Einzelner Mitarbeiter
+                  </div>
+                  <p style="font-size:12px; color:var(--admin-text-muted); margin-bottom:16px;">Arbeitsbericht für einen ausgewählten Mitarbeiter generieren.</p>
+                  <select id="report-employee-select" style="width:100%; background:#334155; border:1px solid #475569; color:#fff; padding:10px 12px; border-radius:6px; font-size:12px; margin-bottom:12px;">
+                    <option value="">-- Mitarbeiter wählen --</option>
+                  </select>
+                  <button onclick="exportSingleEmployeeReport()" style="width:100%; background:var(--admin-gold); border:none; color:#0f172a; padding:12px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;">
+                    <i class="fa-solid fa-download" style="margin-right:8px;"></i>PDF erstellen
+                  </button>
+                </div>
+                <div style="background:rgba(255,255,255,0.03); border:1px solid var(--admin-border); border-radius:10px; padding:20px;">
+                  <div style="font-size:13px; font-weight:700; color:#fff; margin-bottom:8px;">
+                    <i class="fa-solid fa-users" style="color:#3b82f6; margin-right:8px;"></i>Alle Mitarbeiter
+                  </div>
+                  <p style="font-size:12px; color:var(--admin-text-muted); margin-bottom:16px;">Separate PDF-Berichte für jeden Mitarbeiter generieren.</p>
+                  <button onclick="exportAllEmployeesPDF()" style="width:100%; background:rgba(59,130,246,0.9); border:none; color:#fff; padding:12px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; margin-top:auto;">
+                    <i class="fa-solid fa-file-zipper" style="margin-right:8px;"></i>Alle PDFs exportieren
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Settings Section -->
+          <section id="admin-section-settings" class="admin-section" style="display:none;">
+            <div style="background:var(--admin-card); border:1px solid var(--admin-border); border-radius:12px; padding:24px;">
+              <h3 style="font-size:16px; font-weight:700; color:#fff; margin:0 0 20px 0;">
+                <i class="fa-solid fa-gear" style="color:var(--admin-gold); margin-right:10px;"></i>Admin-Einstellungen
+              </h3>
+              <div style="background:rgba(255,255,255,0.03); border:1px solid var(--admin-border); border-radius:10px; padding:20px; margin-bottom:16px;">
+                <div style="font-size:13px; font-weight:700; color:#fff; margin-bottom:12px;">Sprache / Language</div>
+                <div style="display:flex; gap:10px;">
+                  <button type="button" onclick="setApplicationLanguage('de')" style="flex:1; background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.3); color:var(--admin-gold); padding:12px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;">
+                    Deutsch
+                  </button>
+                  <button type="button" onclick="setApplicationLanguage('en')" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid var(--admin-border); color:#fff; padding:12px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;">
+                    English
+                  </button>
+                </div>
+              </div>
+              <div style="background:rgba(255,255,255,0.03); border:1px solid var(--admin-border); border-radius:10px; padding:20px;">
+                <div style="font-size:13px; font-weight:700; color:#fff; margin-bottom:8px;">Systemstatus</div>
+                <div style="font-size:12px; color:var(--admin-text-muted);">
+                  <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--admin-border);">
+                    <span>Firebase-Verbindung</span>
+                    <span style="color:#34d399;"><i class="fa-solid fa-circle" style="font-size:8px; margin-right:6px;"></i>Verbunden</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--admin-border);">
+                    <span>Datenbank-Sync</span>
+                    <span style="color:#34d399;"><i class="fa-solid fa-circle" style="font-size:8px; margin-right:6px;"></i>Aktiv</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; padding:8px 0;">
+                    <span>Version</span>
+                    <span style="color:var(--admin-gold);">2.1.0 Enterprise</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </main>
   </div>
 </div>
 
@@ -436,44 +757,113 @@
             </div>
           </div>
 
-          <div class="admin-controls-bar">
-            <div style="color:#fff; font-size:12px; font-weight:700; white-space:nowrap;">
-              <i class="fa-solid fa-filter" style="color:var(--admin-gold); margin-right:6px;"></i>FILTER:
-            </div>
-            <select id="admin-user-filter-dropdown" onchange="runAdminTableRender()">
-              <option value="ALL">Alle Mitarbeiter anzeigen</option>
-            </select>
-            <select id="admin-type-filter" onchange="runAdminTableRender()">
-              <option value="ALL">Alle Log-Typen</option>
-              <option value="WORK">Arbeitsstunden</option>
-              <option value="VACATION">Urlaub</option>
-              <option value="SICK">Krankmeldungen</option>
-            </select>
-            <button type="button" onclick="refreshAdminData()" style="background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.4); color:var(--admin-gold); padding:10px 14px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;">
-              <i class="fa-solid fa-rotate-right" style="margin-right:6px;"></i>Aktualisieren
+          <!-- View Toggle Tabs -->
+          <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <button type="button" id="admin-tab-overview" onclick="switchAdminView('overview')" style="flex:1; background:var(--admin-gold); border:none; color:#0f172a; padding:12px 16px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;">
+              <i class="fa-solid fa-table-list" style="margin-right:6px;"></i>Übersicht (Neueste)
             </button>
-            <button type="button" onclick="triggerAdminPDFExport()" style="background:var(--admin-gold); border:none; color:#0f172a; padding:10px 14px; border-radius:8px; font-size:12px; font-weight:800; cursor:pointer; white-space:nowrap;">
-              <i class="fa-solid fa-file-pdf" style="margin-right:6px;"></i>Export PDF
+            <button type="button" id="admin-tab-employees" onclick="switchAdminView('employees')" style="flex:1; background:rgba(255,255,255,0.08); border:1px solid var(--admin-border); color:var(--admin-text-main); padding:12px 16px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;">
+              <i class="fa-solid fa-users" style="margin-right:6px;"></i>Mitarbeiter Einzelansicht
             </button>
           </div>
 
-          <div class="admin-table-scroll-shield">
-            <table class="admin-enterprise-table">
-              <thead>
-                <tr>
-                  <th>Mitarbeiter</th>
-                  <th>Datum</th>
-                  <th>Typ</th>
-                  <th>Beschreibung</th>
-                  <th style="text-align:right;">Dauer</th>
-                </tr>
-              </thead>
-              <tbody id="admin-global-table-body">
-                <tr><td colspan="5" style="text-align:center; padding:40px; color:var(--admin-text-muted);">
-                  <i class="fa-solid fa-circle-notch fa-spin" style="margin-right:8px;"></i>Lade Unternehmensdaten...
-                </td></tr>
-              </tbody>
-            </table>
+          <!-- Overview View (Recent Entries) -->
+          <div id="admin-view-overview">
+            <div class="admin-controls-bar">
+              <div style="color:#fff; font-size:12px; font-weight:700; white-space:nowrap;">
+                <i class="fa-solid fa-filter" style="color:var(--admin-gold); margin-right:6px;"></i>FILTER:
+              </div>
+              <select id="admin-user-filter-dropdown" onchange="runAdminTableRender()">
+                <option value="ALL">Alle Mitarbeiter anzeigen</option>
+              </select>
+              <select id="admin-type-filter" onchange="runAdminTableRender()">
+                <option value="ALL">Alle Log-Typen</option>
+                <option value="WORK">Arbeitsstunden</option>
+                <option value="VACATION">Urlaub</option>
+                <option value="SICK">Krankmeldungen</option>
+              </select>
+              <button type="button" onclick="refreshAdminData()" style="background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.4); color:var(--admin-gold); padding:10px 14px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;">
+                <i class="fa-solid fa-rotate-right" style="margin-right:6px;"></i>Aktualisieren
+              </button>
+            </div>
+
+            <div class="admin-table-scroll-shield">
+              <table class="admin-enterprise-table">
+                <thead>
+                  <tr>
+                    <th>Mitarbeiter</th>
+                    <th>Datum</th>
+                    <th>Typ</th>
+                    <th>Beschreibung</th>
+                    <th style="text-align:right;">Dauer</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-global-table-body">
+                  <tr><td colspan="5" style="text-align:center; padding:40px; color:var(--admin-text-muted);">
+                    <i class="fa-solid fa-circle-notch fa-spin" style="margin-right:8px;"></i>Lade Unternehmensdaten...
+                  </td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Employee Detail View -->
+          <div id="admin-view-employees" style="display:none;">
+            <div class="admin-controls-bar">
+              <div style="color:#fff; font-size:12px; font-weight:700; white-space:nowrap;">
+                <i class="fa-solid fa-user-tie" style="color:var(--admin-gold); margin-right:6px;"></i>MITARBEITER:
+              </div>
+              <select id="admin-employee-select" onchange="renderEmployeeDetail()">
+                <option value="">-- Mitarbeiter auswählen --</option>
+              </select>
+              <button type="button" onclick="exportEmployeePDF()" id="btn-export-employee-pdf" style="background:var(--admin-gold); border:none; color:#0f172a; padding:10px 14px; border-radius:8px; font-size:12px; font-weight:800; cursor:pointer; white-space:nowrap; opacity:0.5;" disabled>
+                <i class="fa-solid fa-file-pdf" style="margin-right:6px;"></i>PDF Export
+              </button>
+              <button type="button" onclick="exportAllEmployeesPDF()" style="background:rgba(192,57,43,0.9); border:none; color:#fff; padding:10px 14px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;">
+                <i class="fa-solid fa-file-zipper" style="margin-right:6px;"></i>Alle PDFs exportieren
+              </button>
+            </div>
+
+            <!-- Employee Stats Cards -->
+            <div id="employee-stats-cards" style="display:none; gap:12px; margin-bottom:20px;">
+              <div style="flex:1; background:linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05)); border:1px solid rgba(212,175,55,0.3); border-radius:10px; padding:16px;">
+                <div style="font-size:10px; color:var(--admin-gold); font-weight:700; letter-spacing:1px; margin-bottom:4px;">MITARBEITER</div>
+                <div id="emp-stat-name" style="font-size:18px; color:#fff; font-weight:800;">-</div>
+              </div>
+              <div style="flex:1; background:rgba(255,255,255,0.05); border:1px solid var(--admin-border); border-radius:10px; padding:16px;">
+                <div style="font-size:10px; color:var(--admin-text-muted); font-weight:700; letter-spacing:1px; margin-bottom:4px;">ARBEITSSTUNDEN</div>
+                <div id="emp-stat-hours" style="font-size:18px; color:var(--admin-gold); font-weight:800;">0.00 h</div>
+              </div>
+              <div style="flex:1; background:rgba(255,255,255,0.05); border:1px solid var(--admin-border); border-radius:10px; padding:16px;">
+                <div style="font-size:10px; color:var(--admin-text-muted); font-weight:700; letter-spacing:1px; margin-bottom:4px;">URLAUBSTAGE</div>
+                <div id="emp-stat-vacation" style="font-size:18px; color:#3b82f6; font-weight:800;">0</div>
+              </div>
+              <div style="flex:1; background:rgba(255,255,255,0.05); border:1px solid var(--admin-border); border-radius:10px; padding:16px;">
+                <div style="font-size:10px; color:var(--admin-text-muted); font-weight:700; letter-spacing:1px; margin-bottom:4px;">KRANKTAGE</div>
+                <div id="emp-stat-sick" style="font-size:18px; color:#ef4444; font-weight:800;">0</div>
+              </div>
+            </div>
+
+            <!-- Employee Table -->
+            <div class="admin-table-scroll-shield">
+              <table class="admin-enterprise-table">
+                <thead>
+                  <tr>
+                    <th>Datum</th>
+                    <th>Typ</th>
+                    <th>Projekt/Beschreibung</th>
+                    <th>Startzeit</th>
+                    <th>Endzeit</th>
+                    <th style="text-align:right;">Dauer</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-employee-table-body">
+                  <tr><td colspan="6" style="text-align:center; padding:40px; color:var(--admin-text-muted);">
+                    <i class="fa-solid fa-user-clock" style="margin-right:8px; font-size:16px;"></i>Bitte wählen Sie einen Mitarbeiter aus.
+                  </td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div id="admin-pdf-header" style="display:none; padding-bottom:15px; border-bottom:2px dashed #000; margin-bottom:20px; margin-top:20px;">
@@ -907,16 +1297,25 @@
 
   async function launchSessionUI() {
     document.getElementById('login-view').style.display = 'none';
+    
+    // Check if admin - show full admin view instead of regular app view
+    if (authenticatedUserRoleGlobal === 'admin') {
+      document.getElementById('app-view').style.display = 'none';
+      document.getElementById('admin-full-view').style.display = 'block';
+      document.getElementById('admin-user-display').textContent = authenticatedUserGlobal;
+      launchAdminDashboard();
+      return;
+    }
+    
+    // Regular user view
+    document.getElementById('admin-full-view').style.display = 'none';
     document.getElementById('app-view').style.display   = 'block';
     document.getElementById('user-profile-title').textContent  = authenticatedUserGlobal;
     document.getElementById('dash-profile-username').textContent = authenticatedUserGlobal;
 
     const adminLink = document.getElementById('nav-admin-link');
-    if (authenticatedUserRoleGlobal === 'admin') {
-      adminLink.style.display = 'flex';
-    } else {
-      adminLink.style.display = 'none';
-    }
+    adminLink.style.display = 'none';
+    
     setApplicationLanguage(activeLanguageGlobal);
     // Restore this user's saved data from Firestore before rendering metrics
     await loadUserDataFromCloud();
@@ -926,6 +1325,99 @@
     if (typeof renderRecentlyDeletedBinSheet === 'function') renderRecentlyDeletedBinSheet();
     runGlobalApplicationMetricsEngine();
     updateCloudBackupStatusIndicator();
+  }
+
+  // ── Admin Dashboard Launch ─────────────────────────────────────────────────
+  async function launchAdminDashboard() {
+    setApplicationLanguage(activeLanguageGlobal);
+    await refreshAdminData();
+    populateReportEmployeeDropdown();
+    document.getElementById('admin-last-update').textContent = 
+      'Letzte Aktualisierung: ' + new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function populateReportEmployeeDropdown() {
+    const dropdown = document.getElementById('report-employee-select');
+    if (!dropdown) return;
+    const allUsers = [...new Set(adminAllEntriesCache.map(r => r.user))].sort();
+    dropdown.innerHTML = '<option value="">-- Mitarbeiter wählen --</option>';
+    allUsers.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u;
+      opt.textContent = u;
+      dropdown.appendChild(opt);
+    });
+  }
+
+  function exportSingleEmployeeReport() {
+    const selected = document.getElementById('report-employee-select').value;
+    if (!selected) {
+      showToast('Bitte wählen Sie einen Mitarbeiter aus.', 'error');
+      return;
+    }
+    generateEmployeePDFDocument(selected);
+  }
+
+  function switchAdminSection(section) {
+    // Hide all sections
+    document.querySelectorAll('.admin-section').forEach(s => s.style.display = 'none');
+    // Deactivate all nav items
+    document.querySelectorAll('.admin-nav-item').forEach(n => n.classList.remove('active'));
+    
+    // Show selected section and activate nav
+    const sectionEl = document.getElementById('admin-section-' + section);
+    const navEl = document.getElementById('admin-nav-' + section);
+    if (sectionEl) sectionEl.style.display = 'block';
+    if (navEl) navEl.classList.add('active');
+
+    // Update page title
+    const titles = {
+      overview: 'Unternehmens-Dashboard',
+      employees: 'Mitarbeiter-Verwaltung',
+      reports: 'PDF Berichte',
+      settings: 'Einstellungen'
+    };
+    document.getElementById('admin-page-title').textContent = titles[section] || 'Admin';
+
+    // Populate employee dropdown when switching to employees section
+    if (section === 'employees') {
+      populateEmployeeDropdown();
+    }
+    if (section === 'reports') {
+      populateReportEmployeeDropdown();
+    }
+
+    // Close mobile sidebar after nav click
+    const sidebar = document.getElementById('admin-sidebar');
+    const backdrop = document.getElementById('admin-sidebar-backdrop');
+    if (sidebar) sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('show');
+  }
+
+  function toggleAdminSidebar() {
+    const sidebar = document.getElementById('admin-sidebar');
+    const backdrop = document.getElementById('admin-sidebar-backdrop');
+    const isOpen = sidebar.classList.toggle('open');
+    if (backdrop) backdrop.classList.toggle('show', isOpen);
+  }
+
+  function handleAdminSignOut() {
+    if (!confirm(activeLanguageGlobal === 'de' ? 'Wirklich abmelden?' : 'Sign out?')) return;
+    auth.signOut().catch(() => {});
+    localStorage.removeItem('schuermann_auth_user');
+    localStorage.removeItem('schuermann_auth_role');
+    authenticatedUserGlobal     = '';
+    authenticatedUserRoleGlobal = 'user';
+    globalLoggedSessionsDatabaseMock = [];
+    vacationLoggedDaysArrayCache     = [];
+    recentlyDeletedItemsBinCache     = [];
+    adminAllEntriesCache = [];
+    document.getElementById('username').value = '';
+    document.getElementById('passcode').value = '';
+    document.getElementById('message-box').style.display = 'none';
+    document.getElementById('admin-full-view').style.display = 'none';
+    document.getElementById('app-view').style.display  = 'none';
+    document.getElementById('login-view').style.display = 'flex';
   }
 
   function handleSecureSignOutRequest() {
@@ -943,6 +1435,7 @@
     document.getElementById('username').value = '';
     document.getElementById('passcode').value = '';
     document.getElementById('message-box').style.display = 'none';
+    document.getElementById('admin-full-view').style.display = 'none';
     document.getElementById('app-view').style.display  = 'none';
     document.getElementById('login-view').style.display = 'flex';
     switchActiveView('dashboard', document.getElementById('nav-dash-link'));
@@ -1391,9 +1884,19 @@
   }
 
   // ── PDF Export (History) ───────────────────────────────────────────────────
-  function buildWorkReportHTML() {
-    const user = authenticatedUserGlobal || '';
+  function triggerPDFExportEngine() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    let y = margin;
+
+    const user = authenticatedUserGlobal || 'Mitarbeiter';
     const sessions = (globalLoggedSessionsDatabaseMock || []).filter(s => s.type === 'work');
+    const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+    // Group sessions by date
     const groups = {};
     sessions.forEach(s => { (groups[s.date] = groups[s.date] || []).push(s); });
     const dateKeys = Object.keys(groups).sort((a, b) => {
@@ -1401,143 +1904,218 @@
       const [db, mb, yb] = b.split('/').map(Number);
       return new Date(ya, ma - 1, da) - new Date(yb, mb - 1, db);
     });
+
+    // Calculate totals
     const totalNet = sessions.reduce((sum, s) => sum + ((s.duration || 0) - ((s.breakTime || 0) / 60)), 0);
     const totalBreak = sessions.reduce((sum, s) => sum + ((s.breakTime || 0) / 60), 0);
-    const fmtDate = (key) => {
-      const [d, m, y] = key.split('/').map(Number);
-      return new Date(y, m - 1, d).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-    };
-    const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-    let dayBlocks = '';
-    dateKeys.forEach(key => {
-      const items = groups[key].slice().sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
-      let dailyNet = 0;
-      let dailyBreak = 0;
-      let rows = '';
-      items.forEach((s, idx) => {
-        const net = (s.duration || 0) - ((s.breakTime || 0) / 60);
-        dailyNet += net;
-        dailyBreak += (s.breakTime || 0) / 60;
-        const time = (s.startTime && s.endTime) ? `${s.startTime} – ${s.endTime}` : '—';
-        const bg = idx % 2 === 1 ? '#fafbfc' : '#ffffff';
-        rows += `<tr style="background:${bg};">
-          <td style="padding:9px 14px; font-size:11px; color:#1f2937; border-bottom:1px solid #eef0f3; white-space:nowrap;">${time}</td>
-          <td style="padding:9px 14px; font-size:11px; color:#1f2937; border-bottom:1px solid #eef0f3;">${(s.project || '').replace(/</g,'&lt;')}</td>
-          <td style="padding:9px 14px; font-size:11px; color:#1f2937; border-bottom:1px solid #eef0f3; text-align:right; font-variant-numeric:tabular-nums;">${net.toFixed(2)} h</td>
-        </tr>`;
-      });
-      dayBlocks += `
-        <div style="margin-bottom:14px; border:1px solid #e5e7eb; border-radius:4px; overflow:hidden; page-break-inside:avoid;">
-          <div style="background:#f3f4f6; padding:8px 14px; border-bottom:2px solid #c0392b; font-size:12px; font-weight:700; color:#111827; letter-spacing:0.3px;">
-            ${fmtDate(key)}
-          </div>
-          <table style="width:100%; border-collapse:collapse;">
-            <thead>
-              <tr style="background:#2c3e50; color:#ffffff;">
-                <th style="padding:7px 14px; text-align:left; font-size:10px; font-weight:600; letter-spacing:0.6px; text-transform:uppercase; width:28%;">Zeit</th>
-                <th style="padding:7px 14px; text-align:left; font-size:10px; font-weight:600; letter-spacing:0.6px; text-transform:uppercase;">Baustelle</th>
-                <th style="padding:7px 14px; text-align:right; font-size:10px; font-weight:600; letter-spacing:0.6px; text-transform:uppercase; width:18%;">Dauer</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-            <tfoot>
-              <tr style="background:#f8fafc;">
-                <td colspan="3" style="padding:9px 14px; font-size:11px; color:#0f172a; text-align:right; font-weight:700; border-top:1px solid #e5e7eb;">
-                  <span style="color:#475569; font-weight:600;">Tagesarbeit:</span> <span style="font-variant-numeric:tabular-nums;">${dailyNet.toFixed(2)} h</span>
-                  <span style="display:inline-block; width:1px; height:11px; background:#cbd5e1; margin:0 10px; vertical-align:middle;"></span>
-                  <span style="color:#475569; font-weight:600;">Pause:</span> <span style="font-variant-numeric:tabular-nums;">${dailyBreak.toFixed(2)} h</span>
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>`;
+    // Colors
+    const primaryRed = [192, 57, 43];
+    const darkSlate = [44, 62, 80];
+    const lightGray = [248, 250, 252];
+    const borderGray = [229, 231, 235];
+    const textDark = [15, 23, 42];
+    const textMuted = [100, 116, 139];
+
+    // ═══ HEADER ═══
+    // Red accent line at top
+    doc.setFillColor(...primaryRed);
+    doc.rect(0, 0, pageWidth, 3, 'F');
+
+    y = 12;
+    // Company name
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(...textDark);
+    doc.text('SCHÜRMANN', margin, y);
+    
+    doc.setFontSize(9);
+    doc.setTextColor(...primaryRed);
+    doc.text('GEBÄUDE + ENERGIE', margin, y + 5);
+
+    // Report title (right side)
+    doc.setFontSize(11);
+    doc.setTextColor(...textDark);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ARBEITSBERICHT', pageWidth - margin, y, { align: 'right' });
+    
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...textMuted);
+    doc.text('Ausstellungsdatum: ' + today, pageWidth - margin, y + 5, { align: 'right' });
+
+    // Header underline
+    y += 12;
+    doc.setDrawColor(...primaryRed);
+    doc.setLineWidth(0.8);
+    doc.line(margin, y, pageWidth - margin, y);
+
+    // ═══ SUMMARY CARDS ═══
+    y += 8;
+    const cardWidth = (pageWidth - margin * 2 - 6) / 4;
+    const cardHeight = 18;
+    const cards = [
+      { label: 'MITARBEITER', value: user, accent: false },
+      { label: 'EINTRÄGE', value: sessions.length.toString(), accent: false },
+      { label: 'PAUSE GESAMT', value: totalBreak.toFixed(2) + ' h', accent: false },
+      { label: 'GESAMTARBEITSZEIT', value: totalNet.toFixed(2) + ' h', accent: true }
+    ];
+
+    cards.forEach((card, i) => {
+      const x = margin + i * (cardWidth + 2);
+      
+      // Card background
+      if (card.accent) {
+        doc.setFillColor(...darkSlate);
+      } else {
+        doc.setFillColor(...lightGray);
+      }
+      doc.roundedRect(x, y, cardWidth, cardHeight, 2, 2, 'F');
+      
+      // Left accent bar
+      doc.setFillColor(...(card.accent ? primaryRed : darkSlate));
+      doc.rect(x, y, 2, cardHeight, 'F');
+
+      // Label
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...(card.accent ? [203, 213, 225] : textMuted));
+      doc.text(card.label, x + 6, y + 6);
+
+      // Value
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...(card.accent ? [255, 255, 255] : textDark));
+      doc.text(card.value, x + 6, y + 13);
     });
 
-    if (!dateKeys.length) {
-      dayBlocks = `<div style="padding:40px; text-align:center; color:#94a3b8; font-size:12px; border:1px dashed #e5e7eb; border-radius:4px;">Keine Arbeitseinträge vorhanden.</div>`;
+    y += cardHeight + 10;
+
+    // ═══ DAILY TABLES ═══
+    const fmtDate = (key) => {
+      const [d, m, yr] = key.split('/').map(Number);
+      return new Date(yr, m - 1, d).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    };
+
+    if (dateKeys.length === 0) {
+      doc.setFontSize(11);
+      doc.setTextColor(...textMuted);
+      doc.text('Keine Arbeitseinträge vorhanden.', pageWidth / 2, y + 20, { align: 'center' });
+    } else {
+      dateKeys.forEach((key, dateIdx) => {
+        const items = groups[key].slice().sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+        let dailyNet = 0;
+        let dailyBreak = 0;
+
+        // Check if we need a new page
+        const estimatedHeight = 25 + (items.length * 8) + 10;
+        if (y + estimatedHeight > pageHeight - 20) {
+          doc.addPage();
+          y = margin;
+          // Add header accent on new page
+          doc.setFillColor(...primaryRed);
+          doc.rect(0, 0, pageWidth, 3, 'F');
+        }
+
+        // Date header bar
+        doc.setFillColor(243, 244, 246);
+        doc.roundedRect(margin, y, pageWidth - margin * 2, 8, 1, 1, 'F');
+        
+        // Red bottom border for date header
+        doc.setFillColor(...primaryRed);
+        doc.rect(margin, y + 7, pageWidth - margin * 2, 1, 'F');
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textDark);
+        doc.text(fmtDate(key), margin + 4, y + 5.5);
+
+        y += 10;
+
+        // Prepare table data
+        const tableData = items.map((s, idx) => {
+          const net = (s.duration || 0) - ((s.breakTime || 0) / 60);
+          dailyNet += net;
+          dailyBreak += (s.breakTime || 0) / 60;
+          const time = (s.startTime && s.endTime) ? s.startTime + ' – ' + s.endTime : '—';
+          return [time, s.project || '—', net.toFixed(2) + ' h'];
+        });
+
+        // Draw table using autoTable
+        doc.autoTable({
+          startY: y,
+          head: [['ZEIT', 'BAUSTELLE', 'DAUER']],
+          body: tableData,
+          margin: { left: margin, right: margin },
+          styles: {
+            fontSize: 9,
+            cellPadding: 3,
+            textColor: textDark,
+            lineColor: borderGray,
+            lineWidth: 0.1
+          },
+          headStyles: {
+            fillColor: darkSlate,
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 8,
+            cellPadding: 2.5
+          },
+          alternateRowStyles: {
+            fillColor: [250, 251, 252]
+          },
+          columnStyles: {
+            0: { cellWidth: 35 },
+            2: { cellWidth: 25, halign: 'right' }
+          },
+          didDrawPage: (data) => {
+            // Add header accent on new pages
+            if (data.pageNumber > 1) {
+              doc.setFillColor(...primaryRed);
+              doc.rect(0, 0, pageWidth, 3, 'F');
+            }
+          }
+        });
+
+        y = doc.lastAutoTable.finalY + 1;
+
+        // Daily summary row
+        doc.setFillColor(248, 250, 252);
+        doc.rect(margin, y, pageWidth - margin * 2, 7, 'F');
+        doc.setDrawColor(...borderGray);
+        doc.line(margin, y, pageWidth - margin, y);
+
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...textMuted);
+        const summaryText = 'Tagesarbeit: ' + dailyNet.toFixed(2) + ' h    |    Pause: ' + dailyBreak.toFixed(2) + ' h';
+        doc.text(summaryText, pageWidth - margin - 4, y + 4.5, { align: 'right' });
+
+        y += 12;
+      });
     }
 
-    return `
-      <div style="font-family: Arial, Helvetica, sans-serif; color:#0f172a; background:#ffffff; padding:28px 32px; width:730px; box-sizing:border-box;">
-        <table style="width:100%; border-collapse:collapse; margin-bottom:18px; border-bottom:3px solid #c0392b;">
-          <tr>
-            <td style="padding-bottom:12px; vertical-align:top;">
-              <div style="font-size:22px; font-weight:800; letter-spacing:2px; color:#111827;">SCHÜRMANN</div>
-              <div style="font-size:11px; font-weight:700; color:#c0392b; letter-spacing:3px; margin-top:2px;">GEBÄUDE + ENERGIE</div>
-            </td>
-            <td style="padding-bottom:12px; text-align:right; vertical-align:top; font-size:10px; color:#64748b; line-height:1.5;">
-              <div style="font-size:13px; font-weight:700; color:#111827; letter-spacing:1px;">ARBEITSBERICHT</div>
-              <div style="margin-top:4px;">Ausstellungsdatum: <strong style="color:#0f172a;">${today}</strong></div>
-            </td>
-          </tr>
-        </table>
+    // ═══ FOOTER ═══
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      
+      // Footer line
+      doc.setDrawColor(...borderGray);
+      doc.setLineWidth(0.3);
+      doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
 
-        <table style="width:100%; border-collapse:separate; border-spacing:8px 0; margin-bottom:20px;">
-          <tr>
-            <td style="width:25%; padding:10px 14px; background:#f8fafc; border-left:3px solid #2c3e50; vertical-align:top;">
-              <div style="font-size:9px; color:#64748b; letter-spacing:1px; font-weight:700;">MITARBEITER</div>
-              <div style="font-size:13px; color:#0f172a; font-weight:700; margin-top:3px;">${(user || '—').replace(/</g,'&lt;')}</div>
-            </td>
-            <td style="width:25%; padding:10px 14px; background:#f8fafc; border-left:3px solid #2c3e50; vertical-align:top;">
-              <div style="font-size:9px; color:#64748b; letter-spacing:1px; font-weight:700;">EINTRÄGE</div>
-              <div style="font-size:13px; color:#0f172a; font-weight:700; margin-top:3px;">${sessions.length}</div>
-            </td>
-            <td style="width:25%; padding:10px 14px; background:#f8fafc; border-left:3px solid #2c3e50; vertical-align:top;">
-              <div style="font-size:9px; color:#64748b; letter-spacing:1px; font-weight:700;">PAUSE GESAMT</div>
-              <div style="font-size:13px; color:#0f172a; font-weight:700; margin-top:3px;">${totalBreak.toFixed(2)} h</div>
-            </td>
-            <td style="width:25%; padding:10px 14px; background:#2c3e50; border-left:3px solid #c0392b; vertical-align:top;">
-              <div style="font-size:9px; color:#cbd5e1; letter-spacing:1px; font-weight:700;">GESAMTARBEITSZEIT</div>
-              <div style="font-size:13px; color:#ffffff; font-weight:700; margin-top:3px;">${totalNet.toFixed(2)} h</div>
-            </td>
-          </tr>
-        </table>
+      // Footer text
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...textMuted);
+      doc.text('Schürmann Gebäude + Energie', margin, pageHeight - 8);
+      doc.text('Erstellt am ' + today, pageWidth / 2, pageHeight - 8, { align: 'center' });
+      doc.text('Seite ' + i + ' von ' + totalPages, pageWidth - margin, pageHeight - 8, { align: 'right' });
+    }
 
-        ${dayBlocks}
-
-        <table style="width:100%; border-collapse:collapse; margin-top:28px; border-top:1px solid #e5e7eb;">
-          <tr>
-            <td style="padding-top:10px; font-size:9px; color:#94a3b8;">Schürmann Gebäude + Energie</td>
-            <td style="padding-top:10px; font-size:9px; color:#94a3b8; text-align:right;">Erstellt am ${today}</td>
-          </tr>
-        </table>
-      </div>
-    `;
-  }
-
-  function triggerPDFExportEngine() {
-    const user = authenticatedUserGlobal || 'mitarbeiter';
-    const wrap = document.createElement('div');
-    // Must be on-screen and fully visible for html2canvas to capture properly
-    // Using fixed position at top-left, will be removed immediately after capture
-    wrap.style.cssText = 'position:fixed; top:0; left:0; width:794px; background:#ffffff; z-index:99999;';
-    wrap.innerHTML = buildWorkReportHTML();
-    document.body.appendChild(wrap);
-    // Give browser time to render the DOM
-    setTimeout(() => {
-      html2pdf().set({
-        margin: [10, 10, 10, 10],
-        filename: `Arbeitsbericht_${user}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true, 
-          backgroundColor: '#ffffff', 
-          width: 794,
-          windowWidth: 794,
-          scrollX: 0, 
-          scrollY: -window.scrollY,
-          logging: true,
-          allowTaint: true,
-          removeContainer: false
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
-      }).from(wrap).save()
-        .then(() => wrap.remove())
-        .catch((e) => { console.error('PDF export failed:', e); wrap.remove(); });
-    }, 500);
+    // Save the PDF
+    doc.save('Arbeitsbericht_' + user + '.pdf');
   }
 
   // ── Feedback ───────────────────────────────────────────────────────────────
@@ -1592,7 +2170,10 @@
             adminAllEntriesCache.push({
               user: uid, date: s.date, category: 'WORK',
               desc: `${s.project || '–'}${s.notes ? ' | ' + s.notes : ''}`,
-              hrs: Math.max(0, net), rawDate: s.date
+              hrs: Math.max(0, net), rawDate: s.date,
+              startTime: s.startTime || null,
+              endTime: s.endTime || null,
+              breakHrs: (s.breakTime || 0) / 60
             });
           }
         });
@@ -1632,6 +2213,8 @@
       if ([...allUsers].includes(curVal)) dropdown.value = curVal;
 
       runAdminTableRender();
+      document.getElementById('admin-last-update').textContent =
+        'Letzte Aktualisierung: ' + new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
     } catch (err) {
       console.error('Admin data load error:', err);
       tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:#f87171;">Fehler beim Laden: ${err.message}</td></tr>`;
@@ -1673,25 +2256,321 @@
     });
   }
 
-  function triggerAdminPDFExport() {
-    const wrapper  = document.querySelector('.premium-admin-wrapper');
-    const pdfHead  = document.getElementById('admin-pdf-header');
-    const filterEl = document.getElementById('admin-user-filter-dropdown');
-    if (!wrapper || !pdfHead) return;
-    document.getElementById('admin-pdf-filter-label').textContent = filterEl.value === 'ALL' ? 'Alle Mitarbeiter' : filterEl.value;
-    document.getElementById('admin-pdf-date').textContent = new Date().toLocaleDateString('de-DE');
-    pdfHead.style.display = 'block';
-    // Clone wrapper to render off-screen to avoid blank PDF issues
-    const clone = wrapper.cloneNode(true);
-    clone.style.cssText = 'position:absolute; left:-9999px; top:0; width:1100px; background:#ffffff;';
-    document.body.appendChild(clone);
-    html2pdf().set({
-      margin: [10,8,10,8],
-      filename: `Admin_Report_${filterEl.value}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-    }).from(clone).save().then(() => { pdfHead.style.display = 'none'; clone.remove(); }).catch(() => { pdfHead.style.display = 'none'; clone.remove(); });
+  // ── Admin View Switching ──────────────────────────────────────────────────
+  function switchAdminView(view) {
+    const overviewTab = document.getElementById('admin-tab-overview');
+    const employeesTab = document.getElementById('admin-tab-employees');
+    const overviewView = document.getElementById('admin-view-overview');
+    const employeesView = document.getElementById('admin-view-employees');
+    
+    if (view === 'overview') {
+      overviewTab.style.background = 'var(--admin-gold)';
+      overviewTab.style.color = '#0f172a';
+      overviewTab.style.border = 'none';
+      employeesTab.style.background = 'rgba(255,255,255,0.08)';
+      employeesTab.style.color = 'var(--admin-text-main)';
+      employeesTab.style.border = '1px solid var(--admin-border)';
+      overviewView.style.display = 'block';
+      employeesView.style.display = 'none';
+    } else {
+      employeesTab.style.background = 'var(--admin-gold)';
+      employeesTab.style.color = '#0f172a';
+      employeesTab.style.border = 'none';
+      overviewTab.style.background = 'rgba(255,255,255,0.08)';
+      overviewTab.style.color = 'var(--admin-text-main)';
+      overviewTab.style.border = '1px solid var(--admin-border)';
+      overviewView.style.display = 'none';
+      employeesView.style.display = 'block';
+      populateEmployeeDropdown();
+    }
+  }
+
+  function populateEmployeeDropdown() {
+    const dropdown = document.getElementById('admin-employee-select');
+    const allUsers = new Set(adminAllEntriesCache.map(r => r.user));
+    const curVal = dropdown.value;
+    dropdown.innerHTML = '<option value="">-- Mitarbeiter auswählen --</option>';
+    [...allUsers].sort().forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u;
+      opt.textContent = u;
+      dropdown.appendChild(opt);
+    });
+    if ([...allUsers].includes(curVal)) dropdown.value = curVal;
+  }
+
+  function renderEmployeeDetail() {
+    const selectedUser = document.getElementById('admin-employee-select').value;
+    const tbody = document.getElementById('admin-employee-table-body');
+    const statsCards = document.getElementById('employee-stats-cards');
+    const pdfBtn = document.getElementById('btn-export-employee-pdf');
+    
+    if (!selectedUser) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--admin-text-muted);">
+        <i class="fa-solid fa-user-clock" style="margin-right:8px; font-size:16px;"></i>Bitte wählen Sie einen Mitarbeiter aus.
+      </td></tr>`;
+      statsCards.style.display = 'none';
+      pdfBtn.style.opacity = '0.5';
+      pdfBtn.disabled = true;
+      return;
+    }
+
+    // Enable PDF button
+    pdfBtn.style.opacity = '1';
+    pdfBtn.disabled = false;
+
+    // Filter data for this employee
+    const empData = adminAllEntriesCache.filter(r => r.user === selectedUser);
+    const workEntries = empData.filter(r => r.category === 'WORK');
+    const totalHours = workEntries.reduce((sum, r) => sum + r.hrs, 0);
+    const vacationDays = empData.filter(r => r.category === 'VACATION').length;
+    const sickDays = empData.filter(r => r.category === 'SICK').length;
+
+    // Update stats
+    document.getElementById('emp-stat-name').textContent = selectedUser;
+    document.getElementById('emp-stat-hours').textContent = totalHours.toFixed(2) + ' h';
+    document.getElementById('emp-stat-vacation').textContent = vacationDays;
+    document.getElementById('emp-stat-sick').textContent = sickDays;
+    statsCards.style.display = 'flex';
+
+    // Render table
+    tbody.innerHTML = '';
+    if (!empData.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--admin-text-muted);">Keine Einträge für diesen Mitarbeiter.</td></tr>`;
+      return;
+    }
+
+    empData.forEach(row => {
+      const tr = tbody.insertRow();
+      const badge = row.category === 'VACATION' ? '<span class="badge-type-v">URLAUB</span>' :
+                    row.category === 'SICK' ? '<span class="badge-type-s">KRANKMELDUNG</span>' :
+                    '<span class="badge-type-w">ARBEITSZEIT</span>';
+      const dur = row.category === 'WORK' ? row.hrs.toFixed(2) + ' hrs' : '1 Tag';
+      const startTime = row.startTime || '-';
+      const endTime = row.endTime || '-';
+      tr.innerHTML = `
+        <td>${row.date}</td>
+        <td>${badge}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${row.desc}">${row.desc}</td>
+        <td>${startTime}</td>
+        <td>${endTime}</td>
+        <td style="text-align:right;font-weight:700;color:var(--admin-gold);">${dur}</td>`;
+    });
+  }
+
+  // ── Employee PDF Export (Single Employee) ─────────────────────────────────
+  function exportEmployeePDF() {
+    const selectedUser = document.getElementById('admin-employee-select').value;
+    if (!selectedUser) return;
+    generateEmployeePDFDocument(selectedUser);
+  }
+
+  function generateEmployeePDFDocument(employeeName) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    let y = margin;
+
+    const empData = adminAllEntriesCache.filter(r => r.user === employeeName);
+    const workEntries = empData.filter(r => r.category === 'WORK');
+    const totalHours = workEntries.reduce((sum, r) => sum + r.hrs, 0);
+    const totalBreak = workEntries.reduce((sum, r) => sum + (r.breakHrs || 0), 0);
+    const vacationDays = empData.filter(r => r.category === 'VACATION').length;
+    const sickDays = empData.filter(r => r.category === 'SICK').length;
+    const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+    // Group work entries by date
+    const workByDate = {};
+    workEntries.forEach(s => { (workByDate[s.rawDate] = workByDate[s.rawDate] || []).push(s); });
+    const dateKeys = Object.keys(workByDate).sort((a, b) => {
+      const [da, ma, ya] = a.split('/').map(Number);
+      const [db, mb, yb] = b.split('/').map(Number);
+      return new Date(yb, mb - 1, db) - new Date(ya, ma - 1, da); // Newest first
+    });
+
+    // Colors
+    const primaryRed = [192, 57, 43];
+    const darkSlate = [44, 62, 80];
+    const gold = [212, 175, 55];
+    const lightGray = [248, 250, 252];
+    const borderGray = [229, 231, 235];
+    const textDark = [15, 23, 42];
+    const textMuted = [100, 116, 139];
+
+    // ═══ HEADER ═══
+    doc.setFillColor(...primaryRed);
+    doc.rect(0, 0, pageWidth, 3, 'F');
+
+    y = 12;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(...textDark);
+    doc.text('SCHÜRMANN', margin, y);
+    
+    doc.setFontSize(9);
+    doc.setTextColor(...primaryRed);
+    doc.text('GEBÄUDE + ENERGIE', margin, y + 5);
+
+    doc.setFontSize(11);
+    doc.setTextColor(...textDark);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ARBEITSBERICHT', pageWidth - margin, y, { align: 'right' });
+    
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...textMuted);
+    doc.text('Erstellt: ' + today, pageWidth - margin, y + 5, { align: 'right' });
+
+    y += 12;
+    doc.setDrawColor(...primaryRed);
+    doc.setLineWidth(0.8);
+    doc.line(margin, y, pageWidth - margin, y);
+
+    // ═══ EMPLOYEE INFO BOX ═══
+    y += 8;
+    doc.setFillColor(...darkSlate);
+    doc.roundedRect(margin, y, pageWidth - margin * 2, 22, 2, 2, 'F');
+    doc.setFillColor(...gold);
+    doc.rect(margin, y, 3, 22, 'F');
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...gold);
+    doc.text('MITARBEITER', margin + 8, y + 7);
+    
+    doc.setFontSize(16);
+    doc.setTextColor(255, 255, 255);
+    doc.text(employeeName, margin + 8, y + 16);
+
+    y += 28;
+
+    // ═══ SUMMARY CARDS ═══
+    const cardWidth = (pageWidth - margin * 2 - 9) / 4;
+    const cardHeight = 18;
+    const cards = [
+      { label: 'EINTRÄGE', value: workEntries.length.toString(), accent: false },
+      { label: 'ARBEITSSTUNDEN', value: totalHours.toFixed(2) + ' h', accent: true },
+      { label: 'URLAUBSTAGE', value: vacationDays.toString(), accent: false },
+      { label: 'KRANKTAGE', value: sickDays.toString(), accent: false }
+    ];
+
+    cards.forEach((card, i) => {
+      const x = margin + i * (cardWidth + 3);
+      if (card.accent) {
+        doc.setFillColor(...darkSlate);
+      } else {
+        doc.setFillColor(...lightGray);
+      }
+      doc.roundedRect(x, y, cardWidth, cardHeight, 2, 2, 'F');
+      doc.setFillColor(...(card.accent ? gold : darkSlate));
+      doc.rect(x, y, 2, cardHeight, 'F');
+
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...(card.accent ? [203, 213, 225] : textMuted));
+      doc.text(card.label, x + 6, y + 6);
+
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...(card.accent ? [255, 255, 255] : textDark));
+      doc.text(card.value, x + 6, y + 13);
+    });
+
+    y += cardHeight + 10;
+
+    // ═══ WORK ENTRIES TABLE ═══
+    const fmtDate = (key) => {
+      const [d, m, yr] = key.split('/').map(Number);
+      return new Date(yr, m - 1, d).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+    };
+
+    if (dateKeys.length === 0) {
+      doc.setFontSize(11);
+      doc.setTextColor(...textMuted);
+      doc.text('Keine Arbeitseinträge vorhanden.', pageWidth / 2, y + 20, { align: 'center' });
+    } else {
+      // Build table data
+      const tableData = [];
+      dateKeys.forEach(key => {
+        const items = workByDate[key];
+        items.forEach(row => {
+          const time = (row.startTime && row.endTime) ? row.startTime + ' - ' + row.endTime : '-';
+          tableData.push([fmtDate(key), row.desc || '-', time, row.hrs.toFixed(2) + ' h']);
+        });
+      });
+
+      doc.autoTable({
+        startY: y,
+        head: [['DATUM', 'BAUSTELLE/PROJEKT', 'ZEIT', 'DAUER']],
+        body: tableData,
+        margin: { left: margin, right: margin },
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+          textColor: textDark,
+          lineColor: borderGray,
+          lineWidth: 0.1
+        },
+        headStyles: {
+          fillColor: darkSlate,
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 8,
+          cellPadding: 2.5
+        },
+        alternateRowStyles: {
+          fillColor: [250, 251, 252]
+        },
+        columnStyles: {
+          0: { cellWidth: 38 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 22, halign: 'right', textColor: gold, fontStyle: 'bold' }
+        },
+        didDrawPage: () => {
+          doc.setFillColor(...primaryRed);
+          doc.rect(0, 0, pageWidth, 3, 'F');
+        }
+      });
+    }
+
+    // ═══ FOOTER ═══
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(...borderGray);
+      doc.setLineWidth(0.3);
+      doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...textMuted);
+      doc.text('Schürmann Gebäude + Energie', margin, pageHeight - 8);
+      doc.text(employeeName + ' | ' + today, pageWidth / 2, pageHeight - 8, { align: 'center' });
+      doc.text('Seite ' + i + ' von ' + totalPages, pageWidth - margin, pageHeight - 8, { align: 'right' });
+    }
+
+    doc.save('Arbeitsbericht_' + employeeName.replace(/\s+/g, '_') + '.pdf');
+  }
+
+  // ── Export All Employees PDFs ─────────────────────────────────────────────
+  function exportAllEmployeesPDF() {
+    const allUsers = [...new Set(adminAllEntriesCache.map(r => r.user))].sort();
+    if (allUsers.length === 0) {
+      alert('Keine Mitarbeiter gefunden.');
+      return;
+    }
+    
+    // Generate PDF for each employee with a small delay between
+    let index = 0;
+    const downloadNext = () => {
+      if (index < allUsers.length) {
+        generateEmployeePDFDocument(allUsers[index]);
+        index++;
+        setTimeout(downloadNext, 500); // 500ms delay between downloads
+      }
+    };
+    downloadNext();
   }
 
 </script>
