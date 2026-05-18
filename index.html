@@ -804,62 +804,66 @@
     }
 
     // Corrected Firestore Live Login Authenticator Verification Engine
-    async function handleSecureLoginAttempt(event) {
-        event.preventDefault();
-        const nameInput = document.getElementById('login-username').value.trim();
-        const passInput = document.getElementById('login-password').value.trim();
-        const messageBox = document.getElementById('login-status-message');
-        
-        if (!nameInput || !passInput) return;
-        
-        messageBox.innerHTML = activeLanguageGlobal === 'de' ? "Verifiziere Identität..." : "Authenticating Token...";
-        messageBox.className = "message success";
-        messageBox.style.display = "block";
+async function handleSecureLoginAttempt(event) {
+    event.preventDefault();
+    
+    // FIXED: Using 'username' and 'passcode' to exactly match your original HTML element IDs
+    const nameInput = document.getElementById('username').value.trim();
+    const passInput = document.getElementById('passcode').value.trim();
+    const messageBox = document.getElementById('message-box'); // FIXED: Matches your id="message-box" element
+    
+    if (!nameInput || !passInput) return;
+    
+    messageBox.innerHTML = activeLanguageGlobal === 'de' ? "Verifiziere Identität..." : "Authenticating Token...";
+    messageBox.className = "message success";
+    messageBox.style.display = "block";
 
-        // Fallback configuration if Firestore component library fails to mount locally
-        if (typeof firebase === 'undefined') {
-            if (nameInput.toLowerCase() === "admin" && passInput === "123456") {
-                authenticatedUserGlobal = "Admin Security Head";
-                authenticatedUserRoleGlobal = "admin";
-                completeSessionLaunchUiTransitions();
-                return;
-            }
-            messageBox.innerHTML = activeLanguageGlobal === 'de' ? "Cloud Framework Offline." : "Cloud Framework Offline.";
+    if (typeof firebase === 'undefined') {
+        if (nameInput === "Admin" && passInput === "123456") {
+            authenticatedUserGlobal = "Admin Security Head";
+            authenticatedUserRoleGlobal = "admin";
+            completeSessionLaunchUiTransitions();
+            return;
+        }
+        messageBox.innerHTML = activeLanguageGlobal === 'de' ? "Cloud Framework Offline." : "Cloud Framework Offline.";
+        messageBox.className = 'message error';
+        return;
+    }
+
+    try {
+        // FIXED: Looks up your case-sensitive typed username directly as the document ID under "Users"
+        const userDocRef = firebase.firestore().collection("Users").doc(nameInput);
+        const userSnapshot = await userDocRef.get();
+
+        if (!userSnapshot.exists) {
+            messageBox.innerHTML = activeLanguageGlobal === 'de' ? 
+                "Mitarbeiter-Datensatz nicht gefunden. Bitte Groß-/Kleinschreibung beachten!" : "Employee record not found. Check exact uppercase formatting!";
             messageBox.className = 'message error';
             return;
         }
 
-        try {
-            // Access the dynamic document using exact "Users" capitalization requested
-            const userDocRef = firebase.firestore().collection("Users").doc(nameInput);
-            const userSnapshot = await userDocRef.get();
+        const userDataPayload = userSnapshot.data();
+        
+        // FIXED: Explicitly checks your uppercase database field title "Code"
+        const databaseSecretCode = userDataPayload.Code ? String(userDataPayload.Code).trim() : "";
+        const userAssignedRole = userDataPayload.role ? String(userDataPayload.role).trim().toLowerCase() : "user";
 
-            if (!userSnapshot.exists) {
-                messageBox.innerHTML = activeLanguageGlobal === 'de' ? 
-                    "Mitarbeiter-Datensatz nicht gefunden." : "Employee record not found.";
-                messageBox.className = 'message error';
-                return;
-            }
-
-            const userDataPayload = userSnapshot.data();
-            // Read the "Code" string field exactly matching database screenshots
-            const databaseSecretCode = userDataPayload.Code ? String(userDataPayload.Code).trim() : "";
-            const userAssignedRole = userDataPayload.role ? String(userDataPayload.role).trim().toLowerCase() : "user";
-
-            if (databaseSecretCode === passInput && passInput !== "") {
-                authenticatedUserGlobal = nameInput;
-                authenticatedUserRoleGlobal = userAssignedRole;
-                completeSessionLaunchUiTransitions();
-            } else {
-                messageBox.innerHTML = activeLanguageGlobal === 'de' ? 
-                    "Falsches Kennwort / PIN-Code ungültig!" : "Invalid passcode. Access denied!";
-                messageBox.className = 'message error';
-            }
-        } catch (error) {
-            console.error("Login verification transaction error: ", error);
-            messageBox.innerHTML = `Error connecting to authentication matrix: ${error.message}`;
+        if (databaseSecretCode === passInput && passInput !== "") {
+            authenticatedUserGlobal = nameInput; // Keeps your exact case layout string untouched
+            authenticatedUserRoleGlobal = userAssignedRole;
+            completeSessionLaunchUiTransitions();
+        } else {
+            messageBox.innerHTML = activeLanguageGlobal === 'de' ? 
+                "Falsches Kennwort / PIN-Code ungültig!" : "Invalid passcode. Access denied!";
             messageBox.className = 'message error';
         }
+    } catch (error) {
+        console.error("Login verification transaction error: ", error);
+        messageBox.innerHTML = `Error connecting to authentication matrix: ${error.message}`;
+        messageBox.className = 'message error';
+    }
+}
+
     }
 
     function completeSessionLaunchUiTransitions() {
