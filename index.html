@@ -1509,22 +1509,35 @@
   function triggerPDFExportEngine() {
     const user = authenticatedUserGlobal || 'mitarbeiter';
     const wrap = document.createElement('div');
-    // Position off-screen but keep fully visible for html2canvas (opacity:0 causes blank PDFs)
-    wrap.style.cssText = 'position:absolute; left:-9999px; top:0; width:794px; background:#ffffff;';
+    // Must be on-screen and fully visible for html2canvas to capture properly
+    // Using fixed position at top-left, will be removed immediately after capture
+    wrap.style.cssText = 'position:fixed; top:0; left:0; width:794px; background:#ffffff; z-index:99999;';
     wrap.innerHTML = buildWorkReportHTML();
     document.body.appendChild(wrap);
+    // Give browser time to render the DOM
     setTimeout(() => {
       html2pdf().set({
         margin: [10, 10, 10, 10],
         filename: `Arbeitsbericht_${user}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 794, scrollX: 0, scrollY: 0, logging: false },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true, 
+          backgroundColor: '#ffffff', 
+          width: 794,
+          windowWidth: 794,
+          scrollX: 0, 
+          scrollY: -window.scrollY,
+          logging: true,
+          allowTaint: true,
+          removeContainer: false
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
       }).from(wrap).save()
         .then(() => wrap.remove())
         .catch((e) => { console.error('PDF export failed:', e); wrap.remove(); });
-    }, 300);
+    }, 500);
   }
 
   // ── Feedback ───────────────────────────────────────────────────────────────
