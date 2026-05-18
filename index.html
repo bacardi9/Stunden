@@ -1394,72 +1394,108 @@
   function buildWorkReportHTML() {
     const user = authenticatedUserGlobal || '';
     const sessions = (globalLoggedSessionsDatabaseMock || []).filter(s => s.type === 'work');
-    // Group by date (dd/mm/yyyy)
     const groups = {};
-    sessions.forEach(s => {
-      (groups[s.date] = groups[s.date] || []).push(s);
-    });
-    // Sort dates ascending
+    sessions.forEach(s => { (groups[s.date] = groups[s.date] || []).push(s); });
     const dateKeys = Object.keys(groups).sort((a, b) => {
       const [da, ma, ya] = a.split('/').map(Number);
       const [db, mb, yb] = b.split('/').map(Number);
       return new Date(ya, ma - 1, da) - new Date(yb, mb - 1, db);
     });
     const totalNet = sessions.reduce((sum, s) => sum + ((s.duration || 0) - ((s.breakTime || 0) / 60)), 0);
+    const totalBreak = sessions.reduce((sum, s) => sum + ((s.breakTime || 0) / 60), 0);
     const fmtDate = (key) => {
       const [d, m, y] = key.split('/').map(Number);
-      return new Date(y, m - 1, d).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' });
+      return new Date(y, m - 1, d).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
     };
+    const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-    let rowsHTML = '';
+    let dayBlocks = '';
     dateKeys.forEach(key => {
       const items = groups[key].slice().sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
       let dailyNet = 0;
       let dailyBreak = 0;
-      rowsHTML += `<tr class="day-header"><td colspan="3" style="padding:10px 12px 6px; font-weight:700; font-size:12px; color:#1e293b;">${fmtDate(key)}</td></tr>`;
+      let rows = '';
       items.forEach((s, idx) => {
         const net = (s.duration || 0) - ((s.breakTime || 0) / 60);
         dailyNet += net;
         dailyBreak += (s.breakTime || 0) / 60;
         const time = (s.startTime && s.endTime) ? `${s.startTime} – ${s.endTime}` : '—';
-        const bg = idx % 2 === 1 ? 'background:#f7f7f9;' : '';
-        rowsHTML += `<tr style="${bg}">
-          <td style="padding:8px 12px; font-size:11px; color:#334155;">${time}</td>
-          <td style="padding:8px 12px; font-size:11px; color:#334155;">${(s.project || '').replace(/</g,'&lt;')}</td>
-          <td style="padding:8px 12px; font-size:11px; color:#334155; text-align:right;">${net.toFixed(2)}h</td>
+        const bg = idx % 2 === 1 ? '#fafbfc' : '#ffffff';
+        rows += `<tr style="background:${bg};">
+          <td style="padding:9px 14px; font-size:11px; color:#1f2937; border-bottom:1px solid #eef0f3; white-space:nowrap;">${time}</td>
+          <td style="padding:9px 14px; font-size:11px; color:#1f2937; border-bottom:1px solid #eef0f3;">${(s.project || '').replace(/</g,'&lt;')}</td>
+          <td style="padding:9px 14px; font-size:11px; color:#1f2937; border-bottom:1px solid #eef0f3; text-align:right; font-variant-numeric:tabular-nums;">${net.toFixed(2)} h</td>
         </tr>`;
       });
-      rowsHTML += `<tr><td colspan="3" style="padding:8px 12px; background:#f1f5f9; font-size:11px; color:#475569; text-align:right; font-weight:600;">
-        Tagesarbeit: ${dailyNet.toFixed(2)}h &nbsp;|&nbsp; Pause: ${dailyBreak.toFixed(2)}h
-      </td></tr>`;
+      dayBlocks += `
+        <div style="margin-bottom:14px; border:1px solid #e5e7eb; border-radius:4px; overflow:hidden; page-break-inside:avoid;">
+          <div style="background:#f3f4f6; padding:8px 14px; border-bottom:2px solid #c0392b; font-size:12px; font-weight:700; color:#111827; letter-spacing:0.3px;">
+            ${fmtDate(key)}
+          </div>
+          <table style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr style="background:#2c3e50; color:#ffffff;">
+                <th style="padding:7px 14px; text-align:left; font-size:10px; font-weight:600; letter-spacing:0.6px; text-transform:uppercase; width:28%;">Zeit</th>
+                <th style="padding:7px 14px; text-align:left; font-size:10px; font-weight:600; letter-spacing:0.6px; text-transform:uppercase;">Baustelle</th>
+                <th style="padding:7px 14px; text-align:right; font-size:10px; font-weight:600; letter-spacing:0.6px; text-transform:uppercase; width:18%;">Dauer</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+            <tfoot>
+              <tr style="background:#f8fafc;">
+                <td colspan="3" style="padding:9px 14px; font-size:11px; color:#0f172a; text-align:right; font-weight:700; border-top:1px solid #e5e7eb;">
+                  <span style="color:#475569; font-weight:600;">Tagesarbeit:</span> <span style="font-variant-numeric:tabular-nums;">${dailyNet.toFixed(2)} h</span>
+                  <span style="display:inline-block; width:1px; height:11px; background:#cbd5e1; margin:0 10px; vertical-align:middle;"></span>
+                  <span style="color:#475569; font-weight:600;">Pause:</span> <span style="font-variant-numeric:tabular-nums;">${dailyBreak.toFixed(2)} h</span>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>`;
     });
 
     if (!dateKeys.length) {
-      rowsHTML = `<tr><td colspan="3" style="padding:24px; text-align:center; color:#94a3b8; font-size:12px;">Keine Arbeitseinträge vorhanden.</td></tr>`;
+      dayBlocks = `<div style="padding:40px; text-align:center; color:#94a3b8; font-size:12px; border:1px dashed #e5e7eb; border-radius:4px;">Keine Arbeitseinträge vorhanden.</div>`;
     }
 
     return `
-      <div style="font-family: Arial, Helvetica, sans-serif; color:#0f172a; padding:8px;">
-        <div style="text-align:center; margin-bottom:18px;">
-          <div style="font-size:24px; font-weight:800; letter-spacing:1px;">SCHÜRMANN</div>
-          <div style="font-size:16px; font-weight:800; color:#c0392b; letter-spacing:1px;">GEBÄUDE + ENERGIE</div>
-          <div style="margin-top:14px; font-size:15px; font-weight:700;">Arbeitsbericht</div>
-          <div style="font-size:13px; font-weight:600; margin-top:2px;">${user}</div>
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color:#0f172a; background:#ffffff; padding:28px 32px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:14px; border-bottom:3px solid #c0392b; margin-bottom:22px;">
+          <div>
+            <div style="font-size:22px; font-weight:800; letter-spacing:2px; color:#111827;">SCHÜRMANN</div>
+            <div style="font-size:11px; font-weight:700; color:#c0392b; letter-spacing:3px; margin-top:2px;">GEBÄUDE + ENERGIE</div>
+          </div>
+          <div style="text-align:right; font-size:10px; color:#64748b; line-height:1.5;">
+            <div style="font-size:13px; font-weight:700; color:#111827; letter-spacing:1px; text-transform:uppercase;">Arbeitsbericht</div>
+            <div style="margin-top:4px;">Ausstellungsdatum: <strong style="color:#0f172a;">${today}</strong></div>
+          </div>
         </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:11px; font-weight:700; color:#0f172a;">
-          <span>${sessions.length} Einträge</span>
-          <span>Gesamtarbeitszeit: ${totalNet.toFixed(2)}h</span>
+
+        <div style="display:flex; justify-content:space-between; gap:14px; margin-bottom:20px;">
+          <div style="flex:1; padding:10px 14px; background:#f8fafc; border-left:3px solid #2c3e50;">
+            <div style="font-size:9px; color:#64748b; text-transform:uppercase; letter-spacing:1px; font-weight:600;">Mitarbeiter</div>
+            <div style="font-size:13px; color:#0f172a; font-weight:700; margin-top:2px;">${user || '—'}</div>
+          </div>
+          <div style="flex:1; padding:10px 14px; background:#f8fafc; border-left:3px solid #2c3e50;">
+            <div style="font-size:9px; color:#64748b; text-transform:uppercase; letter-spacing:1px; font-weight:600;">Einträge</div>
+            <div style="font-size:13px; color:#0f172a; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums;">${sessions.length}</div>
+          </div>
+          <div style="flex:1; padding:10px 14px; background:#f8fafc; border-left:3px solid #2c3e50;">
+            <div style="font-size:9px; color:#64748b; text-transform:uppercase; letter-spacing:1px; font-weight:600;">Pause gesamt</div>
+            <div style="font-size:13px; color:#0f172a; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums;">${totalBreak.toFixed(2)} h</div>
+          </div>
+          <div style="flex:1; padding:10px 14px; background:#2c3e50; border-left:3px solid #c0392b;">
+            <div style="font-size:9px; color:#cbd5e1; text-transform:uppercase; letter-spacing:1px; font-weight:600;">Gesamtarbeitszeit</div>
+            <div style="font-size:13px; color:#ffffff; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums;">${totalNet.toFixed(2)} h</div>
+          </div>
         </div>
-        <table style="width:100%; border-collapse:collapse; margin-top:4px;">
-          <thead>
-            <tr style="background:#2c3e50; color:#fff;">
-              <th style="padding:9px 12px; text-align:left; font-size:11px; font-weight:700;">Zeit</th>
-              <th style="padding:9px 12px; text-align:left; font-size:11px; font-weight:700;">Baustelle</th>
-              <th style="padding:9px 12px; text-align:right; font-size:11px; font-weight:700;">Dauer</th>
-            </tr>
-          </thead>
-          <tbody>${rowsHTML}</tbody>
-        </table>
+
+        ${dayBlocks}
+
+        <div style="margin-top:28px; padding-top:12px; border-top:1px solid #e5e7eb; display:flex; justify-content:space-between; font-size:9px; color:#94a3b8;">
+          <span>Schürmann Gebäude + Energie</span>
+          <span>Erstellt am ${today}</span>
+        </div>
       </div>
     `;
   }
@@ -1467,18 +1503,22 @@
   function triggerPDFExportEngine() {
     const user = authenticatedUserGlobal || 'mitarbeiter';
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:fixed; left:-10000px; top:0; width:794px; background:#fff;';
+    wrap.style.cssText = 'position:absolute; left:-10000px; top:0; width:794px; background:#ffffff; z-index:-1;';
     wrap.innerHTML = buildWorkReportHTML();
     document.body.appendChild(wrap);
-    html2pdf().set({
-      margin: [12, 12, 12, 12],
-      filename: `Arbeitsbericht_${user}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }).from(wrap).save()
-      .then(() => wrap.remove())
-      .catch(() => wrap.remove());
+    // Allow layout/fonts to settle before rasterizing — fixes white-page issue
+    setTimeout(() => {
+      html2pdf().set({
+        margin: [10, 10, 10, 10],
+        filename: `Arbeitsbericht_${user}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 794 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      }).from(wrap).save()
+        .then(() => wrap.remove())
+        .catch((e) => { console.error('PDF export failed:', e); wrap.remove(); });
+    }, 250);
   }
 
   // ── Feedback ───────────────────────────────────────────────────────────────
