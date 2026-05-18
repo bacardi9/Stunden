@@ -1509,8 +1509,8 @@
   function triggerPDFExportEngine() {
     const user = authenticatedUserGlobal || 'mitarbeiter';
     const wrap = document.createElement('div');
-    // Render on-screen but invisible — off-screen/negative-z elements often produce blank canvases
-    wrap.style.cssText = 'position:fixed; top:0; left:0; width:794px; background:#ffffff; opacity:0; pointer-events:none; z-index:0;';
+    // Position off-screen but keep fully visible for html2canvas (opacity:0 causes blank PDFs)
+    wrap.style.cssText = 'position:absolute; left:-9999px; top:0; width:794px; background:#ffffff;';
     wrap.innerHTML = buildWorkReportHTML();
     document.body.appendChild(wrap);
     setTimeout(() => {
@@ -1518,7 +1518,7 @@
         margin: [10, 10, 10, 10],
         filename: `Arbeitsbericht_${user}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 794, scrollX: 0, scrollY: 0 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 794, scrollX: 0, scrollY: 0, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
       }).from(wrap).save()
@@ -1668,13 +1668,17 @@
     document.getElementById('admin-pdf-filter-label').textContent = filterEl.value === 'ALL' ? 'Alle Mitarbeiter' : filterEl.value;
     document.getElementById('admin-pdf-date').textContent = new Date().toLocaleDateString('de-DE');
     pdfHead.style.display = 'block';
+    // Clone wrapper to render off-screen to avoid blank PDF issues
+    const clone = wrapper.cloneNode(true);
+    clone.style.cssText = 'position:absolute; left:-9999px; top:0; width:1100px; background:#ffffff;';
+    document.body.appendChild(clone);
     html2pdf().set({
       margin: [10,8,10,8],
       filename: `Admin_Report_${filterEl.value}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-    }).from(wrapper).save().then(() => { pdfHead.style.display = 'none'; }).catch(() => { pdfHead.style.display = 'none'; });
+    }).from(clone).save().then(() => { pdfHead.style.display = 'none'; clone.remove(); }).catch(() => { pdfHead.style.display = 'none'; clone.remove(); });
   }
 
 </script>
