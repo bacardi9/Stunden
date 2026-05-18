@@ -1058,6 +1058,8 @@
       id: 'work-' + Date.now(),
       type: 'work',
       date: `${d}/${mo}/${y}`,
+      startTime: startVal,
+      endTime: endVal,
       project: document.getElementById('log-project-name').value.trim(),
       duration: grossHrs,
       breakTime: activeSelectedFormBreakDuration,
@@ -1389,20 +1391,94 @@
   }
 
   // ── PDF Export (History) ───────────────────────────────────────────────────
+  function buildWorkReportHTML() {
+    const user = authenticatedUserGlobal || '';
+    const sessions = (globalLoggedSessionsDatabaseMock || []).filter(s => s.type === 'work');
+    // Group by date (dd/mm/yyyy)
+    const groups = {};
+    sessions.forEach(s => {
+      (groups[s.date] = groups[s.date] || []).push(s);
+    });
+    // Sort dates ascending
+    const dateKeys = Object.keys(groups).sort((a, b) => {
+      const [da, ma, ya] = a.split('/').map(Number);
+      const [db, mb, yb] = b.split('/').map(Number);
+      return new Date(ya, ma - 1, da) - new Date(yb, mb - 1, db);
+    });
+    const totalNet = sessions.reduce((sum, s) => sum + ((s.duration || 0) - ((s.breakTime || 0) / 60)), 0);
+    const fmtDate = (key) => {
+      const [d, m, y] = key.split('/').map(Number);
+      return new Date(y, m - 1, d).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' });
+    };
+
+    let rowsHTML = '';
+    dateKeys.forEach(key => {
+      const items = groups[key].slice().sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+      let dailyNet = 0;
+      let dailyBreak = 0;
+      rowsHTML += `<tr class="day-header"><td colspan="3" style="padding:10px 12px 6px; font-weight:700; font-size:12px; color:#1e293b;">${fmtDate(key)}</td></tr>`;
+      items.forEach((s, idx) => {
+        const net = (s.duration || 0) - ((s.breakTime || 0) / 60);
+        dailyNet += net;
+        dailyBreak += (s.breakTime || 0) / 60;
+        const time = (s.startTime && s.endTime) ? `${s.startTime} – ${s.endTime}` : '—';
+        const bg = idx % 2 === 1 ? 'background:#f7f7f9;' : '';
+        rowsHTML += `<tr style="${bg}">
+          <td style="padding:8px 12px; font-size:11px; color:#334155;">${time}</td>
+          <td style="padding:8px 12px; font-size:11px; color:#334155;">${(s.project || '').replace(/</g,'&lt;')}</td>
+          <td style="padding:8px 12px; font-size:11px; color:#334155; text-align:right;">${net.toFixed(2)}h</td>
+        </tr>`;
+      });
+      rowsHTML += `<tr><td colspan="3" style="padding:8px 12px; background:#f1f5f9; font-size:11px; color:#475569; text-align:right; font-weight:600;">
+        Tagesarbeit: ${dailyNet.toFixed(2)}h &nbsp;|&nbsp; Pause: ${dailyBreak.toFixed(2)}h
+      </td></tr>`;
+    });
+
+    if (!dateKeys.length) {
+      rowsHTML = `<tr><td colspan="3" style="padding:24px; text-align:center; color:#94a3b8; font-size:12px;">Keine Arbeitseinträge vorhanden.</td></tr>`;
+    }
+
+    return `
+      <div style="font-family: Arial, Helvetica, sans-serif; color:#0f172a; padding:8px;">
+        <div style="text-align:center; margin-bottom:18px;">
+          <div style="font-size:24px; font-weight:800; letter-spacing:1px;">SCHÜRMANN</div>
+          <div style="font-size:16px; font-weight:800; color:#c0392b; letter-spacing:1px;">GEBÄUDE + ENERGIE</div>
+          <div style="margin-top:14px; font-size:15px; font-weight:700;">Arbeitsbericht</div>
+          <div style="font-size:13px; font-weight:600; margin-top:2px;">${user}</div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:11px; font-weight:700; color:#0f172a;">
+          <span>${sessions.length} Einträge</span>
+          <span>Gesamtarbeitszeit: ${totalNet.toFixed(2)}h</span>
+        </div>
+        <table style="width:100%; border-collapse:collapse; margin-top:4px;">
+          <thead>
+            <tr style="background:#2c3e50; color:#fff;">
+              <th style="padding:9px 12px; text-align:left; font-size:11px; font-weight:700;">Zeit</th>
+              <th style="padding:9px 12px; text-align:left; font-size:11px; font-weight:700;">Baustelle</th>
+              <th style="padding:9px 12px; text-align:right; font-size:11px; font-weight:700;">Dauer</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHTML}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
   function triggerPDFExportEngine() {
-    const target = document.getElementById('pdf-render-target');
-    const header = document.getElementById('pdf-custom-header');
-    const meta   = document.getElementById('pdf-user-metadata');
-    if (!target || !header) return;
-    if (meta) meta.textContent = `${uiTranslations[activeLanguageGlobal].pdfMeta} ${authenticatedUserGlobal}`;
-    header.style.display = 'block';
+    const user = authenticatedUserGlobal || 'mitarbeiter';
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed; left:-10000px; top:0; width:794px; background:#fff;';
+    wrap.innerHTML = buildWorkReportHTML();
+    document.body.appendChild(wrap);
     html2pdf().set({
-      margin: [15,15,15,15],
-      filename: `Stundenzettel_${authenticatedUserGlobal}.pdf`,
+      margin: [12, 12, 12, 12],
+      filename: `Arbeitsbericht_${user}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }).from(target).save().then(() => { header.style.display = 'none'; }).catch(() => { header.style.display = 'none'; });
+    }).from(wrap).save()
+      .then(() => wrap.remove())
+      .catch(() => wrap.remove());
   }
 
   // ── Feedback ───────────────────────────────────────────────────────────────
