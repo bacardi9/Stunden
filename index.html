@@ -592,6 +592,39 @@
   // Admin cache
   let adminAllEntriesCache = [];
 
+  // ── Cloud persistence (Firestore: userProfiles/<username>) ─────────────────
+  let _persistTimer = null;
+  async function persistUserDataNow() {
+    if (!authenticatedUserGlobal || authenticatedUserRoleGlobal === 'admin') return;
+    try {
+      await db.collection('userProfiles').doc(authenticatedUserGlobal).set({
+        workSessions: globalLoggedSessionsDatabaseMock || [],
+        leaveDays:    vacationLoggedDaysArrayCache     || [],
+        trash:        recentlyDeletedItemsBinCache     || [],
+        updatedAt:    Date.now()
+      }, { merge: true });
+    } catch (err) {
+      console.error('Cloud save failed:', err);
+    }
+  }
+  function persistUserData() {
+    // Debounce rapid mutations
+    if (_persistTimer) clearTimeout(_persistTimer);
+    _persistTimer = setTimeout(persistUserDataNow, 400);
+  }
+  async function loadUserDataFromCloud() {
+    if (!authenticatedUserGlobal || authenticatedUserRoleGlobal === 'admin') return;
+    try {
+      const snap = await db.collection('userProfiles').doc(authenticatedUserGlobal).get();
+      const data = snap.exists ? (snap.data() || {}) : {};
+      globalLoggedSessionsDatabaseMock = Array.isArray(data.workSessions) ? data.workSessions : [];
+      vacationLoggedDaysArrayCache     = Array.isArray(data.leaveDays)    ? data.leaveDays    : [];
+      recentlyDeletedItemsBinCache     = Array.isArray(data.trash)        ? data.trash        : [];
+    } catch (err) {
+      console.error('Cloud load failed:', err);
+    }
+  }
+
   // ── Translations ───────────────────────────────────────────────────────────
   const uiTranslations = {
     en: {
@@ -872,7 +905,7 @@
     }
   }
 
-  function launchSessionUI() {
+  async function launchSessionUI() {
     document.getElementById('login-view').style.display = 'none';
     document.getElementById('app-view').style.display   = 'block';
     document.getElementById('user-profile-title').textContent  = authenticatedUserGlobal;
@@ -885,6 +918,12 @@
       adminLink.style.display = 'none';
     }
     setApplicationLanguage(activeLanguageGlobal);
+    // Restore this user's saved data from Firestore before rendering metrics
+    await loadUserDataFromCloud();
+    if (typeof renderHistoricalRecordsSheet === 'function') renderHistoricalRecordsSheet();
+    if (typeof renderVacationRecordsSheet   === 'function') renderVacationRecordsSheet();
+    if (typeof renderTrashRecordsSheet      === 'function') renderTrashRecordsSheet();
+    if (typeof renderRecentlyDeletedBinSheet === 'function') renderRecentlyDeletedBinSheet();
     runGlobalApplicationMetricsEngine();
     updateCloudBackupStatusIndicator();
   }
@@ -1025,6 +1064,7 @@
       notes: document.getElementById('log-notes').value.trim()
     };
     globalLoggedSessionsDatabaseMock.unshift(record);
+    persistUserData();
     document.getElementById('log-project-name').value = '';
     document.getElementById('log-notes').value = '';
     selectBreakOption(0, document.querySelectorAll('.break-pill')[0]);
@@ -1059,6 +1099,7 @@
         duration: 0, breakTime: 0
       });
     }
+    persistUserData();
     document.getElementById('vacation-from-date-input').value = '';
     document.getElementById('vacation-to-date-input').value   = '';
     document.getElementById('vacation-notes-input').value     = '';
@@ -1221,6 +1262,7 @@
       const idx = vacationLoggedDaysArrayCache.findIndex(v => v.id === id);
       if (idx > -1) { const obj = vacationLoggedDaysArrayCache.splice(idx,1)[0]; obj.deletedAtTimestamp = Date.now(); recentlyDeletedItemsBinCache.push(obj); }
     }
+    persistUserData();
     renderHistoricalRecordsSheet();
     renderVacationRecordsSheet();
     runGlobalApplicationMetricsEngine();
@@ -1235,6 +1277,7 @@
       if (item.type === 'work') globalLoggedSessionsDatabaseMock.unshift(item);
       else vacationLoggedDaysArrayCache.unshift(item);
     }
+    persistUserData();
     renderRecentlyDeletedBinSheet();
     renderHistoricalRecordsSheet();
     renderVacationRecordsSheet();
@@ -1246,6 +1289,7 @@
     const limit = 12 * 60 * 60 * 1000;
     const now = Date.now();
     recentlyDeletedItemsBinCache = recentlyDeletedItemsBinCache.filter(i => (now - i.deletedAtTimestamp) < limit);
+    persistUserData();
     if (document.getElementById('view-deleted').classList.contains('active')) renderRecentlyDeletedBinSheet();
   }
 
@@ -1387,8 +1431,14 @@
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--admin-text-muted);"><i class="fa-solid fa-circle-notch fa-spin" style="margin-right:8px;"></i>Lade Unternehmensdaten...</td></tr>`;
 
     try {
-      const allSnap = await db.collection('userProfiles').get();
+      // Seed the user list from the real Users collection so every employee
+      // shows up in the dropdown — even those who haven't logged work yet.
+      const [usersSnap, allSnap] = await Promise.all([
+        db.collection('Users').get(),
+        db.collection('userProfiles').get()
+      ]);
       const allUsers = new Set();
+      usersSnap.forEach(d => allUsers.add(d.id));
       let totalLogs = 0, totalHrs = 0;
       adminAllEntriesCache = [];
 
