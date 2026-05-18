@@ -807,10 +807,10 @@
 async function handleSecureLoginAttempt(event) {
     event.preventDefault();
     
-    // FIXED: Using 'username' and 'passcode' to exactly match your original HTML element IDs
+    // Read user inputs from your HTML fields
     const nameInput = document.getElementById('username').value.trim();
     const passInput = document.getElementById('passcode').value.trim();
-    const messageBox = document.getElementById('message-box'); // FIXED: Matches your id="message-box" element
+    const messageBox = document.getElementById('message-box'); 
     
     if (!nameInput || !passInput) return;
     
@@ -831,25 +831,32 @@ async function handleSecureLoginAttempt(event) {
     }
 
     try {
-        // FIXED: Looks up your case-sensitive typed username directly as the document ID under "Users"
+        // Looks up the document ID matching your uppercase letters and spaces exactly
         const userDocRef = firebase.firestore().collection("Users").doc(nameInput);
         const userSnapshot = await userDocRef.get();
 
         if (!userSnapshot.exists) {
             messageBox.innerHTML = activeLanguageGlobal === 'de' ? 
-                "Mitarbeiter-Datensatz nicht gefunden. Bitte Groß-/Kleinschreibung beachten!" : "Employee record not found. Check exact uppercase formatting!";
+                "Mitarbeiter-Datensatz nicht gefunden. Bitte Groß-/Kleinschreibung beachten!" : "Employee record not found. Check uppercase letters & spaces!";
             messageBox.className = 'message error';
             return;
         }
 
         const userDataPayload = userSnapshot.data();
         
-        // FIXED: Explicitly checks your uppercase database field title "Code"
-        const databaseSecretCode = userDataPayload.Code ? String(userDataPayload.Code).trim() : "";
+        // FIXED: Looks up uppercase 'Code' field and converts the number from the DB to a string
+        let databaseSecretCode = "";
+        if (userDataPayload.Code !== undefined && userDataPayload.Code !== null) {
+            databaseSecretCode = String(userDataPayload.Code).trim();
+        } else if (userDataPayload.code !== undefined && userDataPayload.code !== null) {
+            databaseSecretCode = String(userDataPayload.code).trim();
+        }
+        
         const userAssignedRole = userDataPayload.role ? String(userDataPayload.role).trim().toLowerCase() : "user";
 
+        // Strict validation converting everything cleanly
         if (databaseSecretCode === passInput && passInput !== "") {
-            authenticatedUserGlobal = nameInput; // Keeps your exact case layout string untouched
+            authenticatedUserGlobal = nameInput; 
             authenticatedUserRoleGlobal = userAssignedRole;
             completeSessionLaunchUiTransitions();
         } else {
@@ -862,6 +869,8 @@ async function handleSecureLoginAttempt(event) {
         messageBox.innerHTML = `Error connecting to authentication matrix: ${error.message}`;
         messageBox.className = 'message error';
     }
+}
+
 }
 
     }
