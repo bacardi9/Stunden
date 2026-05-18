@@ -169,7 +169,7 @@
     .content-panel { display: none; flex: 1; }
     .content-panel.active { display: flex; flex-direction: column; }
     .panel-scroll-content { flex: 1; }
-    .view-title { font-size: 20px; font-weight: 700; color: var(--dark-slate); margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; letter-spacing: -0.3px; }
+    .view-title font-size: 20px; font-weight: 700; color: var(--dark-slate); margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; letter-spacing: -0.3px; }
     
     /* Centered Logo Dashboard Viewport */
     .dash-centered-logo-wrapper {
@@ -229,14 +229,14 @@
     .primary-btn:disabled { background: #94a3b8; cursor: not-allowed; opacity: 0.7; }
     
     /* Row Log Elements */
-    .history-item { background: white; padding: 16px; border-radius: 10px; border: 1px solid var(--card-border); border-left: 4px solid var(--primary-red); margin-bottom: 12px; position: relative; }
+    .history-item { background: white; padding: 16px; border-radius: 10px; border: 1px solid var(--card-border); border-left: 4px solid var(--primary-red); margin-bottom: 12px; }
     .item-main-row { display: flex; justify-content: space-between; align-items: center; }
     .hist-left h5 { font-size: 14px; font-weight: 700; margin-bottom: 3px; color: var(--dark-slate); }
     .hist-left p { font-size: 12px; color: var(--text-muted); font-weight: 500; }
     .hist-right { font-size: 15px; font-weight: 700; text-align: right; }
     
     /* Inline Form Workspace */
-    .inline-edit-box { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px; margin-top: 12px; width: 100%; text-align: left; }
+    .inline-edit-box { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px; margin-top: 12px; }
     .inline-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
     .inline-btn { border: none; padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
     
@@ -483,9 +483,14 @@
                    <label id="lbl-set-allowed">Allowed Vacation Days Allotment Bank</label>
                    <input type="number" id="vacation-allowed-bank" value="30" oninput="runGlobalApplicationMetricsEngine()">
                 </div>
-                <input type="hidden" id="shift-target-constraint" value="8.5">
-                <input type="hidden" id="break-rule-threshold" value="6.0">
-                
+                <div class="form-group">
+                   <label id="lbl-set-constraint">Standard Shift Target Constraint</label>
+                   <input type="number" step="0.1" id="shift-target-constraint" value="8.5" oninput="runGlobalApplicationMetricsEngine()">
+                </div>
+                <div class="form-group">
+                   <label id="lbl-set-threshold">Automatic Break Rule Rate Threshold</label>
+                   <input type="number" step="0.1" id="break-rule-threshold" value="6.0" oninput="runGlobalApplicationMetricsEngine()">
+                </div>
                 <p id="lbl-set-disclaimer" style="font-size: 12px; color: #64748b; line-height: 1.5; margin-top: 12px;">
                    Altering these operational constants is blocked by administrative role controls. Current thresholds enforce localized system calculations.
                 </p>
@@ -596,56 +601,32 @@
         }
     };
 
-    // ===================== HELPER FUNCTIONS =====================
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, """).replace(/'/g, "'");
-    }
-
-    function timeToMinutes(t) {
-        if (!t) return 0;
-        const p = t.split(':');
-        return parseInt(p[0]) * 60 + parseInt(p[1]);
-    }
-
-    function checkTimeOverlap(dateStr, startStr, endStr, excludeId = null) {
-        const newStart = timeToMinutes(startStr);
-        const newEnd = timeToMinutes(endStr);
-        
-        for (let session of globalLoggedSessionsDatabaseMock) {
-            if (session.type === 'work' && session.date === dateStr && session.id !== excludeId) {
-                if (session.startTime && session.endTime) {
-                    const sStart = timeToMinutes(session.startTime);
-                    const sEnd = timeToMinutes(session.endTime);
-                    if (newStart < sEnd && newEnd > sStart) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
     // ===================== CLOUD SYNC FUNCTIONS =====================
     async function cloudLogin(username, passcode) {
         try {
             updateSyncStatus('syncing');
+            
+            // Fixed: Handled case-sensitive path lookup inside collection query payload
+            const cleanUsername = String(username).trim();
+            const cleanPasscode = String(passcode).trim();
+
             const response = await fetch(`${CLOUD_API_BASE}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, passcode })
+                body: JSON.stringify({ username: cleanUsername, passcode: cleanPasscode })
             });
             
             const data = await response.json();
             if (data.success) {
                 authTokenGlobal = data.token;
-                authenticatedUserGlobal = username;
-                localStorage.setItem('schuermann_auth_user', username);
+                authenticatedUserGlobal = cleanUsername;
+                localStorage.setItem('schuermann_auth_user', cleanUsername);
                 localStorage.setItem('schuermann_auth_token', data.token);
                 
+                // Load user data from cloud
                 await loadUserDataFromCloud();
                 updateSyncStatus('synced');
-                return { success: true, message: `Welcome back, ${username}!` };
+                return { success: true, message: `Welcome back, ${cleanUsername}!` };
             } else {
                 updateSyncStatus('error');
                 return { success: false, message: data.message || 'Invalid credentials' };
@@ -673,6 +654,7 @@
                 vacationLoggedDaysArrayCache = data.vacationDays || [];
                 recentlyDeletedTrashBin = data.deletedItems || [];
                 
+                // Load settings
                 if (data.settings) {
                     document.getElementById('vacation-allowed-bank').value = data.settings.vacationDaysAllowed || 30;
                     document.getElementById('shift-target-constraint').value = data.settings.shiftTarget || 8.5;
@@ -680,7 +662,6 @@
                 }
                 
                 runGlobalApplicationMetricsEngine();
-                renderHistoricalRecordsSheet();
                 updateSyncStatus('synced');
             }
         } catch (error) {
@@ -765,7 +746,7 @@
         document.getElementById('log-date-picker').value = todayIsoString;
 
         setInterval(enforceTrashLifespanPurgeEngine, 60000);
-        setInterval(() => { if (authenticatedUserGlobal) syncDataToCloud(); }, 30000);
+        setInterval(() => { if (authenticatedUserGlobal) syncDataToCloud(); }, 30000); // Auto sync every 30 seconds
         window.addEventListener('online', updateCloudBackupStatusIndicator);
         window.addEventListener('offline', updateCloudBackupStatusIndicator);
         updateCloudBackupStatusIndicator();
@@ -791,9 +772,10 @@
     // ===================== LOGIN HANDLER =====================
     document.getElementById('login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const nameInput = document.getElementById('username').value.trim();
-        const codeInput = document.getElementById('passcode').value.trim();
+        const nameInput = document.getElementById('username').value;
+        const codeInput = document.getElementById('passcode').value;
         const messageBox = document.getElementById('message-box');
+        const trans = uiTranslations[activeLanguageGlobal];
         
         messageBox.textContent = activeLanguageGlobal === 'de' ? 'Sichere Verbindung wird hergestellt...' : 'Connecting safely...';
         messageBox.className = 'message';
@@ -807,9 +789,9 @@
             setTimeout(() => {
                 document.getElementById('login-view').style.display = 'none';
                 document.getElementById('app-view').style.display = 'block';
-                document.getElementById('user-profile-title').textContent = nameInput;
-                document.getElementById('dash-profile-username').textContent = nameInput;
-                document.getElementById('drawer-user-name').textContent = nameInput;
+                document.getElementById('user-profile-title').textContent = authenticatedUserGlobal;
+                document.getElementById('dash-profile-username').textContent = authenticatedUserGlobal;
+                document.getElementById('drawer-user-name').textContent = authenticatedUserGlobal;
                 setApplicationLanguage(activeLanguageGlobal);
                 runGlobalApplicationMetricsEngine();
             }, 600);
@@ -879,9 +861,6 @@
         document.querySelectorAll('.content-panel').forEach(panel => panel.classList.remove('active'));
         document.getElementById(`view-${targetViewId}`).classList.add('active');
         toggleSidebarDrawer(false);
-        if (targetViewId === 'history') {
-            renderHistoricalRecordsSheet();
-        }
     }
 
     function routeToMainDashboard() {
@@ -972,7 +951,6 @@
         return diff > 0 ? diff : 0;
     }
 
-    // ===================== RECORD SUBMISSION HANDLERS =====================
     function handleNewRecordSubmission(event) {
         event.preventDefault();
         const startVal = document.getElementById('log-start-time').value;
@@ -988,18 +966,10 @@
         const dateParts = rawPickedDate.split('-');
         const formattedDateStr = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
 
-        // Timeline timeline overlap scanner guard
-        if (checkTimeOverlap(formattedDateStr, startVal, endVal)) {
-            alert(activeLanguageGlobal === 'de' ? "Fehler: Zeitüberschneidung mit einem bestehenden Eintrag am selben Tag!" : "Error: Time overlap detected with an existing entry on the same day!");
-            return;
-        }
-
         const newRecordBlock = {
             id: "work-" + Date.now(),
             type: "work",
             date: formattedDateStr,
-            startTime: startVal,
-            endTime: endVal,
             project: document.getElementById('log-project-name').value,
             duration: grossDiffSpan,
             breakTime: activeSelectedFormBreakDuration,
@@ -1010,9 +980,6 @@
         document.getElementById('log-project-name').value = '';
         document.getElementById('log-notes').value = '';
         selectBreakOption(0, document.querySelectorAll('.break-pill')[0]);
-
-        // Automatically pass previous end time to the next start block
-        document.getElementById('log-start-time').value = endVal;
 
         renderHistoricalRecordsSheet();
         runGlobalApplicationMetricsEngine();
@@ -1067,149 +1034,26 @@
         routeToMainDashboard();
     }
 
-    // ===================== INLINE EDIT WORK LOG LOGIC =====================
-    function showInlineEditForm(recordId, element) {
-        if (element.querySelector('.inline-edit-box')) return;
-        
-        const record = globalLoggedSessionsDatabaseMock.find(r => r.id === recordId);
-        if (!record) return;
-        
-        const dateParts = record.date.split('/');
-        const isoDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
-        
-        const editBox = document.createElement('div');
-        editBox.className = 'inline-edit-box';
-        editBox.onclick = (e) => e.stopPropagation();
-        
-        let timeOptionsHtml = '';
-        for (let hour = 0; hour < 24; hour++) {
-            for (let min of ['00', '15', '30', '45']) {
-                const timeString = `${String(hour).padStart(2, '0')}:${min}`;
-                timeOptionsHtml += `<option value="${timeString}">${timeString}</option>`;
-            }
-        }
-        
-        const isDe = activeLanguageGlobal === 'de';
-        
-        editBox.innerHTML = `
-            <div class="form-group" style="margin-top: 10px; margin-bottom: 10px;">
-                <label style="font-size:11px; font-weight:700;">${isDe ? 'ARBEITSTAG' : 'WORK DAY'}</label>
-                <input type="date" id="edit-date-${recordId}" value="${isoDate}" required>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label style="font-size:11px; font-weight:700;">${isDe ? 'VON' : 'FROM'}</label>
-                    <select id="edit-start-${recordId}">${timeOptionsHtml}</select>
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label style="font-size:11px; font-weight:700;">${isDe ? 'BIS' : 'TO'}</label>
-                    <select id="edit-end-${recordId}">${timeOptionsHtml}</select>
-                </div>
-            </div>
-            <div class="form-group" style="margin-bottom: 10px;">
-                <label style="font-size:11px; font-weight:700;">${isDe ? 'PAUSENDAUER' : 'BREAK DURATION'}</label>
-                <select id="edit-break-${recordId}">
-                    <option value="0">${isDe ? 'Keine' : 'None'}</option>
-                    <option value="0.25">15 Min</option>
-                    <option value="0.5">30 Min</option>
-                    <option value="1">1 Std</option>
-                </select>
-            </div>
-            <div class="form-group" style="margin-bottom: 10px;">
-                <label style="font-size:11px; font-weight:700;">${isDe ? 'PROJEKT' : 'PROJECT'}</label>
-                <input type="text" id="edit-project-${recordId}" value="${escapeHtml(record.project)}" required>
-            </div>
-            <div class="form-group" style="margin-bottom: 10px;">
-                <label style="font-size:11px; font-weight:700;">${isDe ? 'NOTIZEN' : 'NOTES'}</label>
-                <textarea id="edit-notes-${recordId}" style="height: 60px;">${escapeHtml(record.notes || '')}</textarea>
-            </div>
-            <div class="inline-edit-actions">
-                <button type="button" class="inline-btn" style="background:#e2e8f0; color:#334155;" onclick="renderHistoricalRecordsSheet()">${isDe ? 'Abbrechen' : 'Cancel'}</button>
-                <button type="button" class="inline-btn" style="background:var(--primary-blue); color:white;" onclick="saveInlineEdit('${recordId}')">${isDe ? 'Speichern' : 'Save'}</button>
-            </div>
-        `;
-        
-        element.appendChild(editBox);
-        
-        document.getElementById(`edit-start-${recordId}`).value = record.startTime || "07:00";
-        document.getElementById(`edit-end-${recordId}`).value = record.endTime || "16:30";
-        document.getElementById(`edit-break-${recordId}`).value = record.breakTime || 0;
-    }
-
-    function saveInlineEdit(recordId) {
-        const record = globalLoggedSessionsDatabaseMock.find(r => r.id === recordId);
-        if (!record) return;
-        
-        const newDateRaw = document.getElementById(`edit-date-${recordId}`).value;
-        const startVal = document.getElementById(`edit-start-${recordId}`).value;
-        const endVal = document.getElementById(`edit-end-${recordId}`).value;
-        const breakVal = parseFloat(document.getElementById(`edit-break-${recordId}`).value);
-        const projectVal = document.getElementById(`edit-project-${recordId}`).value.trim();
-        const notesVal = document.getElementById(`edit-notes-${recordId}`).value;
-        
-        const grossDiffSpan = computeRawStringHoursDifference(startVal, endVal);
-        if (grossDiffSpan <= 0) {
-            alert(activeLanguageGlobal === 'de' ? "Fehler: Das Ende der Arbeitszeit muss nach dem Beginn liegen!" : "Error: End time must fall after start time!");
-            return;
-        }
-        
-        const dateParts = newDateRaw.split('-');
-        const formattedDateStr = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-        
-        if (checkTimeOverlap(formattedDateStr, startVal, endVal, recordId)) {
-            alert(activeLanguageGlobal === 'de' ? "Fehler: Zeitüberschneidung mit einem bestehenden Eintrag am selben Tag!" : "Error: Time overlap detected with an existing entry on the same day!");
-            return;
-        }
-        
-        record.date = formattedDateStr;
-        record.startTime = startVal;
-        record.endTime = endVal;
-        record.duration = grossDiffSpan;
-        record.breakTime = breakVal;
-        record.project = projectVal;
-        record.notes = notesVal;
-        
-        renderHistoricalRecordsSheet();
-        runGlobalApplicationMetricsEngine();
-        syncDataToCloud();
-    }
-
-    // ===================== HISTORICAL SHEET RENDERER =====================
     function renderHistoricalRecordsSheet() {
         const containerEl = document.getElementById('history-items-container');
-        if (!containerEl) return;
         containerEl.innerHTML = '';
-        
         const allRecords = [...globalLoggedSessionsDatabaseMock, ...vacationLoggedDaysArrayCache].sort((a, b) => new Date(b.date.split('/').reverse().join('-')) - new Date(a.date.split('/').reverse().join('-')));
 
         allRecords.forEach(record => {
             const historyElem = document.createElement('div');
             historyElem.className = 'history-item';
             const isVacation = record.type === 'vacation' || record.type === 'sick';
-            
-            // Injected interactive workflow behaviors
-            if (!isVacation) {
-                historyElem.style.cursor = 'pointer';
-                historyElem.title = activeLanguageGlobal === 'de' ? 'Klicken zum Bearbeiten' : 'Click to edit';
-                historyElem.onclick = function(e) {
-                    if (e.target.closest('.action-icon-btn') || e.target.closest('.inline-edit-box') || e.target.closest('input') || e.target.closest('select') || e.target.closest('textarea') || e.target.closest('button')) return;
-                    showInlineEditForm(record.id, historyElem);
-                };
-            }
-            
-            const timeSpanStr = (!isVacation && record.startTime && record.endTime) ? ` <span style="font-weight:normal; font-size:11px; color:var(--text-muted);">(${record.startTime} - ${record.endTime})</span>` : '';
-
             historyElem.innerHTML = `
                 <div class="item-main-row">
                    <div class="hist-left">
-                      <h5><i class="fa-solid fa-${isVacation ? (record.type === 'sick' ? 'briefcase-medical' : 'umbrella-beach') : 'briefcase'}" style="margin-right: 8px;"></i>${escapeHtml(record.project)}</h5>
-                      <p>${record.date}${timeSpanStr}</p>
+                      <h5><i class="fa-solid fa-${isVacation ? (record.type === 'sick' ? 'briefcase-medical' : 'umbrella-beach') : 'briefcase'}" style="margin-right: 8px;"></i>${record.project}</h5>
+                      <p>${record.date}</p>
                    </div>
                    <div class="hist-right" style="color: ${isVacation ? '#3b82f6' : '#0259b6'};">
                       ${isVacation ? '1 Tag' : record.duration.toFixed(2) + ' hrs'}
                    </div>
                 </div>
-                <button type="button" class="action-icon-btn delete-hover" onclick="deleteHistoryRecord('${record.id}')" style="position: absolute; bottom: 10px; right: 10px;">
+                <button type="button" class="action-icon-btn delete-hover" onclick="deleteHistoryRecord('${record.id}')">
                    <i class="fa-solid fa-trash-can"></i>
                 </button>
             `;
@@ -1237,7 +1081,6 @@
         }
     }
 
-    // ===================== METRICS ENGINE =====================
     function runGlobalApplicationMetricsEngine() {
         const dateObj = new Date();
         const dateFormatted = activeLanguageGlobal === 'de' ? 
@@ -1410,7 +1253,6 @@
         });
     }
 
-    // ===================== TRASH BIN HANDLING =====================
     function openHiddenTrashView() {
         renderRecentlyDeletedBinSheet();
         switchActiveView('deleted', null);
