@@ -462,9 +462,17 @@
 </div>
 
 <script>
-   // Authentic Core Rest Database Engine Initialization
+   // Firebase Initialization
+   const firebaseConfig = {
+       apiKey: 'AIzaSyBbBMWCPlE-TNauiJgn3SeOgM9usMXUEJA',
+       authDomain: 'logins-fa136.firebaseapp.com',
+       projectId: 'logins-fa136',
+       storageBucket: 'logins-fa136.firebasestorage.app',
+       messagingSenderId: '624142930319',
+       appId: '1:624142930319:web:f4e0c97ee517b848cf3bfa'
+   };
    if (!firebase.apps.length) {
-       console.error("Firebase framework missing initial configurations initialization sequences.");
+       firebase.initializeApp(firebaseConfig);
    }
    const databaseReferenceEngine = firebase.firestore();
 
