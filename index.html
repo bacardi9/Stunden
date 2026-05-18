@@ -156,8 +156,9 @@
   .badge-type-s { background: rgba(225,29,72,0.25); color: #f87171; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
 
   /* ── Full-Screen Admin Layout ── */
-  #admin-full-view { display: none; min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); }
-  .admin-layout { display: flex; min-height: 100vh; }
+  body.admin-mode { background: #0f172a !important; overflow: hidden; }
+  #admin-full-view { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 50; background: linear-gradient(160deg, #0c1322 0%, #1a2332 60%, #0f172a 100%); overflow-y: auto; overflow-x: hidden; }
+  .admin-layout { display: flex; min-height: 100%; }
   .admin-sidebar { width: 280px; background: linear-gradient(180deg, #0c1322 0%, #1a2332 100%); border-right: 1px solid rgba(212,175,55,0.15); display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 100; }
   .admin-sidebar-header { padding: 28px 24px; border-bottom: 1px solid rgba(212,175,55,0.2); background: linear-gradient(135deg, rgba(212,175,55,0.08) 0%, transparent 100%); }
   .admin-sidebar-brand { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
@@ -194,10 +195,28 @@
     .admin-main { margin-left: 240px; }
   }
   @media (max-width: 768px) {
-    .admin-sidebar { transform: translateX(-100%); transition: transform 0.3s; position: fixed; width: 280px; }
+    .admin-sidebar { transform: translateX(-100%); position: fixed; width: 280px; }
     .admin-sidebar.open { transform: translateX(0); }
-    .admin-main { margin-left: 0; }
+    .admin-main { margin-left: 0; min-height: 100vh; }
     .admin-mobile-toggle { display: flex !important; }
+    .admin-content { padding: 20px 14px; }
+    .admin-header { padding: 0 14px; height: 60px; }
+    .admin-header-title h1 { font-size: 15px; }
+    .admin-header-actions { gap: 8px; }
+    .admin-metrics-row { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; margin-bottom: 16px; }
+    .admin-metric-tile { padding: 14px 12px; }
+    .admin-metric-tile .number-callout { font-size: 22px; }
+    #employee-stats-cards { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+  }
+  @media (max-width: 480px) {
+    .admin-content { padding: 14px 10px; }
+    .admin-header { height: 54px; }
+    .admin-header-badge { display: none; }
+    .admin-header-actions > div[id="admin-last-update"] { display: none; }
+    .admin-metrics-row { grid-template-columns: 1fr !important; }
+    .admin-enterprise-table { font-size: 11px; }
+    .admin-enterprise-table th, .admin-enterprise-table td { padding: 9px 8px; }
+    .admin-content-inner { padding: 0; }
   }
   .admin-mobile-toggle { display: none; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 10px 12px; border-radius: 8px; cursor: pointer; }
   .admin-sidebar-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 99; backdrop-filter: blur(2px); }
@@ -1303,12 +1322,14 @@
       document.getElementById('app-view').style.display = 'none';
       document.getElementById('admin-full-view').style.display = 'block';
       document.getElementById('admin-user-display').textContent = authenticatedUserGlobal;
+      document.body.classList.add('admin-mode');
       launchAdminDashboard();
       return;
     }
     
     // Regular user view
     document.getElementById('admin-full-view').style.display = 'none';
+    document.body.classList.remove('admin-mode');
     document.getElementById('app-view').style.display   = 'block';
     document.getElementById('user-profile-title').textContent  = authenticatedUserGlobal;
     document.getElementById('dash-profile-username').textContent = authenticatedUserGlobal;
@@ -1418,6 +1439,7 @@
     document.getElementById('admin-full-view').style.display = 'none';
     document.getElementById('app-view').style.display  = 'none';
     document.getElementById('login-view').style.display = 'flex';
+    document.body.classList.remove('admin-mode');
   }
 
   function handleSecureSignOutRequest() {
@@ -2368,187 +2390,188 @@
   function generateEmployeePDFDocument(employeeName) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageWidth  = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 15;
-    let y = margin;
 
-    const empData = adminAllEntriesCache.filter(r => r.user === employeeName);
+    const empData     = adminAllEntriesCache.filter(r => r.user === employeeName);
     const workEntries = empData.filter(r => r.category === 'WORK');
-    const totalHours = workEntries.reduce((sum, r) => sum + r.hrs, 0);
-    const totalBreak = workEntries.reduce((sum, r) => sum + (r.breakHrs || 0), 0);
-    const vacationDays = empData.filter(r => r.category === 'VACATION').length;
-    const sickDays = empData.filter(r => r.category === 'SICK').length;
-    const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const totalHours  = workEntries.reduce((sum, r) => sum + r.hrs, 0);
+    const vacDays     = empData.filter(r => r.category === 'VACATION').length;
+    const sickDays    = empData.filter(r => r.category === 'SICK').length;
+    const today       = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-    // Group work entries by date
+    // Group work entries by date → oldest first
     const workByDate = {};
     workEntries.forEach(s => { (workByDate[s.rawDate] = workByDate[s.rawDate] || []).push(s); });
     const dateKeys = Object.keys(workByDate).sort((a, b) => {
-      const [da, ma, ya] = a.split('/').map(Number);
-      const [db, mb, yb] = b.split('/').map(Number);
-      return new Date(yb, mb - 1, db) - new Date(ya, ma - 1, da); // Newest first
+      const parse = k => { const [d,m,y] = k.split('/').map(Number); return new Date(y, m-1, d); };
+      return parse(a) - parse(b);
     });
 
-    // Colors
-    const primaryRed = [192, 57, 43];
-    const darkSlate = [44, 62, 80];
-    const gold = [212, 175, 55];
-    const lightGray = [248, 250, 252];
-    const borderGray = [229, 231, 235];
-    const textDark = [15, 23, 42];
-    const textMuted = [100, 116, 139];
+    // ── Color palette ──
+    const red      = [192, 57,  43];
+    const slate    = [44,  62,  80];
+    const gold     = [212, 175, 55];
+    const hdrGray  = [236, 240, 244];
+    const sumGray  = [248, 250, 252];
+    const txtDark  = [15,  23,  42];
+    const txtMuted = [100, 116, 139];
+    const white    = [255, 255, 255];
 
-    // ═══ HEADER ═══
-    doc.setFillColor(...primaryRed);
-    doc.rect(0, 0, pageWidth, 3, 'F');
-
-    y = 12;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
-    doc.setTextColor(...textDark);
-    doc.text('SCHÜRMANN', margin, y);
-    
-    doc.setFontSize(9);
-    doc.setTextColor(...primaryRed);
-    doc.text('GEBÄUDE + ENERGIE', margin, y + 5);
-
-    doc.setFontSize(11);
-    doc.setTextColor(...textDark);
-    doc.setFont('helvetica', 'bold');
-    doc.text('ARBEITSBERICHT', pageWidth - margin, y, { align: 'right' });
-    
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...textMuted);
-    doc.text('Erstellt: ' + today, pageWidth - margin, y + 5, { align: 'right' });
-
-    y += 12;
-    doc.setDrawColor(...primaryRed);
-    doc.setLineWidth(0.8);
-    doc.line(margin, y, pageWidth - margin, y);
-
-    // ═══ EMPLOYEE INFO BOX ═══
-    y += 8;
-    doc.setFillColor(...darkSlate);
-    doc.roundedRect(margin, y, pageWidth - margin * 2, 22, 2, 2, 'F');
-    doc.setFillColor(...gold);
-    doc.rect(margin, y, 3, 22, 'F');
-
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...gold);
-    doc.text('MITARBEITER', margin + 8, y + 7);
-    
-    doc.setFontSize(16);
-    doc.setTextColor(255, 255, 255);
-    doc.text(employeeName, margin + 8, y + 16);
-
-    y += 28;
-
-    // ═══ SUMMARY CARDS ═══
-    const cardWidth = (pageWidth - margin * 2 - 9) / 4;
-    const cardHeight = 18;
-    const cards = [
-      { label: 'EINTRÄGE', value: workEntries.length.toString(), accent: false },
-      { label: 'ARBEITSSTUNDEN', value: totalHours.toFixed(2) + ' h', accent: true },
-      { label: 'URLAUBSTAGE', value: vacationDays.toString(), accent: false },
-      { label: 'KRANKTAGE', value: sickDays.toString(), accent: false }
-    ];
-
-    cards.forEach((card, i) => {
-      const x = margin + i * (cardWidth + 3);
-      if (card.accent) {
-        doc.setFillColor(...darkSlate);
-      } else {
-        doc.setFillColor(...lightGray);
-      }
-      doc.roundedRect(x, y, cardWidth, cardHeight, 2, 2, 'F');
-      doc.setFillColor(...(card.accent ? gold : darkSlate));
-      doc.rect(x, y, 2, cardHeight, 'F');
-
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...(card.accent ? [203, 213, 225] : textMuted));
-      doc.text(card.label, x + 6, y + 6);
-
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...(card.accent ? [255, 255, 255] : textDark));
-      doc.text(card.value, x + 6, y + 13);
-    });
-
-    y += cardHeight + 10;
-
-    // ═══ WORK ENTRIES TABLE ═══
     const fmtDate = (key) => {
-      const [d, m, yr] = key.split('/').map(Number);
-      return new Date(yr, m - 1, d).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+      const [d, m, y] = key.split('/').map(Number);
+      return new Date(y, m-1, d).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' });
     };
 
+    // ── Draw page header (called on page 1 and continuation pages) ──
+    const drawHeader = (isFirstPage) => {
+      doc.setFillColor(...red);
+      doc.rect(0, 0, pageWidth, 3, 'F');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20);
+      doc.setTextColor(...txtDark);
+      doc.text('SCHÜRMANN', margin, 14);
+
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...red);
+      doc.text('GEBÄUDE + ENERGIE', margin, 19.5);
+
+      doc.setFontSize(13);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...txtDark);
+      doc.text('Work Report', pageWidth - margin, 13, { align: 'right' });
+
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...txtMuted);
+      doc.text(today, pageWidth - margin, 19.5, { align: 'right' });
+
+      doc.setDrawColor(...hdrGray);
+      doc.setLineWidth(0.5);
+      doc.line(margin, 23, pageWidth - margin, 23);
+    };
+
+    drawHeader(true);
+    let y = 30;
+
+    // ── Employee name + summary line ──
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...txtDark);
+    doc.text(employeeName, margin, y);
+    y += 6;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...txtMuted);
+    const sumLine = workEntries.length + ' Arbeitseinträge   |   Gesamtarbeit: ' + totalHours.toFixed(2) + ' h'
+      + (vacDays  ? '   |   Urlaub: ' + vacDays  + ' Tag(e)' : '')
+      + (sickDays ? '   |   Krank: '  + sickDays + ' Tag(e)' : '');
+    doc.text(sumLine, margin, y);
+    y += 9;
+
+    // ── Build flat table body with date-header and daily-sum rows ──
+    const tableBody      = [];
+    const dateHeaderRows = new Set();
+    const dailySumRows   = new Set();
+
     if (dateKeys.length === 0) {
-      doc.setFontSize(11);
-      doc.setTextColor(...textMuted);
-      doc.text('Keine Arbeitseinträge vorhanden.', pageWidth / 2, y + 20, { align: 'center' });
+      // No entries placeholder
+      tableBody.push([{ content: 'Keine Arbeitseinträge vorhanden.', colSpan: 4,
+        styles: { halign: 'center', textColor: txtMuted, fontStyle: 'italic' } }]);
     } else {
-      // Build table data
-      const tableData = [];
       dateKeys.forEach(key => {
         const items = workByDate[key];
+
+        // Date header row
+        dateHeaderRows.add(tableBody.length);
+        tableBody.push([{ content: fmtDate(key), colSpan: 4, styles: {} }]);
+
+        // Individual work entries
+        let dailyWork = 0, dailyBreak = 0;
         items.forEach(row => {
-          const time = (row.startTime && row.endTime) ? row.startTime + ' - ' + row.endTime : '-';
-          tableData.push([fmtDate(key), row.desc || '-', time, row.hrs.toFixed(2) + ' h']);
+          const timeStr = (row.startTime && row.endTime)
+            ? row.startTime + ' \u2013 ' + row.endTime
+            : '\u2013';
+          dailyWork  += row.hrs;
+          dailyBreak += (row.breakHrs || 0);
+          tableBody.push([timeStr, row.desc || '\u2013', 'Working', row.hrs.toFixed(2) + ' h']);
         });
-      });
 
-      doc.autoTable({
-        startY: y,
-        head: [['DATUM', 'BAUSTELLE/PROJEKT', 'ZEIT', 'DAUER']],
-        body: tableData,
-        margin: { left: margin, right: margin },
-        styles: {
-          fontSize: 9,
-          cellPadding: 3,
-          textColor: textDark,
-          lineColor: borderGray,
-          lineWidth: 0.1
-        },
-        headStyles: {
-          fillColor: darkSlate,
-          textColor: [255, 255, 255],
-          fontStyle: 'bold',
-          fontSize: 8,
-          cellPadding: 2.5
-        },
-        alternateRowStyles: {
-          fillColor: [250, 251, 252]
-        },
-        columnStyles: {
-          0: { cellWidth: 38 },
-          2: { cellWidth: 30 },
-          3: { cellWidth: 22, halign: 'right', textColor: gold, fontStyle: 'bold' }
-        },
-        didDrawPage: () => {
-          doc.setFillColor(...primaryRed);
-          doc.rect(0, 0, pageWidth, 3, 'F');
+        // Daily summary row
+        dailySumRows.add(tableBody.length);
+        const dailyText = 'Daily Work: ' + dailyWork.toFixed(2) + ' h   |   Break: ' + dailyBreak.toFixed(2) + ' h';
+        tableBody.push([{ content: dailyText, colSpan: 4, styles: {} }]);
+      });
+    }
+
+    doc.autoTable({
+      startY: y,
+      head: [['ZEIT', 'PROJEKT / BAUSTELLE', 'AUFGABE', 'DAUER']],
+      body: tableBody,
+      margin: { left: margin, right: margin },
+      tableWidth: 'auto',
+      styles: {
+        fontSize: 9,
+        cellPadding: { top: 3, right: 5, bottom: 3, left: 5 },
+        textColor: txtDark,
+        lineColor: [220, 225, 230],
+        lineWidth: 0.1,
+        overflow: 'linebreak'
+      },
+      headStyles: {
+        fillColor: slate,
+        textColor: white,
+        fontStyle: 'bold',
+        fontSize: 8,
+        cellPadding: { top: 4, right: 5, bottom: 4, left: 5 }
+      },
+      alternateRowStyles: { fillColor: [250, 251, 252] },
+      columnStyles: {
+        0: { cellWidth: 34 },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 24 },
+        3: { cellWidth: 22, halign: 'right', fontStyle: 'bold', textColor: slate }
+      },
+      didParseCell: (data) => {
+        if (data.section !== 'body') return;
+        const ri = data.row.index;
+        if (dateHeaderRows.has(ri)) {
+          data.cell.styles.fillColor    = hdrGray;
+          data.cell.styles.textColor    = txtDark;
+          data.cell.styles.fontStyle    = 'bold';
+          data.cell.styles.fontSize     = 9;
+          data.cell.styles.cellPadding  = { top: 5, right: 8, bottom: 5, left: 8 };
         }
-      });
-    }
-
-    // ═══ FOOTER ═══
-    const totalPages = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.setDrawColor(...borderGray);
-      doc.setLineWidth(0.3);
-      doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...textMuted);
-      doc.text('Schürmann Gebäude + Energie', margin, pageHeight - 8);
-      doc.text(employeeName + ' | ' + today, pageWidth / 2, pageHeight - 8, { align: 'center' });
-      doc.text('Seite ' + i + ' von ' + totalPages, pageWidth - margin, pageHeight - 8, { align: 'right' });
-    }
+        if (dailySumRows.has(ri)) {
+          data.cell.styles.fillColor    = sumGray;
+          data.cell.styles.textColor    = txtMuted;
+          data.cell.styles.fontStyle    = 'bold';
+          data.cell.styles.halign       = 'right';
+          data.cell.styles.fontSize     = 8;
+          data.cell.styles.cellPadding  = { top: 4, right: 8, bottom: 4, left: 8 };
+          data.cell.styles.lineColor    = [200, 210, 220];
+        }
+      },
+      didDrawPage: (data) => {
+        // Continuation pages: redraw header bar
+        if (data.pageNumber > 1) drawHeader(false);
+        // Footer on every page
+        const pg = data.pageNumber;
+        doc.setDrawColor(220, 225, 230);
+        doc.setLineWidth(0.3);
+        doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...txtMuted);
+        doc.text('Schürmann Gebäude + Energie', margin, pageHeight - 8);
+        doc.text(employeeName + '  |  ' + today, pageWidth / 2, pageHeight - 8, { align: 'center' });
+        doc.text('Seite ' + pg, pageWidth - margin, pageHeight - 8, { align: 'right' });
+      }
+    });
 
     doc.save('Arbeitsbericht_' + employeeName.replace(/\s+/g, '_') + '.pdf');
   }
