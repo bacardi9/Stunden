@@ -807,7 +807,7 @@
 async function handleSecureLoginAttempt(event) {
     event.preventDefault();
     
-    // Read user inputs from your HTML fields
+    // Read user inputs from the exact HTML input field IDs
     const nameInput = document.getElementById('username').value.trim();
     const passInput = document.getElementById('passcode').value.trim();
     const messageBox = document.getElementById('message-box'); 
@@ -831,7 +831,7 @@ async function handleSecureLoginAttempt(event) {
     }
 
     try {
-        // Looks up the document ID matching your uppercase letters and spaces exactly
+        // EXACT LOOKUP: Uses collection "Users" and targets your exact typed document layout (capitalization + spaces)
         const userDocRef = firebase.firestore().collection("Users").doc(nameInput);
         const userSnapshot = await userDocRef.get();
 
@@ -844,7 +844,7 @@ async function handleSecureLoginAttempt(event) {
 
         const userDataPayload = userSnapshot.data();
         
-        // FIXED: Looks up uppercase 'Code' field and converts the number from the DB to a string
+        // EXACT LOOKUP: Reads field "Code" matching case-sensitive key and string value format
         let databaseSecretCode = "";
         if (userDataPayload.Code !== undefined && userDataPayload.Code !== null) {
             databaseSecretCode = String(userDataPayload.Code).trim();
@@ -854,9 +854,9 @@ async function handleSecureLoginAttempt(event) {
         
         const userAssignedRole = userDataPayload.role ? String(userDataPayload.role).trim().toLowerCase() : "user";
 
-        // Strict validation converting everything cleanly
+        // Compare string entries directly
         if (databaseSecretCode === passInput && passInput !== "") {
-            authenticatedUserGlobal = nameInput; 
+            authenticatedUserGlobal = nameInput; // Sets profile to full name typed
             authenticatedUserRoleGlobal = userAssignedRole;
             completeSessionLaunchUiTransitions();
         } else {
@@ -870,6 +870,7 @@ async function handleSecureLoginAttempt(event) {
         messageBox.className = 'message error';
     }
 }
+
 
 }
 
