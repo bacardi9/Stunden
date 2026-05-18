@@ -20,7 +20,6 @@
        --card-border: #e2e8f0;
        --text-main: #334155;
        --text-muted: #64748b;
-       
        /* Premium Admin Executive Palette Consts */
        --admin-dark: #0f172a;
        --admin-card: #1e293b;
@@ -33,7 +32,7 @@
    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
    body { background-color: var(--light-bg); color: var(--text-main); padding-bottom: 20px; -webkit-font-smoothing: antialiased; }
    
-   /* Modern Login Shell */
+   /* Login Window Styling */
    .login-container { 
        display: flex;
        flex-direction: column;
@@ -43,1536 +42,1073 @@
        padding: 24px; 
        position: relative;
        background-color: #0b0f19;
-       overflow: hidden;
    }
    .login-container::before {
        content: "";
        position: absolute;
-       top: -50%; left: -50%; right: -50%; bottom: -50%;
-       width: 200%; height: 200%;
-       background: 
-           radial-gradient(circle at 20% 30%, rgba(225, 29, 72, 0.45) 0%, rgba(225, 29, 72, 0.1) 35%, transparent 60%),
-           radial-gradient(circle at 80% 70%, rgba(2, 89, 182, 0.35) 0%, rgba(2, 89, 182, 0.05) 30%, transparent 55%),
-           radial-gradient(circle at 50% 50%, #0f172a 0%, #000000 80%);
-       filter: blur(60px);
+       top: 0;
+       left: 0; right: 0; bottom: 0;
+       background: radial-gradient(circle at 50% 50%, #1e293b 0%, #000000 100%);
        z-index: 1;
        pointer-events: none;
    }
    .login-card { 
        background: rgba(255, 255, 255, 0.98);
-       padding: 40px 32px 28px 32px; 
+       padding: 40px 32px; 
        border-radius: 16px; 
        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
        width: 100%; 
        max-width: 420px;
        position: relative;
        z-index: 2;
-       backdrop-filter: blur(8px);
-       border: 1px solid rgba(255, 255, 255, 0.2);
    }
    
    /* Corporate Branding Typography */
    .brand-logo-container { text-align: center; margin-bottom: 6px; cursor: pointer; }
    .brand-title { font-weight: 800; font-size: 26px; letter-spacing: -0.5px; color: #1e293b; line-height: 1; }
    .brand-subtitle { font-size: 10px; font-weight: 700; color: var(--primary-red); letter-spacing: 1.5px; margin-top: 3px; text-transform: uppercase; }
-   .portal-context-caption { font-size: 13px; color: var(--text-muted); font-weight: 500; margin-bottom: 28px; text-align: center; letter-spacing: -0.1px; }
+   .portal-context-caption { font-size: 13px; color: var(--text-muted); font-weight: 500; margin-bottom: 28px; text-align: center; }
    
-   /* Structural Header & Navigation Drawer */
-   .app-header { display: flex; align-items: center; justify-content: space-between; background: white; padding: 14px 20px; border-bottom: 1px solid var(--card-border); position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+   /* Structural Top Header & Navigation Drawer Styles */
+   .app-header { display: flex; align-items: center; justify-content: space-between; background: white; padding: 14px 20px; border-bottom: 1px solid var(--card-border); position: sticky; top: 0; z-index: 100; }
    .menu-trigger-btn { background: none; border: none; font-size: 22px; color: var(--dark-slate); cursor: pointer; padding: 4px; }
    
    .lang-selector-wrapper { display: flex; gap: 4px; background: #e2e8f0; padding: 2px; border-radius: 6px; margin-right: 14px; }
-   .lang-btn { background: none; border: none; padding: 5px 9px; font-size: 11px; font-weight: 700; color: #475569; cursor: pointer; border-radius: 4px; transition: all 0.15s; }
+   .lang-btn { background: none; border: none; padding: 5px 9px; font-size: 11px; font-weight: 700; color: #475569; cursor: pointer; border-radius: 4px; }
    .lang-btn.active { background: white; color: var(--primary-blue); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
-   .sidebar-drawer { position: fixed; top: 0; left: -280px; width: 280px; height: 100vh; background: white; z-index: 200; box-shadow: 5px 0 30px rgba(0,0,0,0.15); transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; }
+   .sidebar-drawer { position: fixed; top: 0; left: -280px; width: 280px; height: 100vh; background: white; z-index: 200; box-shadow: 5px 0 30px rgba(0,0,0,0.15); transition: left 0.3s ease; display: flex; flex-direction: column; }
    .sidebar-drawer.open { left: 0; }
-   .drawer-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.3); backdrop-filter: blur(2px); z-index: 150; display: none; }
+   .drawer-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.3); z-index: 150; display: none; }
    .drawer-backdrop.show { display: block; }
    
    .drawer-user-section { padding: 32px 24px 20px; border-bottom: 1px solid var(--card-border); }
-   .drawer-user-section h3 { font-size: 18px; margin-bottom: 2px; font-weight: 700; color: var(--dark-slate); }
-   .drawer-user-section p { font-size: 10px; font-weight: 800; color: var(--primary-red); letter-spacing: 0.6px; text-transform: uppercase; }
+   .drawer-user-section h3 { font-size: 18px; color: var(--dark-slate); }
+   .drawer-user-section p { font-size: 10px; font-weight: 800; color: var(--primary-red); text-transform: uppercase; }
    
    .drawer-nav-list { list-style: none; padding: 12px 0; flex: 1; overflow-y: auto; }
-   .nav-item { display: flex; align-items: center; gap: 14px; padding: 12px 24px; color: #475569; text-decoration: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
-   .nav-item i { width: 20px; font-size: 16px; color: #94a3b8; text-align: center; }
+   .nav-item { display: flex; align-items: center; gap: 14px; padding: 12px 24px; color: #475569; text-decoration: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+   .nav-item i { width: 20px; text-align: center; color: #94a3b8; }
    .nav-item:hover, .nav-item.active { background: #f1f5f9; color: var(--primary-blue); }
    .nav-item:hover i, .nav-item.active i { color: var(--primary-blue); }
-   .nav-item.disabled { color: #94a3b8; cursor: not-allowed; background: none; }
-   .nav-item.disabled:hover { background: none; color: #94a3b8; }
-   .nav-item.disabled i { color: #cbd5e1; }
+   .nav-item.disabled { color: #94a3b8; cursor: not-allowed; }
 
-   /* Viewport Workspace Grid Elements */
+   /* Viewport Workspace Grid Content Elements */
    main { padding: 20px; max-width: 600px; margin: 0 auto; min-height: calc(100vh - 120px); display: flex; flex-direction: column; }
    main.admin-layout-widescreen { max-width: 1200px !important; }
    .content-panel { display: none; flex: 1; }
    .content-panel.active { display: flex; flex-direction: column; }
    .panel-scroll-content { flex: 1; }
-   .view-title { font-size: 20px; font-weight: 700; color: var(--dark-slate); margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; letter-spacing: -0.3px; }
+   .view-title { font-size: 20px; font-weight: 700; color: var(--dark-slate); margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; }
    
-   .dash-centered-logo-wrapper { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 12px auto 28px auto; text-align: center; cursor: pointer; }
-   .backup-status-dot { width: 9px; height: 9px; background-color: #94a3b8; border-radius: 50%; display: inline-block; transition: background-color 0.3s ease, box-shadow 0.3s ease; }
+   .dash-centered-logo-wrapper { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 28px; }
+   .backup-status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; background-color: #cbd5e1; }
    .backup-status-dot.online { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
-   .backup-status-dot.offline { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
    
    /* Operational Analytics Cards Layout */
    .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
-   .metric-card { background: white; padding: 18px 16px; border-radius: 12px; border: 1px solid var(--card-border); border-top: 4px solid #cbd5e1; transition: transform 0.15s, box-shadow 0.15s; cursor: pointer; }
-   .metric-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
-   .metric-card label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.3px; pointer-events: none; }
-   .metric-card .value { font-size: 22px; font-weight: 700; color: var(--dark-slate); letter-spacing: -0.5px; pointer-events: none; }
+   .metric-card { background: white; padding: 18px 16px; border-radius: 12px; border: 1px solid var(--card-border); border-top: 4px solid #cbd5e1; cursor: pointer; }
+   .metric-card label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+   .metric-card .value { font-size: 22px; font-weight: 700; color: var(--dark-slate); }
    
-   .app-card { background: white; padding: 22px; border-radius: 12px; border: 1px solid var(--card-border); box-shadow: 0 1px 3px rgba(0,0,0,0.01); margin-bottom: 16px; }
+   .app-card { background: white; padding: 22px; border-radius: 12px; border: 1px solid var(--card-border); margin-bottom: 16px; }
    .form-group { margin-bottom: 18px; }
-   .form-group label { display: block; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.4px; }
-   input[type="text"], input[type="date"], input[type="password"], input[type="number"], select, textarea { width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; color: var(--dark-slate); background-color: #fff; transition: border-color 0.15s, box-shadow 0.15s; }
-   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 3px rgba(2, 89, 182, 0.15); }
+   .form-group label { display: block; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 6px; }
+   input[type="text"], input[type="date"], input[type="password"], input[type="number"], select, textarea { width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; color: var(--dark-slate); }
    
    .toggle-switch-row { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 20px; }
-   .toggle-switch-btn { flex: 1; text-align: center; border: none; background: none; padding: 9px; font-size: 13px; font-weight: 700; color: #475569; cursor: pointer; border-radius: 6px; transition: all 0.2s; }
+   .toggle-switch-btn { flex: 1; text-align: center; border: none; background: none; padding: 9px; font-size: 13px; font-weight: 700; color: #475569; cursor: pointer; border-radius: 6px; }
    .toggle-switch-btn.active { background: white; color: var(--primary-blue); box-shadow: 0 2px 4px rgba(0,0,0,0.06); }
 
    .break-options-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
-   .break-pill { background: #e2e8f0; border: none; padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; color: #475569; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+   .break-pill { background: #e2e8f0; border: none; padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; color: #475569; cursor: pointer; }
    .break-pill.active { background: #fee2e2; color: var(--primary-red); border: 1px solid #fca5a5; }
    
-   .primary-btn { display: block; width: 100%; background: var(--primary-blue); color: white; border: none; padding: 13px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; text-align: center; text-decoration: none; }
-   .primary-btn:hover { opacity: 0.92; }
+   .primary-btn { display: block; width: 100%; background: var(--primary-blue); color: white; border: none; padding: 13px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; }
    .primary-btn.red-btn { background: var(--primary-red); }
-   .primary-btn:disabled { background: #94a3b8; cursor: not-allowed; opacity: 0.7; }
    
    .history-item { background: white; padding: 16px; border-radius: 10px; border: 1px solid var(--card-border); border-left: 4px solid var(--primary-red); margin-bottom: 12px; }
    .item-main-row { display: flex; justify-content: space-between; align-items: center; }
-   .hist-left h5 { font-size: 14px; font-weight: 700; margin-bottom: 3px; color: var(--dark-slate); }
-   .hist-left p { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+   .hist-left h5 { font-size: 14px; font-weight: 700; color: var(--dark-slate); }
+   .hist-left p { font-size: 12px; color: var(--text-muted); }
    .hist-right { font-size: 15px; font-weight: 700; text-align: right; }
+   .action-icon-btn { background: none; border: none; color: #94a3b8; font-size: 15px; cursor: pointer; padding: 6px; }
    
-   .inline-edit-box { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px; margin-top: 12px; }
-   .inline-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-   .inline-btn { border: none; padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+   /* PREMIUM ENTERPRISE EXECUTIVE CONSOLE THEME */
+   .premium-admin-wrapper { background: var(--admin-dark); color: var(--admin-text-main); border-radius: 14px; padding: 30px; border: 1px solid var(--admin-border); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+   .admin-gold-badge { background: rgba(251, 191, 36, 0.1); color: var(--admin-gold); padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; border: 1px solid rgba(251, 191, 36, 0.25); display: inline-block; margin-bottom: 14px; }
+   .admin-metrics-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+   .admin-metric-tile { background: var(--admin-card); border: 1px solid var(--admin-border); padding: 20px; border-radius: 10px; border-left: 4px solid var(--admin-gold); }
+   .admin-metric-tile label { font-size: 11px; color: var(--admin-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 6px; }
+   .admin-metric-tile .number-callout { font-size: 26px; font-weight: 800; color: #ffffff; }
+   .admin-query-control-panel { background: var(--admin-card); border: 1px solid var(--admin-border); padding: 16px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 14px; align-items: center; }
+   .admin-query-control-panel select { background: #334155 !important; border: 1px solid #475569 !important; color: #ffffff !important; flex: 1; }
+   .admin-table-scroll-shield { background: var(--admin-card); border: 1px solid var(--admin-border); border-radius: 10px; overflow-x: auto; }
+   .admin-enterprise-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px; }
+   .admin-enterprise-table th { background: #334155; color: #f1f5f9; font-weight: 700; padding: 14px 18px; text-transform: uppercase; font-size: 11px; }
+   .admin-enterprise-table td { padding: 14px 18px; border-bottom: 1px solid var(--admin-border); color: #e2e8f0; }
+   .admin-enterprise-table tr:hover { background: rgba(255,255,255,0.03); }
    
-   .action-icon-btn { background: none; border: none; color: #94a3b8; font-size: 15px; cursor: pointer; padding: 6px; margin-left: 4px; transition: color 0.15s; }
-   .action-icon-btn:hover { color: var(--primary-blue); }
-   .action-icon-btn.delete-hover:hover { color: var(--primary-red); }
-   
-   .restore-btn { background: #e2e8f0; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; color: #334155; cursor: pointer; }
-   .restore-btn:hover { background: #cbd5e1; }
-   
+   .badge-type-w { background: rgba(2, 89, 182, 0.25); color: #60a5fa; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
+   .badge-type-v { background: rgba(16, 185, 129, 0.25); color: #34d399; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
+   .badge-type-s { background: rgba(225, 29, 72, 0.25); color: #f87171; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
+
+   /* Modals & Layout Mechanics */
+   .custom-modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+   .custom-modal-backdrop.show { display: flex; }
+   .custom-report-modal { background: #ffffff; width: 100%; max-width: 440px; border-radius: 14px; overflow: hidden; border: 1px solid var(--card-border); }
+   .modal-report-header { background: var(--dark-slate); padding: 18px 22px; color: #ffffff; display: flex; align-items: center; justify-content: space-between; }
+   .modal-report-body { padding: 22px; max-height: 340px; overflow-y: auto; }
+   .modal-report-row { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px dashed var(--card-border); font-size: 13px; }
+   .modal-report-footer { padding: 14px 22px; background: #f8fafc; border-top: 1px solid var(--card-border); display: flex; justify-content: flex-end; }
+   .modal-close-btn { background: var(--primary-blue); color: white; border: none; padding: 9px 20px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
+   .statement-summary-box { background: #f1f5f9; padding: 14px; border-radius: 8px; margin-bottom: 14px; font-size: 12px; font-weight: 600; }
+   .statement-summary-box div { display: flex; justify-content: space-between; margin-bottom: 4px; }
+
    .developer-signature { font-size: 9px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; color: #cbd5e1; text-align: center; margin-top: auto; padding-top: 25px; }
-   .login-card .developer-signature { color: #a4b5c6; padding-top: 16px; margin-top: 16px; border-top: 1px solid var(--card-border); }
+   .login-card .developer-signature { color: #94a3b8; border-top: 1px solid var(--card-border); margin-top: 20px; padding-top: 14px; }
    .message { margin-top: 14px; font-size: 13px; font-weight: 600; text-align: center; display: none; }
    .message.error { color: #dc2626; display: block; }
-   .message.success { color: #16a34a; display: block; }
-
-   /* Custom Reporting Modals */
-   .custom-modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; transition: opacity 0.2s ease; }
-   .custom-modal-backdrop.show { display: flex; }
-   .custom-report-modal { background: #ffffff; width: 100%; max-width: 440px; border-radius: 14px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; border: 1px solid var(--card-border); animation: modalEntrance 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
-   .modal-report-header { background: var(--dark-slate); padding: 18px 22px; color: #ffffff; display: flex; align-items: center; justify-content: space-between; }
-   .modal-report-header h4 { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
-   .modal-report-body { padding: 22px; max-height: 340px; overflow-y: auto; }
-   .modal-report-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed #e2e8f0; }
-   .modal-report-row.total-lead { border-bottom: none; font-weight: 700; font-size: 15px; color: var(--primary-blue); margin-top: 14px; padding-top: 10px; border-top: 2px solid #e2e8f0; }
-
-   /* Admin Console Widescreen Styling Sandbox */
-   .admin-layout-wrapper { background: var(--admin-dark); color: var(--admin-text-main); border-radius: 14px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border: 1px solid var(--admin-border); }
-   .admin-dashboard-header { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; padding-bottom: 18px; border-bottom: 1px solid var(--admin-border); }
-   @media (min-width: 768px) { .admin-dashboard-header { flex-direction: row; align-items: center; justify-content: space-between; } }
-   .admin-controls-cluster { display: flex; flex-wrap: wrap; gap: 10px; }
-   .admin-select-input { background: var(--admin-card); color: var(--admin-text-main); border: 1px solid var(--admin-border); padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; outline: none; }
-   .admin-enterprise-table-holder { width: 100%; overflow-x: auto; background: var(--admin-card); border-radius: 8px; border: 1px solid var(--admin-border); }
-   .admin-enterprise-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; min-width: 700px; }
-   .admin-enterprise-table th { background: #1e293b; color: var(--admin-gold); padding: 12px 16px; font-weight: 700; border-bottom: 2px solid var(--admin-border); text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
-   .admin-enterprise-table td { padding: 12px 16px; border-bottom: 1px solid var(--admin-border); color: #cbd5e1; }
-   .admin-enterprise-table tr:last-child td { border-bottom: none; }
-   .admin-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-   .admin-badge.badge-work { background: rgba(2, 89, 182, 0.2); color: #60a5fa; border: 1px solid rgba(2, 89, 182, 0.4); }
-   .admin-badge.badge-vacation { background: rgba(251, 191, 36, 0.2); color: #fcd34d; border: 1px solid rgba(251, 191, 36, 0.4); }
-   .admin-badge.badge-sick { background: rgba(225, 29, 72, 0.2); color: #fca5a5; border: 1px solid rgba(225, 29, 72, 0.4); }
-
-   @keyframes modalEntrance { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+   
+   #pdf-custom-header { display: none; padding-bottom: 15px; border-bottom: 2px dashed #000; margin-bottom: 20px; }
+   .pdf-meta-line { font-size: 12px; margin-top: 4px; }
 </style>
 </head>
 <body>
 
- <div id="view-login" class="login-container">
-     <div class="login-card">
-         <div class="brand-logo-container">
-             <h1 class="brand-title">SCHÜRMANN</h1>
-             <div class="brand-subtitle">Gebäude + Energie</div>
+<div id="login-view" class="login-container">
+   <div class="login-card">
+      <div class="brand-logo-container">
+         <div class="brand-title">SCHÜRMANN</div>
+         <div class="brand-subtitle">GEBÄUDE + ENERGIE</div>
+      </div>
+      <div class="portal-context-caption" id="lbl-login-sub">Mitarbeiter-Portal | Zeiterfassung</div>
+      
+      <form id="login-form">
+         <div class="form-group" style="text-align: left;">
+            <label id="lbl-login-user" for="username">Mitarbeitername</label>
+            <input type="text" id="username" placeholder="Name oder Email eingenen" required>
          </div>
-         <p class="portal-context-caption">Enterprise Work Portal</p>
-         
-         <form id="login-form" onsubmit="handleSecureLoginAttempt(event)">
-             <div class="form-group">
-                 <label id="lbl-login-user">Mitarbeiter Name</label>
-                 <input type="text" id="login-username" placeholder="z.B. Max Mustermann" required>
-             </div>
-             <div class="form-group">
-                 <label id="lbl-login-pass">Passwort / PIN-Code</label>
-                 <input type="password" id="login-password" placeholder="••••••" required>
-             </div>
-             <button type="submit" class="primary-btn" id="lbl-login-btn">Sicher Anmelden</button>
-             <div id="login-status-message" class="message"></div>
-         </form>
-         <div class="developer-signature">Developed by Amran Hiluf</div>
-     </div>
- </div>
+         <div class="form-group" style="text-align: left;">
+            <label id="lbl-login-pass" for="passcode">Kennwort / PIN</label>
+            <input type="password" id="passcode" placeholder="••••••" required>
+         </div>
+         <button type="submit" id="btn-login-submit" class="primary-btn">Anmelden</button>
+      </form>
+      <div id="message-box" class="message"></div>
+      <div class="developer-signature">Developed by Amran Hiluf</div>
+   </div>
+</div>
 
- <div id="app-shell" style="display:none;">
-     <header class="app-header">
-         <button class="menu-trigger-btn" onclick="toggleNavigationSidebarDrawer(true)">
-             <i class="fa-solid fa-bars"></i>
-         </button>
-         <div class="brand-logo-container" onclick="routeToMainDashboard()">
-             <h1 class="brand-title" style="font-size:18px;">SCHÜRMANN</h1>
-             <div class="brand-subtitle" style="font-size:7px; letter-spacing:1px;">Gebäude + Energie</div>
-         </div>
+<div id="app-view" style="display: none;">
+   <header class="app-header">
+      <button class="menu-trigger-btn" onclick="toggleSidebarDrawer(true)"><i class="fa-solid fa-bars"></i></button>
+    
+      <div style="display: flex; align-items: center;">
          <div class="lang-selector-wrapper">
-             <button class="lang-btn active" id="lang-btn-de" onclick="setApplicationLanguage('de')">DE</button>
-             <button class="lang-btn" id="lang-btn-en" onclick="setApplicationLanguage('en')">EN</button>
+            <button type="button" id="lang-btn-en" class="lang-btn" onclick="setApplicationLanguage('en')">EN</button>
+            <button type="button" id="lang-btn-de" class="lang-btn active" onclick="setApplicationLanguage('de')">DE</button>
          </div>
-     </header>
-
-     <div id="sidebar-drawer-backdrop" class="drawer-backdrop" onclick="toggleNavigationSidebarDrawer(false)"></div>
-     <aside id="sidebar-drawer-menu" class="sidebar-drawer">
-         <div class="drawer-user-section">
-             <h3 id="drawer-user-fullname">Mitarbeiter Profile</h3>
-             <p id="drawer-user-role-token">Standard Account</p>
+         <div style="text-align: right; cursor: pointer;" onclick="routeToMainDashboard()">
+            <div style="font-weight: 800; font-size: 15px; color: #1e293b;">SCHÜRMANN</div>
+            <div style="font-size: 8px; font-weight: 700; color: var(--primary-red); text-transform: uppercase; margin-top: -2px;">GEBÄUDE + ENERGIE</div>
          </div>
-         <ul class="drawer-nav-list">
-             <li class="nav-item active" id="nav-dash-link" onclick="switchActiveView('dashboard', this)">
-                 <i class="fa-solid fa-chart-pie"></i><span id="lbl-nav-dash">Dashboard Overview</span>
-             </li>
-             <li class="nav-item" onclick="switchActiveView('worklog', this)">
-                 <i class="fa-solid fa-business-time"></i><span id="lbl-nav-work">Arbeitszeit buchen</span>
-             </li>
-             <li class="nav-item" onclick="switchActiveView('vacation', this)">
-                 <i class="fa-solid fa-calendar-check"></i><span id="lbl-nav-vac">Urlaub & Abwesenheit</span>
-             </li>
-             <li class="nav-item" onclick="switchActiveView('history', this)">
-                 <i class="fa-solid fa-clock-rotate-left"></i><span id="lbl-nav-hist" style="position:relative;">Historie<span id="trash-notification-bubble" style="display:none; position:absolute; right:-20px; top:0; background:var(--primary-red); color:white; font-size:9px; padding:1px 5px; border-radius:10px;">0</span></span>
-             </li>
-             <li class="nav-item" id="nav-admin-link" style="display:none; color:var(--admin-gold); font-weight:700;" onclick="switchActiveView('admin', this)">
-                 <i class="fa-solid fa-screwdriver-wrench" style="color:var(--admin-gold);"></i><span id="lbl-nav-admin">Admin Zentrale</span>
-             </li>
-             <li class="nav-item" onclick="switchActiveView('settings', this)">
-                 <i class="fa-solid fa-sliders"></i><span id="lbl-nav-set">Systemparameter</span>
-             </li>
-             <li class="nav-item" onclick="switchActiveView('feedback', this)">
-                 <i class="fa-solid fa-comment-alt"></i><span id="lbl-nav-feed">Support & Feedback</span>
-             </li>
-             <li class="nav-item" style="margin-top:20px; border-top:1px solid var(--card-border); color:var(--primary-red);" onclick="terminateUserSessionState()">
-                 <i class="fa-solid fa-right-from-bracket" style="color:var(--primary-red);"></i><span id="lbl-nav-logout">Abmelden</span>
-             </li>
-         </ul>
-         <div class="developer-signature" style="color:#cbd5e1; padding-bottom:15px;">Admin Secure Console Workspace</div>
-     </aside>
+      </div>
+   </header>
 
-     <main id="app-viewport-container">
-         
-         <div id="view-dashboard" class="content-panel active">
-             <div class="panel-scroll-content">
-                 <div class="dash-centered-logo-wrapper" onclick="forcePushLocalStateToCloudDatabase()">
-                     <span id="backup-status-indicator" class="backup-status-dot"></span>
-                     <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted); letter-spacing:0.5px;" id="lbl-dash-status">Data Engine Synchronized</span>
-                 </div>
-                 <div class="metrics-grid">
-                     <div class="metric-card" style="border-top-color: var(--primary-blue);" onclick="switchActiveView('history', document.getElementById('lbl-nav-hist').parentNode)">
-                         <label id="lbl-card-hours">Arbeitszeit (Monat)</label>
-                         <div class="value" id="dash-metric-hours-sum">0.00 Std</div>
-                     </div>
-                     <div class="metric-card" style="border-top-color: var(--admin-gold);" onclick="openTargetedModalReportDataSheet('LEAVE')">
-                         <label id="lbl-card-vac">Resturlaub</label>
-                         <div class="value" id="dash-metric-vacation-left">0 Tage</div>
-                     </div>
-                 </div>
-                 <div class="metrics-grid">
-                     <div class="metric-card" style="border-top-color: var(--primary-red);" onclick="openTargetedModalReportDataSheet('OT')">
-                         <label id="lbl-card-ot">Überstunden-Konto</label>
-                         <div class="value" id="dash-metric-overtime-balance">0.00 Std</div>
-                     </div>
-                     <div class="metric-card" style="border-top-color: #10b981;" onclick="openTargetedModalReportDataSheet('WORK')">
-                         <label id="lbl-card-sick">Krankheitstage (Jahr)</label>
-                         <div class="value" id="dash-metric-sick-days-count">0 Tage</div>
-                     </div>
-                 </div>
-                 <div class="app-card" style="text-align: center; padding: 30px 15px;">
-                     <i class="fa-solid fa-file-pdf" style="font-size: 38px; color: var(--primary-red); margin-bottom: 12px;"></i>
-                     <h4 style="font-size:15px; font-weight:700; color:var(--dark-slate); margin-bottom:4px;" id="lbl-pdf-box-title">Monatsbericht Exportieren</h4>
-                     <p style="font-size:12px; color:var(--text-muted); margin-bottom:18px;" id="lbl-pdf-box-desc">Erstellt ein verifiziertes PDF-Dokument der aktuellen Periode.</p>
-                     <button class="primary-btn" onclick="triggerPDFExportEngine()"><i class="fa-solid fa-download" style="margin-right:8px;"></i>PDF Generieren</button>
-                 </div>
-             </div>
-             <div class="developer-signature">Developed by Amran Hiluf</div>
+   <div id="menu-backdrop" class="drawer-backdrop" onclick="toggleSidebarDrawer(false)"></div>
+   
+   <nav id="sidebar-drawer" class="sidebar-drawer">
+      <div class="drawer-user-section">
+         <h3 id="user-profile-title">User</h3>
+         <p id="lbl-sidebar-subtext">Schürmann Log Portal</p>
+      </div>
+      
+      <ul class="drawer-nav-list">
+         <li id="nav-dash-link" class="nav-item active" onclick="switchActiveView('dashboard', this)">
+            <i class="fa-solid fa-chart-simple"></i><span id="nav-lbl-dash">Übersicht</span>
+         </li>
+         <li class="nav-item" onclick="switchActiveView('log-work', this)">
+            <i class="fa-solid fa-pen-to-square"></i><span id="nav-lbl-log">Arbeitszeitbuchen</span>
+         </li>
+         <li class="nav-item" onclick="switchActiveView('vacation', this)">
+            <i class="fa-solid fa-umbrella-beach"></i><span id="nav-lbl-vac">Urlaubs- & Fehlzeitenmanagement</span>
+         </li>
+         <li class="nav-item disabled">
+            <i class="fa-solid fa-brain"></i><span>Berichtsheft <span style="font-size:10px; color:var(--primary-red);">(Bald)</span></span>
+         </li>
+         <li class="nav-item" onclick="switchActiveView('history', this)">
+            <i class="fa-solid fa-clock-rotate-left"></i><span id="nav-lbl-hist">Stundenzettel-Historie</span>
+         </li>
+         <li id="nav-admin-link" class="nav-item" onclick="switchActiveView('admin-panel', this)" style="display: none; border-left: 4px solid var(--admin-gold); background: #fffbeb;">
+            <i class="fa-solid fa-shield-halved" style="color: #b45309;"></i><span style="font-weight:700; color:#b45309;">Admin-Zentrale</span>
+         </li>
+         <li class="nav-item" onclick="switchActiveView('settings', this)">
+            <i class="fa-solid fa-sliders"></i><span id="nav-lbl-set">Systemparameter</span>
+         </li>
+         <li class="nav-item" onclick="handleSecureSignOutRequest()" style="margin-top: 20px; border-top: 1px dashed var(--card-border);">
+            <i class="fa-solid fa-right-from-bracket" style="color: var(--primary-red);"></i><span id="nav-lbl-logout" style="color: var(--primary-red);">Abmelden</span>
+         </li>
+      </ul>
+      <div style="padding: 12px; text-align: center; font-size: 9px; color: #cbd5e1; font-weight:700;">v2.0.1 • Developed by Amran Hiluf</div>
+   </nav>
+
+   <main id="main-content-layout">
+      <div id="view-dashboard" class="content-panel active">
+         <div class="panel-scroll-content">
+            <div class="dash-centered-logo-wrapper" onclick="routeToMainDashboard()">
+               <div style="text-align: center;">
+                  <div style="font-weight: 900; font-size: 24px; color: #1e293b; line-height: 1;">SCHÜRMANN</div>
+                  <div style="font-size: 10px; font-weight: 800; color: var(--primary-red); margin-top: 2px;">GEBÄUDE + ENERGIE</div>
+               </div>
+               <span id="dash-backup-indicator" class="backup-status-dot online"></span>
+            </div>
+
+            <div style="font-size: 15px; font-weight: 600; color: #475569; text-align: center; margin-bottom: 24px;">
+               <span id="lbl-dash-welcome">Willkommen zurück,</span> <span id="dash-profile-username" style="color: var(--primary-blue); font-weight: 700;">User</span>
+            </div>
+
+            <div class="view-title" id="lbl-dash-title">Betriebliche Kennzahlen</div>
+            <div class="metrics-grid">
+               <div class="metric-card" onclick="displayWorkTimeBreakdownSummary()">
+                  <label id="lbl-card-gross">Nettoarbeitszeit</label>
+                  <div id="dash-gross-hours" class="value">0.00 hrs</div>
+               </div>
+               <div class="metric-card" onclick="displayOvertimeBreakdownSummary()">
+                  <label id="lbl-card-overtime">Überstundenkonto</label>
+                  <div id="dash-overtime-hours" class="value" style="color: #10b981;">+0.00 hrs</div>
+               </div>
+            </div>
          </div>
+         <div class="developer-signature">Developed by Amran Hiluf</div>
+      </div>
 
-         <div id="view-worklog" class="content-panel">
-             <div class="panel-scroll-content">
-                 <div class="view-title" id="lbl-log-title">Arbeitszeit Erfassen</div>
-                 <div class="app-card">
-                     <form id="worktime-submission-form" onsubmit="handleWorkTimeLogSubmission(event)">
-                         <div class="form-group">
-                             <label id="lbl-form-date">Datum auswählen</label>
-                             <input type="date" id="log-date-picker" required>
-                         </div>
-                         <div class="form-group">
-                             <label id="lbl-form-project">Projekt / Einsatzort</label>
-                             <input type="text" id="log-project-name" placeholder="Kundenname eintragen" required>
-                         </div>
-                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                             <div class="form-group">
-                                 <label id="lbl-form-start">Arbeitsbeginn (Kommen)</label>
-                                 <select id="log-start-time"></select>
-                             </div>
-                             <div class="form-group">
-                                 <label id="lbl-form-end">Arbeitsende (Gehen)</label>
-                                 <select id="log-end-time"></select>
-                             </div>
-                         </div>
-                         <div class="form-group">
-                             <label id="lbl-form-break">Ruhepausen (Abzug)</label>
-                             <div class="break-options-row">
-                                 <button type="button" class="break-pill active" onclick="selectBreakOption(0, this)">Keine</button>
-                                 <button type="button" class="break-pill" onclick="selectBreakOption(15, this)">15 Min</button>
-                                 <button type="button" class="break-pill" onclick="selectBreakOption(30, this)">30 Min</button>
-                                 <button type="button" class="break-pill" onclick="selectBreakOption(45, this)">45 Min</button>
-                                 <button type="button" class="break-pill" onclick="selectBreakOption(60, this)">60 Min</button>
-                             </div>
-                         </div>
-                         <div class="form-group">
-                             <label id="lbl-form-notes">Tätigkeitsbeschreibung / Notizen</label>
-                             <textarea id="log-notes" rows="3" placeholder="Optionale Details..."></textarea>
-                         </div>
-                         <button type="submit" class="primary-btn" id="lbl-form-submit">Eintrag Speichern</button>
-                     </form>
-                 </div>
-             </div>
-             <div class="developer-signature">Developed by Amran Hiluf</div>
-         </div>
-
-         <div id="view-vacation" class="content-panel">
-             <div class="panel-scroll-content">
-                 <div class="view-title" id="lbl-abs-title">Abwesenheitsmanagement</div>
-                 <div class="app-card">
-                     <form id="leave-submission-form" onsubmit="handleVacationDayLogSubmission(event)">
-                         <div class="form-group">
-                             <label id="lbl-abs-type">Kategorie / Typ</label>
-                             <div class="toggle-switch-row">
-                                 <button type="button" id="leave-toggle-vac" class="toggle-switch-btn active" onclick="toggleSelectedLeaveTypeSegment('VACATION')">Urlaub</button>
-                                 <button type="button" id="leave-toggle-sick" class="toggle-switch-btn" onclick="toggleSelectedLeaveTypeSegment('SICK')">Krankheit / AU</button>
-                             </div>
-                         </div>
-                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                             <div class="form-group">
-                                 <label id="lbl-abs-start">Erster Tag</label>
-                                 <input type="date" id="leave-start-date" required>
-                             </div>
-                             <div class="form-group">
-                                 <label id="lbl-abs-end">Letzter Tag</label>
-                                 <input type="date" id="leave-end-date" required>
-                             </div>
-                         </div>
-                         <div class="form-group">
-                             <label id="lbl-abs-comment">Bemerkung / Begründung</label>
-                             <input type="text" id="leave-notes" placeholder="z.B. Erholungsurlaub 2026">
-                         </div>
-                         <button type="submit" class="primary-btn red-btn" id="lbl-abs-submit">Abwesenheit Beantragen</button>
-                     </form>
-                 </div>
-             </div>
-             <div class="developer-signature">Developed by Amran Hiluf</div>
-         </div>
-
-         <div id="view-history" class="content-panel">
-             <div class="panel-scroll-content">
-                 <div class="view-title">
-                     <span id="lbl-hist-title">Buchungshistorie</span>
-                     <div class="toggle-switch-row" style="margin-bottom:0; font-size:11px; padding:2px;">
-                         <button class="toggle-switch-btn active" style="padding:4px 8px; font-size:11px;" id="hist-view-toggle-live" onclick="toggleHistoryTrashBinWorkspace(false)">Aktiv</button>
-                         <button class="toggle-switch-btn" style="padding:4px 8px; font-size:11px;" id="hist-view-toggle-trash" onclick="toggleHistoryTrashBinWorkspace(true)">Papierkorb</button>
-                     </div>
-                 </div>
-                 
-                 <div id="pdf-render-target" style="background:transparent; padding:1px;">
-                     <div id="pdf-custom-header" style="display: none; padding: 20px; border-bottom: 3px solid var(--primary-blue); margin-bottom: 25px; font-family: Arial, sans-serif;">
-                         <h2 style="font-weight: 800; text-transform: uppercase;">SCHÜRMANN GEBÄUDE + ENERGIE</h2>
-                         <div id="pdf-user-metadata" class="pdf-meta-line">Elektronischer Stundenzettel-Nachweis</div>
-                         <div class="pdf-meta-line" id="pdf-lbl-sub" style="font-size: 10px; color: #666;">Generiert via Automated Core Metrics Engine</div>
-                     </div>
-                     <div id="history-items-container"></div>
-                 </div>
-             </div>
-             <div class="developer-signature">Developed by Amran Hiluf</div>
-         </div>
-
-         <div id="view-admin" class="content-panel">
-             <div class="panel-scroll-content">
-                 <div class="admin-layout-wrapper">
-                     <div class="admin-dashboard-header">
-                         <div>
-                             <h2 style="font-size: 20px; font-weight: 800; color: var(--admin-gold); margin-bottom: 4px;">ADMIN MANAGEMENT CONTROL</h2>
-                             <p style="color: var(--admin-text-muted); font-size: 12px;">Global Unified Enterprise Logging System Tracker</p>
-                         </div>
-                         <div class="admin-controls-cluster">
-                             <select id="admin-user-filter" class="admin-select-input" onchange="renderAdminGlobalLogsTable()">
-                                 <option value="ALL">ALL USERS</option>
-                             </select>
-                             <select id="admin-type-filter" class="admin-select-input" onchange="renderAdminGlobalLogsTable()">
-                                 <option value="ALL">ALL TYPES</option>
-                                 <option value="WORK">WORK ONLY</option>
-                                 <option value="VACATION">VACATION ONLY</option>
-                                 <option value="SICK">SICK LEAVE ONLY</option>
-                             </select>
-                         </div>
-                     </div>
-                     
-                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:24px;">
-                         <div style="background:var(--admin-dark); padding:14px; border-radius:6px; border:1px solid var(--admin-border);">
-                             <div style="font-size:10px; text-transform:uppercase; font-weight:800; color:var(--admin-text-muted);">Total Synchronized Tracks</div>
-                             <div style="font-size:24px; font-weight:800; color:var(--admin-text-main); margin-top:4px;" id="admin-metric-total-count">0</div>
-                         </div>
-                         <div style="background:var(--admin-dark); padding:14px; border-radius:6px; border:1px solid var(--admin-border);">
-                             <div style="font-size:10px; text-transform:uppercase; font-weight:800; color:var(--admin-text-muted);">Accumulated Engine Hours</div>
-                             <div style="font-size:24px; font-weight:800; color:var(--admin-gold); margin-top:4px;" id="admin-metric-total-hours">0.00 h</div>
-                         </div>
-                     </div>
-
-                     <div class="admin-enterprise-table-holder">
-                         <table class="admin-enterprise-table">
-                             <thead>
-                                 <tr>
-                                     <th>Resource Employee</th>
-                                     <th>Datum / Date</th>
-                                     <th>Kategorie / Type</th>
-                                     <th>Operational Description & Target Context</th>
-                                     <th style="text-align:right;">Duration</th>
-                                 </tr>
-                             </thead>
-                             <tbody id="admin-global-table-body">
-                                 <tr>
-                                     <td colspan="5" style="text-align:center; padding:30px; color:var(--admin-text-muted);">Syncing secure environment tracks...</td>
-                                 </tr>
-                             </tbody>
-                         </table>
-                     </div>
-                 </div>
-             </div>
-             <div class="developer-signature" style="color:#475569;">Admin Secure Console Workspace</div>
-         </div>
-
-         <div id="view-settings" class="content-panel">
-             <div class="panel-scroll-content">
-                 <div class="view-title" id="lbl-set-title">Systemparameter</div>
-                 <div class="app-card">
+      <div id="view-log-work" class="content-panel">
+         <div class="panel-scroll-content">
+            <div class="view-title" id="lbl-log-title">Arbeitszeit erfassen</div>
+            <div class="app-card">
+               <form id="shift-submission-form" onsubmit="handleNewRecordSubmission(event)">
+                  <div class="form-group">
+                     <label id="lbl-form-date">Buchungstag auswählen</label>
+                     <input type="date" id="log-date-picker" required>
+                  </div>
+                  <div class="form-group">
+                     <label id="lbl-form-project">Baustelle/Kunde</label>
+                     <input type="text" id="log-project-name" placeholder="Baustelle oder Kundenname eintragen" required>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                      <div class="form-group">
-                         <label id="lbl-set-allowed">Allowed Vacation Days Allotment Bank</label>
-                         <input type="number" id="vacation-allowed-bank" value="30" oninput="runGlobalApplicationMetricsEngine()">
+                        <label id="lbl-form-start">Arbeitsbeginn (Kommen)</label>
+                        <select id="log-start-time"></select>
                      </div>
                      <div class="form-group">
-                         <label id="lbl-set-target">Daily Regular Shift Duration Constraint (Hours)</label>
-                         <input type="number" step="0.01" id="shift-target-constraint" value="8.0" oninput="runGlobalApplicationMetricsEngine()">
+                        <label id="lbl-form-end">Arbeitsende (Gehen)</label>
+                        <select id="log-end-time"></select>
+                     </div>
+                  </div>
+                  <div class="form-group">
+                     <label id="lbl-form-break">Ruhepausen (Abzug)</label>
+                     <div class="break-options-row">
+                        <button type="button" class="break-pill active" onclick="selectBreakOption(0, this)">Keine</button>
+                        <button type="button" class="break-pill" onclick="selectBreakOption(15, this)">15m</button>
+                        <button type="button" class="break-pill" onclick="selectBreakOption(30, this)">30m</button>
+                        <button type="button" class="break-pill" onclick="selectBreakOption(45, this)">45m</button>
+                        <button type="button" class="break-pill" onclick="selectBreakOption(60, this)">1h</button>
+                     </div>
+                  </div>
+                  <div class="form-group">
+                     <label id="lbl-form-notes">Tätigkeitsbericht / Notizen (Optional)</label>
+                     <textarea id="log-notes" rows="2" placeholder="Besondere Vorkommnisse vermerken..."></textarea>
+                  </div>
+                  <button type="submit" id="btn-form-save" class="primary-btn">Eintrag speichern</button>
+               </form>
+            </div>
+         </div>
+         <div class="developer-signature">Developed by Amran Hiluf</div>
+      </div>
+
+      <div id="view-vacation" class="content-panel">
+         <div class="panel-scroll-content">
+            <div class="view-title" id="lbl-vac-title">Urlaubs- & Fehlzeitenmanagement</div>
+            <div class="toggle-switch-row">
+               <button type="button" id="toggle-leave-vacation" class="toggle-switch-btn active" onclick="setLeaveManagementType('vacation')">Erholungsurlaub</button>
+               <button type="button" id="toggle-leave-sick" class="toggle-switch-btn" onclick="setLeaveManagementType('sick')">Arbeitsunfähigkeit (AU)</button>
+            </div>
+            <div class="app-card">
+               <form id="vacation-entry-form" onsubmit="handleVacationDayLogSubmission(event)">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                     <div class="form-group">
+                        <label id="lbl-vac-from-date">Von</label>
+                        <input type="date" id="vacation-from-date-input" required>
                      </div>
                      <div class="form-group">
-                         <label id="lbl-set-threshold">Automatic Break Deduction Rule Threshold (Hours)</label>
-                         <input type="number" step="0.01" id="break-rule-threshold" value="6.0" oninput="runGlobalApplicationMetricsEngine()">
+                        <label id="lbl-vac-to-date">Bis</label>
+                        <input type="date" id="vacation-to-date-input" required>
                      </div>
-                 </div>
-             </div>
-             <div class="developer-signature">Developed by Amran Hiluf</div>
+                  </div>
+                  <div class="form-group">
+                     <label id="lbl-vac-notes">Bemerkung / Context Tracker</label>
+                     <textarea id="vacation-notes-input" rows="2" placeholder="z.B. Erholungsurlaub 2026 oder AU Einreichung..."></textarea>
+                  </div>
+                  <button type="submit" id="btn-vac-save" class="primary-btn">Fehlzeit einbuchen</button>
+               </form>
+            </div>
          </div>
+         <div class="developer-signature">Developed by Amran Hiluf</div>
+      </div>
 
-         <div id="view-feedback" class="content-panel">
-             <div class="panel-scroll-content">
-                 <div class="view-title" id="lbl-feed-title">Support & System Feedback</div>
-                 <div class="app-card">
-                     <form id="feedback-submission-form" onsubmit="handleFeedbackSubmissionEngine(event)">
-                         <div class="form-group">
-                             <label id="lbl-feed-box">Mitteilung / Supportanfrage</label>
-                             <textarea id="feedback-message" rows="5" placeholder="Beschreiben Sie Ihr Anliegen..." required></textarea>
-                         </div>
-                         <button type="submit" class="primary-btn" id="btn-feedback-submit">Feedback Absenden</button>
-                         <div id="feedback-status-box" class="message"></div>
-                     </form>
-                 </div>
-             </div>
-             <div class="developer-signature">Developed by Amran Hiluf</div>
+      <div id="view-history" class="content-panel">
+         <div class="panel-scroll-content">
+            <div class="view-title">
+               <span id="lbl-hist-title">Stundenzettel-Historie</span>
+               <button type="button" class="primary-btn" style="width:auto; padding:6px 14px; font-size:12px;" onclick="buildAndLaunchCustomReportModal()">Report</button>
+            </div>
+            <div id="history-logs-render-node"></div>
          </div>
+         <div class="developer-signature">Developed by Amran Hiluf</div>
+      </div>
 
-     </main>
- </div>
+      <div id="view-admin-panel" class="content-panel">
+         <div class="panel-scroll-content" id="pdf-render-target">
+            <div id="pdf-custom-header">
+               <h2 style="color:#1e293b; font-weight:800;">SCHÜRMANN GEBÄUDE + ENERGIE</h2>
+               <div class="pdf-meta-line"><strong>Mitarbeiter-Report:</strong> <span id="pdf-user-placeholder"></span></div>
+               <div class="pdf-meta-line"><strong>Generiert am:</strong> <span id="pdf-date-placeholder"></span></div>
+            </div>
 
- <div id="custom-report-modal-backdrop" class="custom-modal-backdrop" onclick="closeCustomReportModal()">
-     <div class="custom-report-modal" onclick="event.stopPropagation()">
-         <div class="modal-report-header">
-             <h4 id="custom-modal-title">Kontoauszug</h4>
-             <button onclick="closeCustomReportModal()" style="background:none; border:none; color:white; font-size:18px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            <div class="premium-admin-wrapper">
+               <div class="admin-gold-badge">Executive Security Matrix</div>
+               <div class="view-title" style="color:#fff; margin-bottom:6px;">Admin-Zentrale</div>
+               <p style="color:var(--admin-text-muted); font-size:13px; margin-bottom:24px;">Zentralisierte Überwachung aller erfassten Mitarbeiterstunden & Systemtransaktionen.</p>
+
+               <div class="admin-metrics-row">
+                  <div class="admin-metric-tile">
+                     <label>Aktive Mitarbeiter</label>
+                     <div class="number-callout" id="admin-stat-users">0</div>
+                  </div>
+                  <div class="admin-metric-tile">
+                     <label>Gesamtstunden (Netto)</label>
+                     <div class="number-callout" id="admin-stat-hours">0.00</div>
+                  </div>
+                  <div class="admin-metric-tile">
+                     <label>Urlaub / AU Tage</label>
+                     <div class="number-callout" id="admin-stat-days">0</div>
+                  </div>
+               </div>
+
+               <div class="admin-query-control-panel">
+                  <i class="fa-solid fa-filter" style="color:var(--admin-gold);"></i>
+                  <select id="admin-user-filter-dropdown" onchange="runGlobalAdminFilteringEngine()">
+                     <option value="ALL">Alle Mitarbeiter anzeigen</option>
+                  </select>
+                  <button type="button" class="primary-btn" style="width:auto; background:var(--admin-gold); color:var(--admin-dark); padding:10px 16px;" onclick="triggerPDFExportEngine()">
+                     <i class="fa-solid fa-file-pdf"></i> Export PDF
+                  </button>
+               </div>
+
+               <div class="admin-table-scroll-shield">
+                  <table class="admin-enterprise-table">
+                     <thead>
+                        <tr>
+                           <th>Mitarbeiter</th>
+                           <th>Datum / Date</th>
+                           <th>Kategorie / Type</th>
+                           <th>Operational Description & Target Context</th>
+                           <th style="text-align:right;">Duration</th>
+                        </tr>
+                     </thead>
+                     <tbody id="admin-global-table-body">
+                        <tr>
+                           <td colspan="5" style="text-align:center; padding:30px; color:var(--admin-text-muted);">Syncing secure environment tracks...</td>
+                        </tr>
+                     </tbody>
+                  </table>
+               </div>
+            </div>
          </div>
-         <div class="modal-report-body" id="custom-modal-render-body"></div>
-     </div>
- </div>
-
- <script>
-    // Global App State Core Cache Elements
-    let authenticatedUserGlobal = "";
-    let authenticatedUserRoleGlobal = "user"; 
-    let activeLanguageGlobal = "de"; 
-    let activeSelectedFormBreakDuration = 0; 
-    let activeLeaveFormTypeSelection = "VACATION"; 
-    let temporalHistoryTrashBinFilterActive = false; 
-
-    // Databasing System Caches (Syncs Live to Firestore Cloud Infrastructure)
-    let globalLoggedSessionsDatabaseMock = [];
-    let vacationLoggedDaysArrayCache = [];
-    let recentlyDeletedItemsBinCache = [];
-    let adminGlobalCorporateLogs = []; 
-
-    // Inline Tracker Engine States
-    let globalTrackedActiveInlineEditingSessionId = null;
-
-    // Initialize Cloud Architectures Framework Configuration
-    const firebaseConfigurationCredentialsMap = {
-        apiKey: "AIzaSyAs-FakeKeyStringForLayoutIntegrationOnly",
-        authDomain: "schuermann-building-gmbh.firebaseapp.com",
-        projectId: "schuermann-building-gmbh",
-        storageBucket: "schuermann-building-gmbh.appspot.com",
-        messagingSenderId: "8899001122",
-        appId: "1:8899001122:web:fakeappidstring12345"
-    };
-    
-    // Safe Bootstrap Guard for Namespaced SDK V8 API
-    if (typeof firebase !== 'undefined') {
-        firebase.initializeApp(firebaseConfigurationCredentialsMap);
-    } else {
-        console.warn("Cloud Server Framework Offline - Verification Fallback Mode Activated.");
-    }
-
-    const uiTranslations = {
-        de: {
-            dashStatus: "Daten-Engine Synchronisiert",
-            cardHours: "Arbeitszeit (Monat)",
-            cardVac: "Resturlaub (Aktuell)",
-            cardOt: "Überstunden-Konto",
-            cardSick: "Arbeitsunfähigkeit (AU)",
-            pdfTitle: "Monatsbericht Exportieren",
-            pdfDesc: "Erstellt ein verifiziertes PDF-Dokument der aktuellen Periode.",
-            pdfBtn: "PDF Generieren",
-            logTitle: "Arbeitszeit Erfassen",
-            formDate: "Datum auswählen",
-            formProj: "Projekt / Einsatzort",
-            formStart: "Arbeitsbeginn (Kommen)",
-            formEnd: "Arbeitsende (Gehen)",
-            formBreak: "Ruhepausen (Abzug)",
-            formNotes: "Tätigkeitsbeschreibung / Notizen",
-            formSubmit: "Eintrag Speichern",
-            absTitle: "Abwesenheitsmanagement",
-            absType: "Kategorie / Typ",
-            absStart: "Erster Tag",
-            absEnd: "Letzter Tag",
-            absComment: "Bemerkung / Begründung",
-            absSubmit: "Abwesenheit Buchen",
-            histTitle: "Buchungshistorie",
-            setTitle: "Systemparameter",
-            setAllowed: "Jährlicher Urlaubsanspruch (Tage)",
-            setTarget: "Reguläre Sollarbeitszeit / Tag (Std)",
-            setThreshold: "Pausenabzug-Schwelle (Soll-Stunden)",
-            feedTitle: "Support & System Feedback",
-            feedBox: "Mitteilung / Supportanfrage",
-            feedbackBtn: "Feedback Absenden",
-            feedbackSending: "Wird gesendet...",
-            feedbackDone: "Vielen Dank! Ihr Feedback wurde sicher an die IT-Administration übertragen.",
-            loginUser: "Mitarbeiter Name",
-            loginPass: "Passwort / PIN-Code",
-            loginBtn: "Sicher Anmelden",
-            navDash: "Dashboard Dashboard",
-            navWork: "Arbeitszeit buchen",
-            navVac: "Urlaub & Abwesenheit",
-            navHist: "Historie",
-            navAdmin: "Admin Zentrale",
-            navSet: "Systemparameter",
-            navFeed: "Support & Feedback",
-            navLogout: "Abmelden",
-            emptyTrash: "Der Papierkorb ist leer. Keine wiederherstellbaren Datensätze vorhanden.",
-            emptyLeave: "Keine Urlaubs- oder Krankheitsdaten für diesen Zeitraum hinterlegt.",
-            emptyHist: "Keine verifizierten Arbeitszeitbuchungen vorhanden.",
-            noWorkMsg: "Keine verifizierten Arbeitszeitbuchungen vorhanden.",
-            noOtMsg: "Keine Mehrarbeitsstunden im aktuellen Abrechnungszeitraum vorhanden.",
-            modalOtTitle: "Überstunden-Kontoauszug",
-            modalWorkTitle: "Netto-Arbeitszeit Kontoauszug",
-            modalLeaveTitle: "Abwesenheits- & Urlaubsdatenblatt",
-            modalAck: "Bestätigen",
-            lblVacToken: "ERHOLUNGSURLAUB",
-            lblSickToken: "KRANKMELDUNG / AU",
-            lblDay: "Tag",
-            lblDays: "Tage",
-            lblBreak: "Pause",
-            lblYearlyAllow: "Jahresurlaubsanspruch:",
-            lblVacConsumed: "Genommene Urlaubstage:",
-            lblNetVac: "Resturlaub (Aktuell):",
-            lblTotalSick: "Gesamttage Arbeitsunfähigkeit (AU):",
-            comingSoon: "(Bald verfügbar)"
-        },
-        en: {
-            dashStatus: "Cloud Database Synchronized",
-            cardHours: "Monthly Hours Tracked",
-            cardVac: "Remaining Leave Bank",
-            cardOt: "Overtime Balance",
-            cardSick: "Sick Leave History",
-            pdfTitle: "Export Performance Summary",
-            pdfDesc: "Generates an audit-ready verified PDF document sheet.",
-            pdfBtn: "Generate PDF Report",
-            logTitle: "Log Operational Hours",
-            formDate: "Select Target Date",
-            formProj: "Assigned Project / Client Location",
-            formStart: "Shift Commencement (In)",
-            formEnd: "Shift Termination (Out)",
-            formBreak: "Mandatory Break Allocation",
-            formNotes: "Operational Description / Tasks",
-            formSubmit: "Commit Record to Ledger",
-            absTitle: "Time-Off & Absence Manager",
-            absType: "Absence Category Allocation",
-            absStart: "Commencement Date",
-            absEnd: "Concluding Date",
-            absComment: "Administrative Context / Reason",
-            absSubmit: "Submit Leave Request",
-            histTitle: "Account Transaction History",
-            setTitle: "System Configuration Limits",
-            setAllowed: "Annual Allowed Vacation Days Allocation",
-            setTarget: "Target Work Shift Constraint (Hours)",
-            setThreshold: "Break Mandate Threshold Limit (Hours)",
-            feedTitle: "IT Core Support Helpline",
-            feedBox: "Issue Description / Message",
-            feedbackBtn: "Dispatch Message",
-            feedbackSending: "Transmitting...",
-            feedbackDone: "Transmission successful. Ticket routed to active IT administration nodes.",
-            loginUser: "Employee Username",
-            loginPass: "Security Access PIN / Pass",
-            loginBtn: "Authorize Session",
-            navDash: "Dashboard Overview",
-            navWork: "Log Operational Hours",
-            navVac: "Leave Manager",
-            navHist: "Audit Logs",
-            navAdmin: "Admin Console",
-            navSet: "Configuration Matrix",
-            navFeed: "Helpdesk Support",
-            navLogout: "Terminate Session",
-            emptyTrash: "Trash bin environment clean. No restorable items present.",
-            emptyLeave: "No registered calendar exceptions detected.",
-            emptyHist: "No authenticated transaction files logged.",
-            noWorkMsg: "Zero total duration records authenticated for this range.",
-            noOtMsg: "No overtime threshold accumulation calculated.",
-            modalOtTitle: "Overtime Statement Sheet",
-            modalWorkTitle: "Net Logged Performance Document",
-            modalLeaveTitle: "Calendar Exemption Manifest",
-            modalAck: "Acknowledge",
-            lblVacToken: "ANNUAL RECOVERY LEAVE",
-            lblSickToken: "CERTIFIED SICKNESS RECORD",
-            lblDay: "Day",
-            lblDays: "Days",
-            lblBreak: "Break",
-            lblYearlyAllow: "Yearly Allotment Allotment Bank:",
-            lblVacConsumed: "Consumed Vacation Balance:",
-            lblNetVac: "Net Net Vacation Balance:",
-            lblTotalSick: "Aggregated Incapacity Metric Days:",
-            comingSoon: "(Coming soon)"
-        }
-    };
-
-    // Setup Dropdowns on Bootstrap Launch Engine
-    document.addEventListener("DOMContentLoaded", () => {
-        const startMenuNode = document.getElementById('log-start-time');
-        const endMenuNode = document.getElementById('log-end-time');
-        
-        for (let continuousHourIndex = 0; continuousHourIndex < 24; continuousHourIndex++) {
-            for (let minuteStepVal = 0; minuteStepVal < 60; minuteStepVal += 15) {
-                const timeStr = `${String(continuousHourIndex).padStart(2, '0')}:${String(minuteStepVal).padStart(2, '0')}`;
-                const optStart = new Option(timeStr, timeStr, timeStr === "07:00", timeStr === "07:00");
-                const optEnd = new Option(timeStr, timeStr, timeStr === "16:00", timeStr === "16:00");
-                startMenuNode.add(optStart);
-                endMenuNode.add(optEnd);
-            }
-        }
-        
-        const todayISO = new Date().toISOString().split('T')[0];
-        document.getElementById('log-date-picker').value = todayISO;
-        document.getElementById('leave-start-date').value = todayISO;
-        document.getElementById('leave-end-date').value = todayISO;
-        
-        window.addEventListener('online', updateCloudBackupStatusIndicator);
-        window.addEventListener('offline', updateCloudBackupStatusIndicator);
-        updateCloudBackupStatusIndicator();
-    });
-
-    function updateCloudBackupStatusIndicator() {
-        const node = document.getElementById('backup-status-indicator');
-        if(navigator.onLine) {
-            node.className = "backup-status-dot online";
-        } else {
-            node.className = "backup-status-dot offline";
-        }
-    }
-
-    // Safe SDK8 Namespaced Cloud Framework Integrations
-    async function loadUserDataFromCloud() {
-        if (typeof firebase === 'undefined' || !authenticatedUserGlobal) {
-            runGlobalApplicationMetricsEngine();
-            return;
-        }
-        try {
-            const docRef = firebase.firestore().collection("userProfiles").doc(authenticatedUserGlobal.toLowerCase().replace(/\s+/g, '_'));
-            const snapshot = await docRef.get();
-            if (snapshot.exists) {
-                const cloudPayload = snapshot.data();
-                globalLoggedSessionsDatabaseMock = cloudPayload.workSessions || [];
-                vacationLoggedDaysArrayCache = cloudPayload.leaveDays || [];
-                recentlyDeletedItemsBinCache = cloudPayload.trashBin || [];
-                
-                if (cloudPayload.configVacationBank) document.getElementById('vacation-allowed-bank').value = cloudPayload.configVacationBank;
-                if (cloudPayload.configShiftTarget) document.getElementById('shift-target-constraint').value = cloudPayload.configShiftTarget;
-                if (cloudPayload.configBreakThreshold) document.getElementById('break-rule-threshold').value = cloudPayload.configBreakThreshold;
-            }
-        } catch (err) {
-            console.error("Firestore Cloud Connection failed. Running local fallback cache buffer loop.", err);
-        }
-        
-        if (authenticatedUserRoleGlobal === 'admin') {
-            await downloadGlobalCorporateLogsForAdminConsole();
-        }
-        
-        runGlobalApplicationMetricsEngine();
-    }
-
-    async function forcePushLocalStateToCloudDatabase() {
-        if (typeof firebase === 'undefined' || !authenticatedUserGlobal) return;
-        try {
-            const targetDocId = authenticatedUserGlobal.toLowerCase().replace(/\s+/g, '_');
-            await firebase.firestore().collection("userProfiles").doc(targetDocId).set({
-                username: authenticatedUserGlobal,
-                role: authenticatedUserRoleGlobal,
-                workSessions: globalLoggedSessionsDatabaseMock,
-                leaveDays: vacationLoggedDaysArrayCache,
-                trashBin: recentlyDeletedItemsBinCache,
-                configVacationBank: document.getElementById('vacation-allowed-bank').value,
-                configShiftTarget: document.getElementById('shift-target-constraint').value,
-                configBreakThreshold: document.getElementById('break-rule-threshold').value,
-                lastSyncedTimestamp: Date.now()
-            }, { merge: true });
-            console.log("Firestore Ledger Engine Successfully Synchronized Cloud State.");
-        } catch (err) {
-            console.error("Error committing local arrays to real-time cloud datastores: ", err);
-        }
-    }
-
-    async function downloadGlobalCorporateLogsForAdminConsole() {
-        if (typeof firebase === 'undefined') return;
-        try {
-            const snapshot = await firebase.firestore().collection("userProfiles").get();
-            adminGlobalCorporateLogs = [];
-            const filterSelect = document.getElementById('admin-user-filter');
-            const cachedSelectionValue = filterSelect.value;
-            filterSelect.innerHTML = activeLanguageGlobal === 'de' ? '<option value="ALL">ALLE REFRESHEN</option>' : '<option value="ALL">ALL USERS</option>';
-            
-            const knownUniqueUsersSet = new Set();
-            
-            snapshot.forEach(docDoc => {
-                const userData = docDoc.data();
-                const nameOfUser = userData.username || docDoc.id;
-                if(nameOfUser) knownUniqueUsersSet.add(nameOfUser);
-                
-                if (userData.workSessions) {
-                    userData.workSessions.forEach(ws => {
-                        adminGlobalCorporateLogs.push({ ...ws, owner: nameOfUser, recordType: 'work' });
-                    });
-                }
-                if (userData.leaveDays) {
-                    userData.leaveDays.forEach(ld => {
-                        adminGlobalCorporateLogs.push({ ...ld, owner: nameOfUser, recordType: ld.type });
-                    });
-                }
-            });
-            
-            knownUniqueUsersSet.forEach(usr => {
-                const opt = new Option(usr, usr);
-                filterSelect.add(opt);
-            });
-            filterSelect.value = cachedSelectionValue || "ALL";
-            renderAdminGlobalLogsTable();
-        } catch (err) {
-            console.error("Failed downloading master cloud manifest array logs for admin view panel:", err);
-        }
-    }
-
-    // Corrected Firestore Live Login Authenticator Verification Engine
-async function handleSecureLoginAttempt(event) {
-    event.preventDefault();
-    
-    // Read user inputs from the exact HTML input field IDs
-    const nameInput = document.getElementById('username').value.trim();
-    const passInput = document.getElementById('passcode').value.trim();
-    const messageBox = document.getElementById('message-box'); 
-    
-    if (!nameInput || !passInput) return;
-    
-    messageBox.innerHTML = activeLanguageGlobal === 'de' ? "Verifiziere Identität..." : "Authenticating Token...";
-    messageBox.className = "message success";
-    messageBox.style.display = "block";
-
-    if (typeof firebase === 'undefined') {
-        if (nameInput === "Admin" && passInput === "123456") {
-            authenticatedUserGlobal = "Admin Security Head";
-            authenticatedUserRoleGlobal = "admin";
-            completeSessionLaunchUiTransitions();
-            return;
-        }
-        messageBox.innerHTML = activeLanguageGlobal === 'de' ? "Cloud Framework Offline." : "Cloud Framework Offline.";
-        messageBox.className = 'message error';
-        return;
-    }
-
-    try {
-        // EXACT LOOKUP: Uses collection "Users" and targets your exact typed document layout (capitalization + spaces)
-        const userDocRef = firebase.firestore().collection("Users").doc(nameInput);
-        const userSnapshot = await userDocRef.get();
-
-        if (!userSnapshot.exists) {
-            messageBox.innerHTML = activeLanguageGlobal === 'de' ? 
-                "Mitarbeiter-Datensatz nicht gefunden. Bitte Groß-/Kleinschreibung beachten!" : "Employee record not found. Check uppercase letters & spaces!";
-            messageBox.className = 'message error';
-            return;
-        }
-
-        const userDataPayload = userSnapshot.data();
-        
-        // EXACT LOOKUP: Reads field "Code" matching case-sensitive key and string value format
-        let databaseSecretCode = "";
-        if (userDataPayload.Code !== undefined && userDataPayload.Code !== null) {
-            databaseSecretCode = String(userDataPayload.Code).trim();
-        } else if (userDataPayload.code !== undefined && userDataPayload.code !== null) {
-            databaseSecretCode = String(userDataPayload.code).trim();
-        }
-        
-        const userAssignedRole = userDataPayload.role ? String(userDataPayload.role).trim().toLowerCase() : "user";
-
-        // Compare string entries directly
-        if (databaseSecretCode === passInput && passInput !== "") {
-            authenticatedUserGlobal = nameInput; // Sets profile to full name typed
-            authenticatedUserRoleGlobal = userAssignedRole;
-            completeSessionLaunchUiTransitions();
-        } else {
-            messageBox.innerHTML = activeLanguageGlobal === 'de' ? 
-                "Falsches Kennwort / PIN-Code ungültig!" : "Invalid passcode. Access denied!";
-            messageBox.className = 'message error';
-        }
-    } catch (error) {
-        console.error("Login verification transaction error: ", error);
-        messageBox.innerHTML = `Error connecting to authentication matrix: ${error.message}`;
-        messageBox.className = 'message error';
-    }
-}
-
-
-}
-
-    }
-
-    function completeSessionLaunchUiTransitions() {
-        document.getElementById('view-login').style.display = 'none';
-        document.getElementById('app-shell').style.display = 'block';
-        document.getElementById('drawer-user-fullname').textContent = authenticatedUserGlobal;
-        document.getElementById('drawer-user-role-token').textContent = authenticatedUserRoleGlobal === 'admin' ? "Executive Management Console" : "Standard Corporate Node Account";
-        
-        if (authenticatedUserRoleGlobal === 'admin') {
-            document.getElementById('nav-admin-link').style.display = 'flex';
-        } else {
-            document.getElementById('nav-admin-link').style.display = 'none';
-        }
-        
-        setApplicationLanguage(activeLanguageGlobal);
-        loadUserDataFromCloud();
-    }
-
-    function terminateUserSessionState() {
-        authenticatedUserGlobal = "";
-        authenticatedUserRoleGlobal = "user";
-        globalLoggedSessionsDatabaseMock = [];
-        vacationLoggedDaysArrayCache = [];
-        recentlyDeletedItemsBinCache = [];
-        adminGlobalCorporateLogs = [];
-        
-        document.getElementById('login-username').value = '';
-        document.getElementById('login-password').value = '';
-        document.getElementById('login-status-message').style.display = 'none';
-        
-        document.getElementById('app-shell').style.display = 'none';
-        document.getElementById('view-login').style.display = 'flex';
-        toggleNavigationSidebarDrawer(false);
-        switchActiveView('dashboard', document.getElementById('nav-dash-link'));
-    }
-
-    // Layout Navigation Operations
-    function toggleNavigationSidebarDrawer(openState) {
-        const sidebar = document.getElementById('sidebar-drawer-menu');
-        const backdrop = document.getElementById('sidebar-drawer-backdrop');
-        if (openState) {
-            sidebar.classList.add('open');
-            backdrop.classList.add('show');
-        } else {
-            sidebar.classList.remove('open');
-            backdrop.classList.remove('show');
-        }
-    }
-
-    function switchActiveView(viewId, navBtn) {
-        const panels = document.getElementsByClassName('content-panel');
-        for (let p of panels) { p.classList.remove('active'); }
-        
-        const targetPanel = document.getElementById('view-' + viewId);
-        if (targetPanel) targetPanel.classList.add('active');
-        
-        const navItems = document.getElementsByClassName('nav-item');
-        for (let n of navItems) { n.classList.remove('active'); }
-        if (navBtn) navBtn.classList.add('active');
-        
-        const viewContainerMainNode = document.getElementById('app-viewport-container');
-        if (viewId === 'admin') {
-            viewContainerMainNode.classList.add('admin-layout-widescreen');
-        } else {
-            viewContainerMainNode.classList.remove('admin-layout-widescreen');
-        }
-        
-        toggleNavigationSidebarDrawer(false);
-    }
-
-    function routeToMainDashboard() {
-        switchActiveView('dashboard', document.getElementById('nav-dash-link'));
-    }
-
-    // Computational Time Engine Helpers
-    function computeRawStringHoursDifference(startTimeStr, endTimeStr) {
-        const sh = parseInt(startTimeStr.split(':')[0], 10);
-        const sm = parseInt(startTimeStr.split(':')[1], 10);
-        const eh = parseInt(endTimeStr.split(':')[0], 10);
-        const em = parseInt(endTimeStr.split(':')[1], 10);
-        let m = (eh * 60 + em) - (sh * 60 + sm);
-        if (m < 0) m += 1440; 
-        return m / 60;
-    }
-
-    function calculateExclusiveDaysDifferenceSpan(f, t) {
-        if (!f || !t) return 0;
-        const delta = new Date(t) - new Date(f);
-        return delta < 0 ? 0 : (delta / 86400000) + 1;
-    }
-
-    function selectBreakOption(minutes, element) {
-        activeSelectedFormBreakDuration = minutes;
-        const pills = element.parentNode.getElementsByClassName('break-pill');
-        for (let p of pills) { p.classList.remove('active'); }
-        element.classList.add('active');
-    }
-
-    function toggleSelectedLeaveTypeSegment(typeString) {
-        activeLeaveFormTypeSelection = typeString;
-        document.getElementById('leave-toggle-vac').classList.toggle('active', typeString === 'VACATION');
-        document.getElementById('leave-toggle-sick').classList.toggle('active', typeString === 'SICK');
-        
-        const btn = document.getElementById('lbl-abs-submit');
-        if(typeString === 'SICK') {
-            btn.className = "primary-btn red-btn";
-        } else {
-            btn.className = "primary-btn";
-        }
-    }
-
-    function toggleHistoryTrashBinWorkspace(showTrashBin) {
-        temporalHistoryTrashBinFilterActive = showTrashBin;
-        document.getElementById('hist-view-toggle-live').classList.toggle('active', !showTrashBin);
-        document.getElementById('hist-view-toggle-trash').classList.toggle('active', showTrashBin);
-        renderApplicationHistoryTimelineLayout();
-    }
-
-    // Operational Metric Calculators Engine & Renderer Hooks
-    function runGlobalApplicationMetricsEngine() {
-        let aggregateHoursAccumulator = 0;
-        let evaluatedOvertimeBalance = 0;
-        let computedVacationDaysUsed = 0;
-        let totalCertifiedSickDays = 0;
-        
-        const shiftDailyTargetConstraint = parseFloat(document.getElementById('shift-target-constraint').value) || 8.0;
-        const autoBreakThresholdRule = parseFloat(document.getElementById('break-rule-threshold').value) || 6.0;
-        const baseVacationBankAllotment = parseFloat(document.getElementById('vacation-allowed-bank').value) || 30;
-
-        globalLoggedSessionsDatabaseMock.forEach(session => {
-            let grossHours = session.duration || 0;
-            let breakDeduction = session.breakTime ? (session.breakTime / 60) : 0;
-            
-            if (grossHours > autoBreakThresholdRule && breakDeduction === 0) {
-                breakDeduction = 0.5; 
-            }
-            
-            let netHours = grossHours - breakDeduction;
-            if (netHours < 0) netHours = 0;
-            
-            aggregateHoursAccumulator += netHours;
-            evaluatedOvertimeBalance += (netHours - shiftDailyTargetConstraint);
-        });
-
-        vacationLoggedDaysArrayCache.forEach(leaveBlock => {
-            const duration = calculateExclusiveDaysDifferenceSpan(leaveBlock.startDate, leaveBlock.endDate);
-            if (leaveBlock.type === 'vacation') {
-                computedVacationDaysUsed += duration;
-            } else if (leaveBlock.type === 'sick') {
-                totalCertifiedSickDays += duration;
-            }
-        });
-
-        document.getElementById('dash-metric-hours-sum').textContent = aggregateHoursAccumulator.toFixed(2) + " Std";
-        document.getElementById('dash-metric-overtime-balance').textContent = (evaluatedOvertimeBalance >= 0 ? "+" : "") + evaluatedOvertimeBalance.toFixed(2) + " Std";
-        
-        const netRemainingVacationDays = baseVacationBankAllotment - computedVacationDaysUsed;
-        document.getElementById('dash-metric-vacation-left').textContent = netRemainingVacationDays + " Tage";
-        document.getElementById('dash-metric-sick-days-count').textContent = totalCertifiedSickDays + " Tage";
-
-        document.getElementById('trash-notification-bubble').textContent = recentlyDeletedItemsBinCache.length;
-        document.getElementById('trash-notification-bubble').style.display = recentlyDeletedItemsBinCache.length > 0 ? "inline-block" : "none";
-
-        renderApplicationHistoryTimelineLayout();
-        
-        if (authenticatedUserRoleGlobal === 'admin') {
-            renderAdminGlobalLogsTable();
-        }
-    }
-
-    // Forms Record Submission Processors
-    async function handleWorkTimeLogSubmission(e) {
-        e.preventDefault();
-        const startVal = document.getElementById('log-start-time').value;
-        const endVal = document.getElementById('log-end-time').value;
-        const grossDiffSpan = computeRawStringHoursDifference(startVal, endVal);
-        
-        if(grossDiffSpan <= 0) {
-            alert(activeLanguageGlobal === 'de' ? "Fehler: Das Ende der Arbeitszeit muss nach dem Beginn liegen!" : "Error: End time must fall sequence hours ahead!");
-            return;
-        }
-        
-        const rawPickedDate = document.getElementById('log-date-picker').value;
-        const dateParts = rawPickedDate.split('-');
-        const formattedDateStr = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-        
-        const newRecordBlock = {
-            id: "work-" + Date.now(),
-            type: "work",
-            date: formattedDateStr,
-            project: document.getElementById('log-project-name').value,
-            duration: grossDiffSpan,
-            breakTime: activeSelectedFormBreakDuration,
-            notes: document.getElementById('log-notes').value
-        };
-        
-        globalLoggedSessionsDatabaseMock.unshift(newRecordBlock);
-        document.getElementById('log-project-name').value = '';
-        document.getElementById('log-notes').value = '';
-        
-        runGlobalApplicationMetricsEngine();
-        await forcePushLocalStateToCloudDatabase();
-        if (authenticatedUserRoleGlobal === 'admin') await downloadGlobalCorporateLogsForAdminConsole();
-        
-        switchActiveView('history', document.getElementById('lbl-nav-hist').parentNode);
-    }
-
-    async function handleVacationDayLogSubmission(e) {
-        e.preventDefault();
-        const fDate = document.getElementById('leave-start-date').value;
-        const tDate = document.getElementById('leave-end-date').value;
-        
-        if (new Date(tDate) < new Date(fDate)) {
-            alert(activeLanguageGlobal === 'de' ? "Fehler: Das Enddatum darf nicht vor dem Startdatum liegen!" : "Error: Concluding boundary cannot precede commencement milestone!");
-            return;
-        }
-        
-        const leaveBlock = {
-            id: "leave-" + Date.now(),
-            type: activeLeaveFormTypeSelection.toLowerCase(),
-            startDate: fDate,
-            endDate: tDate,
-            comment: document.getElementById('leave-notes').value || ""
-        };
-        
-        vacationLoggedDaysArrayCache.unshift(leaveBlock);
-        document.getElementById('leave-notes').value = '';
-        
-        runGlobalApplicationMetricsEngine();
-        await forcePushLocalStateToCloudDatabase();
-        if (authenticatedUserRoleGlobal === 'admin') await downloadGlobalCorporateLogsForAdminConsole();
-        
-        switchActiveView('history', document.getElementById('lbl-nav-hist').parentNode);
-    }
-
-    // Transaction History Renderer Matrix
-    function renderApplicationHistoryTimelineLayout() {
-        const mountPoint = document.getElementById('history-items-container');
-        const trans = uiTranslations[activeLanguageGlobal];
-        mountPoint.innerHTML = '';
-
-        if (!temporalHistoryTrashBinFilterActive) {
-            // Operational Tracking: Active Elements Frame
-            if (globalLoggedSessionsDatabaseMock.length === 0 && vacationLoggedDaysArrayCache.length === 0) {
-                mountPoint.innerHTML = `<p style="color:#64748b; font-size:13px; text-align:center; padding:30px;">${trans.emptyHist}</p>`;
-                return;
-            }
-
-            // Append Dynamic Session Blocks 
-            globalLoggedSessionsDatabaseMock.forEach(session => {
-                const card = document.createElement('div');
-                card.className = 'history-item';
-                card.style.borderLeftColor = 'var(--primary-blue)';
-                
-                const calculatedNetHoursVal = session.duration - (session.breakTime / 60);
-
-                if (globalTrackedActiveInlineEditingSessionId === session.id) {
-                    // Inline Editor Interactive Markup Form
-                    card.innerHTML = `
-                        <div class="inline-edit-box">
-                            <div class="form-group">
-                                <label style="font-size:10px;">Projekt / Location</label>
-                                <input type="text" id="inline-edit-proj-${session.id}" value="${session.project}">
-                            </div>
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;" class="form-group">
-                                <div>
-                                    <label style="font-size:10px;">Duration (Gross Hours)</label>
-                                    <input type="number" step="0.25" id="inline-edit-dur-${session.id}" value="${session.duration}">
-                                </div>
-                                <div>
-                                    <label style="font-size:10px;">Break (Minutes)</label>
-                                    <input type="number" step="15" id="inline-edit-break-${session.id}" value="${session.breakTime}">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label style="font-size:10px;">Notizen</label>
-                                <input type="text" id="inline-edit-notes-${session.id}" value="${session.notes || ''}">
-                            </div>
-                            <div class="inline-edit-actions">
-                                <button class="inline-btn" onclick="cancelActiveInlineEditingEngineSession()" style="background:#e2e8f0; color:#334155;">Cancel</button>
-                                <button class="inline-btn" onclick="commitInlineEditingEngineChanges('${session.id}')" style="background:var(--primary-blue); color:white;">Save</button>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    card.innerHTML = `
-                        <div class="item-main-row">
-                            <div class="hist-left">
-                                <h5>${session.project}</h5>
-                                <p><i class="fa-solid fa-calendar" style="margin-right:5px; font-size:11px;"></i>${session.date} ${session.notes ? '• <i>' + session.notes + '</i>' : ''}</p>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:10px;">
-                                <div class="hist-right">
-                                    <div>${calculatedNetHoursVal.toFixed(2)} Std</div>
-                                    <div style="font-size:10px; color:var(--text-muted); font-weight:normal;">${trans.lblBreak}: ${session.breakTime}m</div>
-                                </div>
-                                <div class="action-buttons-shelf">
-                                    <button class="action-icon-btn" onclick="initializeInlineEditingSessionTrack('${session.id}')"><i class="fa-solid fa-pen"></i></button>
-                                    <button class="action-icon-btn delete-hover" onclick="stageItemAllocationToTrashBin('${session.id}', 'WORK')"><i class="fa-solid fa-trash"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-                mountPoint.appendChild(card);
-            });
-
-            // Append Dynamic Leave Exception Components
-            vacationLoggedDaysArrayCache.forEach(leave => {
-                const card = document.createElement('div');
-                card.className = 'history-item';
-                const isSick = leave.type === 'sick';
-                card.style.borderLeftColor = isSick ? 'var(--primary-red)' : 'var(--admin-gold)';
-                
-                const daySpanCount = calculateExclusiveDaysDifferenceSpan(leave.startDate, leave.endDate);
-                
-                card.innerHTML = `
-                    <div class="item-main-row">
-                        <div class="hist-left">
-                            <h5>${isSick ? trans.lblSickToken : trans.lblVacToken}</h5>
-                            <p><i class="fa-solid fa-calendar-alt" style="margin-right:5px; font-size:11px;"></i>${leave.startDate} bis ${leave.endDate} ${leave.comment ? ' • <i>' + leave.comment + '</i>' : ''}</p>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <div class="hist-right">
-                                <div>${daySpanCount} ${daySpanCount === 1 ? trans.lblDay : trans.lblDays}</div>
-                            </div>
-                            <button class="action-icon-btn delete-hover" onclick="stageItemAllocationToTrashBin('${leave.id}', 'LEAVE')"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    </div>
-                `;
-                mountPoint.appendChild(card);
-            });
-        } else {
-            // Operational Tracking: Trash Buffer Active Elements Frame
-            if (recentlyDeletedItemsBinCache.length === 0) {
-                mountPoint.innerHTML = `<p style="color:#64748b; font-size:13px; text-align:center; padding:30px;">${trans.emptyTrash}</p>`;
-                return;
-            }
-            
-            recentlyDeletedItemsBinCache.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'history-item';
-                card.style.opacity = '0.75';
-                card.style.borderLeftColor = '#cbd5e1';
-                
-                let descriptor = item.payload.project || (item.payload.type === 'sick' ? trans.lblSickToken : trans.lblVacToken);
-                let metaSubtitle = item.payload.date ? item.payload.date : `${item.payload.startDate} bis ${item.payload.endDate}`;
-                
-                card.innerHTML = `
-                    <div class="item-main-row">
-                        <div class="hist-left">
-                            <h5 style="text-decoration: line-through; color:var(--text-muted);">${descriptor}</h5>
-                            <p><i class="fa-solid fa-clock" style="margin-right:5px;"></i>${metaSubtitle}</p>
-                        </div>
-                        <button class="restore-btn" onclick="executeRecoveryActionFromTrashBin('${item.id}')"><i class="fa-solid fa-arrow-rotate-left" style="margin-right:5px;"></i>Restore</button>
-                    </div>
-                `;
-                mountPoint.appendChild(card);
-            });
-        }
-    }
-
-    // Interactive Inline Modification Engine Logic
-    function initializeInlineEditingSessionTrack(id) {
-        globalTrackedActiveInlineEditingSessionId = id;
-        renderApplicationHistoryTimelineLayout();
-    }
-
-    function cancelActiveInlineEditingEngineSession() {
-        globalTrackedActiveInlineEditingSessionId = null;
-        renderApplicationHistoryTimelineLayout();
-    }
-
-    async function commitInlineEditingEngineChanges(id) {
-        const sessionIndex = globalLoggedSessionsDatabaseMock.findIndex(s => s.id === id);
-        if(sessionIndex === -1) return;
-        
-        const newProj = document.getElementById(`inline-edit-proj-${id}`).value.trim();
-        const newDur = parseFloat(document.getElementById(`inline-edit-dur-${id}`).value) || 0;
-        const newBreak = parseFloat(document.getElementById(`inline-edit-break-${id}`).value) || 0;
-        const newNotes = document.getElementById(`inline-edit-notes-${id}`).value.trim();
-        
-        if(!newProj || newDur <= 0) {
-            alert("Validation Error: Please configure valid project names and duration parameters.");
-            return;
-        }
-        
-        globalLoggedSessionsDatabaseMock[sessionIndex].project = newProj;
-        globalLoggedSessionsDatabaseMock[sessionIndex].duration = newDur;
-        globalLoggedSessionsDatabaseMock[sessionIndex].breakTime = newBreak;
-        globalLoggedSessionsDatabaseMock[sessionIndex].notes = newNotes;
-        
-        globalTrackedActiveInlineEditingSessionId = null;
-        
-        runGlobalApplicationMetricsEngine();
-        await forcePushLocalStateToCloudDatabase();
-        if (authenticatedUserRoleGlobal === 'admin') await downloadGlobalCorporateLogsForAdminConsole();
-    }
-
-    // Advanced Dual Recovery Trash Storage Track Managers
-    async function stageItemAllocationToTrashBin(id, categoryKey) {
-        if (categoryKey === 'WORK') {
-            const index = globalLoggedSessionsDatabaseMock.findIndex(s => s.id === id);
-            if (index !== -1) {
-                const removed = globalLoggedSessionsDatabaseMock.splice(index, 1)[0];
-                recentlyDeletedItemsBinCache.push({ id: removed.id, origin: 'WORK', payload: removed, deletedAtTimestamp: Date.now() });
-            }
-        } else if (categoryKey === 'LEAVE') {
-            const index = vacationLoggedDaysArrayCache.findIndex(l => l.id === id);
-            if (index !== -1) {
-                const removed = vacationLoggedDaysArrayCache.splice(index, 1)[0];
-                recentlyDeletedItemsBinCache.push({ id: removed.id, origin: 'LEAVE', payload: removed, deletedAtTimestamp: Date.now() });
-            }
-        }
-        
-        runGlobalApplicationMetricsEngine();
-        await forcePushLocalStateToCloudDatabase();
-        if (authenticatedUserRoleGlobal === 'admin') await downloadGlobalCorporateLogsForAdminConsole();
-    }
-
-    async function executeRecoveryActionFromTrashBin(id) {
-        const index = recentlyDeletedItemsBinCache.findIndex(t => t.id === id);
-        if (index === -1) return;
-        
-        const item = recentlyDeletedItemsBinCache.splice(index, 1)[0];
-        if (item.origin === 'WORK') {
-            globalLoggedSessionsDatabaseMock.unshift(item.payload);
-        } else if (item.origin === 'LEAVE') {
-            vacationLoggedDaysArrayCache.unshift(item.payload);
-        }
-        
-        runGlobalApplicationMetricsEngine();
-        await forcePushLocalStateToCloudDatabase();
-        if (authenticatedUserRoleGlobal === 'admin') await downloadGlobalCorporateLogsForAdminConsole();
-    }
-
-    // Support Feedback Engine Handler
-    function handleFeedbackSubmissionEngine(event) {
-        event.preventDefault();
-        const feedbackMsgInput = document.getElementById('feedback-message');
-        const submitBtn = document.getElementById('btn-feedback-submit');
-        const statusBox = document.getElementById('feedback-status-box');
-        const trans = uiTranslations[activeLanguageGlobal];
-        
-        if (!feedbackMsgInput.value.trim()) return;
-        
-        submitBtn.disabled = true;
-        submitBtn.textContent = trans.feedbackSending;
-        statusBox.style.display = "none";
-        
-        setTimeout(() => {
-            feedbackMsgInput.value = '';
-            submitBtn.disabled = false;
-            submitBtn.textContent = trans.feedbackBtn;
-            statusBox.innerHTML = trans.feedbackDone;
-            statusBox.className = "message success";
-            
-            setTimeout(() => { statusBox.style.display = "none"; }, 5000);
-        }, 1200);
-    }
-
-    // Enterprise Administration Output Renderer Matrix
-    function renderAdminGlobalLogsTable() {
-        const tbody = document.getElementById('admin-global-table-body');
-        const filterUser = document.getElementById('admin-user-filter').value;
-        const filterType = document.getElementById('admin-type-filter').value;
-        
-        let logCount = 0, hourCount = 0;
-        tbody.innerHTML = '';
-        
-        const targetData = adminGlobalCorporateLogs.filter(item => {
-            if (filterUser !== 'ALL' && item.owner !== filterUser) return false;
-            if (filterType === 'WORK' && item.recordType !== 'work') return false;
-            if (filterType === 'VACATION' && item.recordType !== 'vacation') return false;
-            if (filterType === 'SICK' && item.recordType !== 'sick') return false;
-            return true;
-        });
-
-        if (targetData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--admin-text-muted);">No synchronized enterprise matching tracks found.</td></tr>`;
-            document.getElementById('admin-metric-total-count').textContent = "0";
-            document.getElementById('admin-metric-total-hours').textContent = "0.00 h";
-            return;
-        }
-
-        targetData.forEach(item => {
-            logCount++;
-            const tr = document.createElement('tr');
-            
-            let typeBadgeMarkup = "";
-            let hoursCellString = "";
-            let descriptionText = "";
-            let dateText = item.date ? item.date : `${item.startDate} to ${item.endDate}`;
-
-            if (item.recordType === 'work') {
-                const netHours = item.duration - (item.breakTime / 60);
-                hourCount += netHours;
-                typeBadgeMarkup = `<span class="admin-badge badge-work">WORK</span>`;
-                hoursCellString = netHours.toFixed(2) + " h";
-                descriptionText = `<b>${item.project}</b>${item.notes ? ' - ' + item.notes : ''}`;
-            } else if (item.recordType === 'vacation') {
-                const days = calculateExclusiveDaysDifferenceSpan(item.startDate, item.endDate);
-                typeBadgeMarkup = `<span class="admin-badge badge-vacation">LEAVE</span>`;
-                hoursCellString = `${days} Day(s)`;
-                descriptionText = `Annual Recovery Vacation Leave ${item.comment ? '• ' + item.comment : ''}`;
-            } else if (item.recordType === 'sick') {
-                const days = calculateExclusiveDaysDifferenceSpan(item.startDate, item.endDate);
-                typeBadgeMarkup = `<span class="admin-badge badge-sick">SICK</span>`;
-                hoursCellString = `${days} Day(s)`;
-                descriptionText = `Certified Sickness Registry Track ${item.comment ? '• ' + item.comment : ''}`;
-            }
-
-            tr.innerHTML = `
-                <td style="font-weight:700; color:var(--admin-text-main);">${item.owner}</td>
-                <td>${dateText}</td>
-                <td>${typeBadgeMarkup}</td>
-                <td style="font-size:12px;">${descriptionText}</td>
-                <td style="text-align:right; font-weight:700; color:var(--admin-gold);">${hoursCellString}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-        document.getElementById('admin-metric-total-count').textContent = logCount;
-        document.getElementById('admin-metric-total-hours').textContent = hourCount.toFixed(2) + " h";
-    }
-
-    // Custom Real-Time Account Statements Calculations Engine Modals
-    function openTargetedModalReportDataSheet(reportToken) {
-        const modalTitle = document.getElementById('custom-modal-title');
-        const bodyNode = document.getElementById('custom-modal-render-body');
-        const trans = uiTranslations[activeLanguageGlobal];
-        
-        bodyNode.innerHTML = '';
-
-        if (reportToken === 'OT') {
-            modalTitle.textContent = trans.modalOtTitle;
-            const targetDailyShiftConstraint = parseFloat(document.getElementById('shift-target-constraint').value) || 8.0;
-            let accumulatedTotalDeltaOt = 0;
-            
-            const workRecords = globalLoggedSessionsDatabaseMock.filter(s => s.type === 'work');
-            if (workRecords.length === 0) {
-                bodyNode.innerHTML = `<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:15px;">${trans.noOtMsg}</p>`;
-            } else {
-                workRecords.forEach(rec => {
-                    const net = rec.duration - (rec.breakTime / 60);
-                    const delta = net - targetDailyShiftConstraint;
-                    accumulatedTotalDeltaOt += delta;
-                    
-                    const row = document.createElement('div');
-                    row.className = 'modal-report-row';
-                    row.innerHTML = `
-                        <span>${rec.date} (${rec.project})</span>
-                        <span style="font-weight:700; color:${delta >= 0 ? '#16a34a' : '#dc2626'}">${delta >= 0 ? '+' : ''}${delta.toFixed(2)} Std</span>
-                    `;
-                    bodyNode.appendChild(row);
-                });
-                
-                const leadRow = document.createElement('div');
-                leadRow.className = 'modal-report-row total-lead';
-                leadRow.innerHTML = `<span>Balance Status:</span><span>${accumulatedTotalDeltaOt.toFixed(2)} Std</span>`;
-                bodyNode.appendChild(leadRow);
-            }
-        } else if (reportToken === 'WORK') {
-            modalTitle.textContent = trans.modalWorkTitle;
-            let grossAggregateSum = 0;
-            
-            const workRecords = globalLoggedSessionsDatabaseMock.filter(s => s.type === 'work');
-            if (workRecords.length === 0) {
-                bodyNode.innerHTML = `<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:15px;">${trans.noWorkMsg}</p>`;
-            } else {
-                workRecords.forEach(rec => {
-                    const net = rec.duration - (rec.breakTime / 60);
-                    grossAggregateSum += net;
-                    
-                    const row = document.createElement('div');
-                    row.className = 'modal-report-row';
-                    row.innerHTML = `
-                        <span>${rec.date} - ${rec.project}</span>
-                        <span>${net.toFixed(2)} Std (Netto)</span>
-                    `;
-                    bodyNode.appendChild(row);
-                });
-                
-                const leadRow = document.createElement('div');
-                leadRow.className = 'modal-report-row total-lead';
-                leadRow.innerHTML = `<span>Net Total Accrued:</span><span>${grossAggregateSum.toFixed(2)} Std</span>`;
-                bodyNode.appendChild(leadRow);
-            }
-        } else if (reportToken === 'LEAVE') {
-            modalTitle.textContent = trans.modalLeaveTitle;
-            
-            const bank = parseFloat(document.getElementById('vacation-allowed-bank').value) || 30;
-            let vDays = 0, sDays = 0;
-            
-            vacationLoggedDaysArrayCache.forEach(l => {
-                const span = calculateExclusiveDaysDifferenceSpan(l.startDate, l.endDate);
-                if (l.type === 'vacation') vDays += span;
-                if (l.type === 'sick') sDays += span;
-            });
-
-            bodyNode.innerHTML = `
-                <div style="font-size:13px; display:flex; flex-direction:column; gap:10px;">
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding-bottom:6px;"><span>${trans.lblYearlyAllow}</span> <b>${bank} ${trans.lblDays}</b></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding-bottom:6px;"><span>${trans.lblVacConsumed}</span> <b style="color:var(--primary-blue);">${vDays} ${trans.lblDays}</b></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding-bottom:6px;"><span>${trans.lblNetVac}</span> <b style="color:#16a34a;">${bank - vDays} ${trans.lblDays}</b></div>
-                    <div style="display:flex; justify-content:space-between; padding-bottom:6px;"><span>${trans.lblTotalSick}</span> <b style="color:var(--primary-red);">${sDays} ${trans.lblDays}</b></div>
-                </div>
-            `;
-        }
-
-        document.getElementById('custom-report-modal-backdrop').className = 'custom-modal-backdrop show';
-    }
-
-    function closeCustomReportModal() {
-        document.getElementById('custom-report-modal-backdrop').className = 'custom-modal-backdrop';
-    }
-
-    // Multi-Language Translation Layout Swapping Sub-System Engine
-    function setApplicationLanguage(langKey) {
-        activeLanguageGlobal = langKey;
-        document.getElementById('lang-btn-de').classList.toggle('active', langKey === 'de');
-        document.getElementById('lang-btn-en').classList.toggle('active', langKey === 'en');
-        
-        const bundle = uiTranslations[langKey];
-        if (!bundle) return;
-
-        // Sync Form Labels & Text Elements
-        document.getElementById('lbl-dash-status').textContent = bundle.dashStatus;
-        document.getElementById('lbl-card-hours').textContent = bundle.cardHours;
-        document.getElementById('lbl-card-vac').textContent = bundle.cardVac;
-        document.getElementById('lbl-card-ot').textContent = bundle.cardOt;
-        document.getElementById('lbl-card-sick').textContent = bundle.cardSick;
-        document.getElementById('lbl-pdf-box-title').textContent = bundle.pdfTitle;
-        document.getElementById('lbl-pdf-box-desc').textContent = bundle.pdfDesc;
-        
-        document.getElementById('lbl-log-title').textContent = bundle.logTitle;
-        document.getElementById('lbl-form-date').textContent = bundle.formDate;
-        document.getElementById('lbl-form-project').textContent = bundle.formProj;
-        document.getElementById('lbl-form-start').textContent = bundle.formStart;
-        document.getElementById('lbl-form-end').textContent = bundle.formEnd;
-        document.getElementById('lbl-form-break').textContent = bundle.formBreak;
-        document.getElementById('lbl-form-notes').textContent = bundle.formNotes;
-        document.getElementById('lbl-form-submit').textContent = bundle.formSubmit;
-        
-        document.getElementById('lbl-abs-title').textContent = bundle.absTitle;
-        document.getElementById('lbl-abs-type').textContent = bundle.absType;
-        document.getElementById('lbl-abs-start').textContent = bundle.absStart;
-        document.getElementById('lbl-abs-end').textContent = bundle.absEnd;
-        document.getElementById('lbl-abs-comment').textContent = bundle.absComment;
-        document.getElementById('lbl-abs-submit').textContent = bundle.absSubmit;
-        
-        document.getElementById('lbl-hist-title').textContent = bundle.histTitle;
-        document.getElementById('lbl-set-title').textContent = bundle.setTitle;
-        document.getElementById('lbl-set-allowed').textContent = bundle.setAllowed;
-        document.getElementById('lbl-set-target').textContent = bundle.setTarget;
-        document.getElementById('lbl-set-threshold').textContent = bundle.setThreshold;
-        document.getElementById('lbl-feed-title').textContent = bundle.feedTitle;
-        document.getElementById('lbl-feed-box').textContent = bundle.feedBox;
-        document.getElementById('btn-feedback-submit').textContent = bundle.feedbackBtn;
-        
-        document.getElementById('lbl-login-user').textContent = bundle.loginUser;
-        document.getElementById('lbl-login-pass').textContent = bundle.loginPass;
-        document.getElementById('lbl-login-btn').textContent = bundle.loginBtn;
-        
-        document.getElementById('lbl-nav-dash').textContent = bundle.navDash;
-        document.getElementById('lbl-nav-work').textContent = bundle.navWork;
-        document.getElementById('lbl-nav-vac').textContent = bundle.navVac;
-        document.getElementById('lbl-nav-hist').childNodes[0].textContent = bundle.navHist;
-        document.getElementById('lbl-nav-admin').textContent = bundle.navAdmin;
-        document.getElementById('lbl-nav-set').textContent = bundle.navSet;
-        document.getElementById('lbl-nav-feed').textContent = bundle.navFeed;
-        document.getElementById('lbl-nav-logout').textContent = bundle.navLogout;
-
-        renderApplicationHistoryTimelineLayout();
-    }
-
-    // Automated PDF Performance Export Engine
-    function triggerPDFExportEngine() {
-        const targetElement = document.getElementById('pdf-render-target');
-        const headerBannerElement = document.getElementById('pdf-custom-header');
-        
-        document.getElementById('pdf-user-metadata').textContent = `Elektronischer Stundenzettel-Nachweis: ${authenticatedUserGlobal}`;
-        headerBannerElement.style.display = 'block';
-
-        const conversionOptionsMap = {
-            margin: [15, 15, 15, 15],
-            filename: `Stundenzettel_Report_${authenticatedUserGlobal.toLowerCase().replace(/\s+/g, '_')}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, logging: false },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        html2pdf().set(conversionOptionsMap).from(targetElement).save().then(() => {
-            headerBannerElement.style.display = 'none';
-        }).catch(err => {
-            console.error("PDF Export execution failed: ", err);
-            headerBannerElement.style.display = 'none';
-        });
-    }
+         <div class="developer-signature" style="color:#475569;">Admin Secure Console Workspace</div>
+      </div>
+
+      <div id="view-settings" class="content-panel">
+         <div class="panel-scroll-content">
+            <div class="view-title" id="lbl-set-title">Systemparameter</div>
+            <div class="app-card">
+               <div class="form-group">
+                  <label id="lbl-set-allowed">Allowed Vacation Days Allotment Bank</label>
+                  <input type="number" id="vacation-allowed-bank" value="30" oninput="runGlobalApplicationMetricsEngine()">
+               </div>
+               <div class="form-group">
+                  <label id="lbl-set-constraint">Standard Shift Target Constraint</label>
+                  <input type="number" step="0.1" id="shift-target-constraint" value="8.5" oninput="runGlobalApplicationMetricsEngine()">
+               </div>
+            </div>
+         </div>
+         <div class="developer-signature">Developed by Amran Hiluf</div>
+      </div>
+   </main>
+</div>
+
+<div id="custom-report-modal-backdrop" class="custom-modal-backdrop" onclick="closeCustomReportModal()">
+   <div class="custom-report-modal" onclick="event.stopPropagation()">
+      <div class="modal-report-header">
+         <h4 id="custom-modal-title-header">Kontoauszug</h4>
+         <i class="fa-solid fa-clock"></i>
+      </div>
+      <div id="modal-report-content-body" class="modal-report-body"></div>
+      <div class="modal-report-footer">
+         <button type="button" class="modal-close-btn" onclick="closeCustomReportModal()">Schließen</button>
+      </div>
+   </div>
+</div>
+
+<script>
+   // Authentic Core Rest Database Engine Initialization
+   if (!firebase.apps.length) {
+       console.error("Firebase framework missing initial configurations initialization sequences.");
+   }
+   const databaseReferenceEngine = firebase.firestore();
+
+   // Global Operational Context Scopes
+   let authenticatedUserGlobal = "";
+   let authenticatedUserRoleGlobal = "user";
+   let activeLanguageGlobal = "de";
+   let currentLeaveTypeGlobal = "vacation";
+   let globalSelectedBreakMinutesCache = 0;
+
+   let globalLoggedSessionsDatabaseMock = [];
+   let vacationLoggedDaysArrayCache = [];
+   let recentlyDeletedItemsBinCache = [];
+
+   // Localization Dictionary Map Matrix
+   const applicationTranslationsMatrix = {
+       en: {
+           loginSub: "Employee Portal | Time Tracking",
+           loginUser: "Employee Name",
+           loginPass: "Passcode / PIN",
+           dashWelcome: "Welcome back,",
+           dashTitle: "Operational Analytics Key Figures",
+           cardGross: "Net Work Hours",
+           cardOvertime: "Overtime Balance Bank",
+           logTitle: "Record Active Shift",
+           formDate: "Select Posting Calendar Date",
+           formProject: "Construction Site / Client Identifier",
+           formStart: "Shift Starting Time (Check-In)",
+           formEnd: "Shift Terminal Time (Check-Out)",
+           formBreak: "Rest Break Deductions",
+           formNotes: "Activity Log / Notes Report (Optional)",
+           vacTitle: "Leave & Absence Management Board",
+           vacFrom: "Start Date (From)",
+           vacTo: "Terminal Date (To)",
+           vacNotes: "Reason Context / Operational Comments",
+           histTitle: "Timecard Ledger History",
+           setTitle: "System Global Configuration Parameters",
+           setAllowed: "Allowed Vacation Days Allotment Bank",
+           setConstraint: "Standard Shift Target Constraint (Hours)"
+       },
+       de: {
+           loginSub: "Mitarbeiter-Portal | Zeiterfassung",
+           loginUser: "Mitarbeitername",
+           loginPass: "Kennwort / PIN",
+           dashWelcome: "Willkommen zurück,",
+           dashTitle: "Betriebliche Kennzahlen",
+           cardGross: "Nettoarbeitszeit",
+           cardOvertime: "Überstundenkonto",
+           logTitle: "Arbeitszeit erfassen",
+           formDate: "Buchungstag auswählen",
+           formProject: "Baustelle/Kunde",
+           formStart: "Arbeitsbeginn (Kommen)",
+           formEnd: "Arbeitsende (Gehen)",
+           formBreak: "Ruhepausen (Abzug)",
+           formNotes: "Tätigkeitsbericht / Notizen (Optional)",
+           vacTitle: "Urlaubs- & Fehlzeitenmanagement",
+           vacFrom: "Von",
+           vacTo: "Bis",
+           vacNotes: "Bemerkung / Context Tracker",
+           histTitle: "Stundenzettel-Historie",
+           setTitle: "Systemparameter",
+           setAllowed: "Urlaubsanspruch Tage (Jahr)",
+           setConstraint: "Soll-Arbeitszeit Standard (Std)"
+       }
+   };
+
+   document.addEventListener("DOMContentLoaded", () => {
+       populateTimeDropdownSelectionMenus();
+       initializeDateInputPickersToCurrentDate();
+       
+       document.getElementById('login-form').addEventListener('submit', handleSecureLoginAttempt);
+   });
+
+   function populateTimeDropdownSelectionMenus() {
+       const startMenuNode = document.getElementById('log-start-time');
+       const endMenuNode = document.getElementById('log-end-time');
+       if(!startMenuNode || !endMenuNode) return;
+       
+       startMenuNode.innerHTML = "";
+       endMenuNode.innerHTML = "";
+
+       for (let continuousHourIndex = 0; continuousHourIndex < 24; continuousHourIndex++) {
+           for (let minuteStepVal = 0; minuteStepVal < 60; minuteStepVal += 15) {
+               const timeStr = `${String(continuousHourIndex).padStart(2, '0')}:${String(minuteStepVal).padStart(2, '0')}`;
+               const optStart = new Option(timeStr, timeStr, timeStr === "07:00", timeStr === "07:00");
+               const optEnd = new Option(timeStr, timeStr, timeStr === "16:00", timeStr === "16:00");
+               startMenuNode.add(optStart);
+               endMenuNode.add(optEnd);
+           }
+       }
+   }
+
+   function initializeDateInputPickersToCurrentDate() {
+       const isoStr = new Date().toISOString().split('T')[0];
+       if(document.getElementById('log-date-picker')) document.getElementById('log-date-picker').value = isoStr;
+       if(document.getElementById('vacation-from-date-input')) document.getElementById('vacation-from-date-input').value = isoStr;
+       if(document.getElementById('vacation-to-date-input')) document.getElementById('vacation-to-date-input').value = isoStr;
+   }
+
+   async function handleSecureLoginAttempt(event) {
+       event.preventDefault();
+       const nameInput = document.getElementById('username').value.trim();
+       const passInput = document.getElementById('passcode').value.trim();
+       const messageBox = document.getElementById('message-box');
+       
+       if (!nameInput || !passInput) return;
+       
+       messageBox.innerHTML = activeLanguageGlobal === 'de' ? "Verifiziere Identität..." : "Authenticating Token...";
+       messageBox.className = "message success";
+       messageBox.style.display = "block";
+
+       if (typeof firebase === 'undefined') {
+           if (nameInput === "Admin" && passInput === "123456") {
+               authenticatedUserGlobal = "Admin Security Head";
+               authenticatedUserRoleGlobal = "admin";
+               completeSessionLaunchUiTransitions();
+               return;
+           }
+           messageBox.innerHTML = activeLanguageGlobal === 'de' ? "Cloud Framework Offline." : "Cloud Framework Offline.";
+           messageBox.className = 'message error';
+           return;
+       }
+
+       try {
+           // FIXED: Look up using raw input string (case-sensitive + spaces matching document ID layout exactly)
+           const userDocRef = databaseReferenceEngine.collection("Users").doc(nameInput);
+           const userSnapshot = await userDocRef.get();
+
+           if (!userSnapshot.exists) {
+               messageBox.innerHTML = activeLanguageGlobal === 'de' ? 
+                   "Mitarbeiter-Datensatz nicht gefunden. Bitte Groß-/Kleinschreibung beachten!" : "Employee record not found. Check uppercase letters & spaces!";
+               messageBox.className = 'message error';
+               return;
+           }
+
+           const userDataPayload = userSnapshot.data();
+           
+           // Reads exact case key string field matching your document rules
+           const databaseSecretCode = userDataPayload.Code ? String(userDataPayload.Code).trim() : "";
+           const userAssignedRole = userDataPayload.role ? String(userDataPayload.role).trim().toLowerCase() : "user";
+
+           if (databaseSecretCode === passInput && passInput !== "") {
+               authenticatedUserGlobal = nameInput; 
+               authenticatedUserRoleGlobal = userAssignedRole;
+               completeSessionLaunchUiTransitions();
+           } else {
+               messageBox.innerHTML = activeLanguageGlobal === 'de' ? 
+                   "Falsches Kennwort / PIN-Code ungültig!" : "Invalid passcode. Access denied!";
+               messageBox.className = 'message error';
+           }
+       } catch (error) {
+           console.error("Login verification transaction error: ", error);
+           messageBox.innerHTML = `Error: ${error.message}`;
+           messageBox.className = 'message error';
+       }
+   }
+
+   function completeSessionLaunchUiTransitions() {
+       document.getElementById('login-view').style.display = 'none';
+       document.getElementById('app-view').style.display = 'block';
+       
+       document.getElementById('user-profile-title').innerText = authenticatedUserGlobal;
+       document.getElementById('dash-profile-username').innerText = authenticatedUserGlobal;
+       
+       if (authenticatedUserRoleGlobal === 'admin') {
+           document.getElementById('nav-admin-link').style.display = 'flex';
+       } else {
+           document.getElementById('nav-admin-link').style.display = 'none';
+       }
+       
+       loadUserDataFromCloud();
+   }
+
+   async function loadUserDataFromCloud() {
+       if (typeof firebase === 'undefined' || !authenticatedUserGlobal) {
+           runGlobalApplicationMetricsEngine();
+           return;
+       }
+       try {
+           // Aligned references matching the exact raw state keys
+           const docRef = databaseReferenceEngine.collection("userProfiles").doc(authenticatedUserGlobal);
+           const snapshot = await docRef.get();
+           if (snapshot.exists) {
+               const cloudPayload = snapshot.data();
+               globalLoggedSessionsDatabaseMock = cloudPayload.workSessions || [];
+               vacationLoggedDaysArrayCache = cloudPayload.leaveDays || [];
+               recentlyDeletedItemsBinCache = cloudPayload.trashBin || [];
+               
+               if (cloudPayload.configVacationBank) document.getElementById('vacation-allowed-bank').value = cloudPayload.configVacationBank;
+               if (cloudPayload.configShiftTarget) document.getElementById('shift-target-constraint').value = cloudPayload.configShiftTarget;
+           }
+       } catch (err) {
+           console.error("Firestore Core sync fetch error: ", err);
+       }
+       runGlobalApplicationMetricsEngine();
+   }
+
+   async function forcePushLocalStateToCloudDatabase() {
+       if (typeof firebase === 'undefined' || !authenticatedUserGlobal) return;
+       try {
+           const payloadDataMap = {
+               workSessions: globalLoggedSessionsDatabaseMock,
+               leaveDays: vacationLoggedDaysArrayCache,
+               trashBin: recentlyDeletedItemsBinCache,
+               configVacationBank: parseFloat(document.getElementById('vacation-allowed-bank').value) || 30,
+               configShiftTarget: parseFloat(document.getElementById('shift-target-constraint').value) || 8.5,
+               lastPushedTimestamp: Date.now()
+           };
+           await databaseReferenceEngine.collection("userProfiles").doc(authenticatedUserGlobal).set(payloadDataMap, { merge: true });
+       } catch (err) {
+           console.error("Firestore backup upload error: ", err);
+       }
+   }
+
+   function handleSecureSignOutRequest() {
+       authenticatedUserGlobal = "";
+       authenticatedUserRoleGlobal = "user";
+       globalLoggedSessionsDatabaseMock = [];
+       vacationLoggedDaysArrayCache = [];
+       recentlyDeletedItemsBinCache = [];
+       
+       document.getElementById('username').value = '';
+       document.getElementById('passcode').value = '';
+       document.getElementById('message-box').style.display = 'none';
+       
+       document.getElementById('app-view').style.display = 'none';
+       document.getElementById('login-view').style.display = 'flex';
+       
+       switchActiveView('dashboard', document.getElementById('nav-dash-link'));
+   }
+
+   function toggleSidebarDrawer(shouldOpen) {
+       document.getElementById('sidebar-drawer').classList.toggle('open', shouldOpen);
+       document.getElementById('menu-backdrop').classList.toggle('show', shouldOpen);
+   }
+
+   function switchActiveView(targetPanelId, navigationMenuNode) {
+       document.querySelectorAll('.content-panel').forEach(panel => panel.classList.remove('active'));
+       document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+       
+       document.getElementById(`view-${targetPanelId}`).classList.add('active');
+       if(navigationMenuNode) navigationMenuNode.classList.add('active');
+       
+       const masterLayoutGrid = document.getElementById('main-content-layout');
+       if (targetPanelId === 'admin-panel') {
+           masterLayoutGrid.classList.add('admin-layout-widescreen');
+           loadAndCompileGlobalAdminDashboardMetrics();
+       } else {
+           masterLayoutGrid.classList.remove('admin-layout-widescreen');
+       }
+       
+       toggleSidebarDrawer(false);
+   }
+
+   function routeToMainDashboard() {
+       switchActiveView('dashboard', document.getElementById('nav-dash-link'));
+   }
+
+   function selectBreakOption(minutesVal, buttonElement) {
+       globalSelectedBreakMinutesCache = minutesVal;
+       document.querySelectorAll('.break-pill').forEach(pill => pill.classList.remove('active'));
+       buttonElement.classList.add('active');
+   }
+
+   function setLeaveManagementType(type) {
+       currentLeaveTypeGlobal = type;
+       document.getElementById('toggle-leave-vacation').classList.toggle('active', type === 'vacation');
+       document.getElementById('toggle-leave-sick').classList.toggle('active', type === 'sick');
+   }
+
+   async function handleNewRecordSubmission(e) {
+       e.preventDefault();
+       const dateVal = document.getElementById('log-date-picker').value;
+       const projectVal = document.getElementById('log-project-name').value.trim();
+       const startVal = document.getElementById('log-start-time').value;
+       const endVal = document.getElementById('log-end-time').value;
+       const notesVal = document.getElementById('log-notes').value.trim();
+
+       const itemRecord = {
+           id: 'session_' + Date.now() + Math.random().toString(36).substr(2, 4),
+           date: dateVal,
+           project: projectVal,
+           startTime: startVal,
+           endTime: endVal,
+           breakMinutes: globalSelectedBreakMinutesCache,
+           notes: notesVal,
+           timestamp: Date.now()
+       };
+
+       globalLoggedSessionsDatabaseMock.unshift(itemRecord);
+       await forcePushLocalStateToCloudDatabase();
+       runGlobalApplicationMetricsEngine();
+
+       document.getElementById('log-project-name').value = '';
+       document.getElementById('log-notes').value = '';
+       switchActiveView('history', document.getElementById('nav-lbl-hist').parentNode);
+   }
+
+   async function handleVacationDayLogSubmission(e) {
+       e.preventDefault();
+       const fromDate = document.getElementById('vacation-from-date-input').value;
+       const toDate = document.getElementById('vacation-to-date-input').value;
+       const notes = document.getElementById('vacation-notes-input').value.trim();
+
+       const dateStart = new Date(fromDate);
+       const dateEnd = new Date(toDate);
+       let totalDaysCount = 0;
+
+       for (let d = new Date(dateStart); d <= dateEnd; d.setDate(d.getDate() + 1)) {
+           const dayOfWeek = d.getDay();
+           if (dayOfWeek !== 0 && dayOfWeek !== 6) { 
+               totalDaysCount++;
+           }
+       }
+
+       const leaveItem = {
+           id: 'leave_' + Date.now() + Math.random().toString(36).substr(2, 4),
+           type: currentLeaveTypeGlobal,
+           fromDate: fromDate,
+           toDate: toDate,
+           computedDays: totalDaysCount,
+           notes: notes,
+           timestamp: Date.now()
+       };
+
+       vacationLoggedDaysArrayCache.unshift(leaveItem);
+       await forcePushLocalStateToCloudDatabase();
+       runGlobalApplicationMetricsEngine();
+
+       document.getElementById('vacation-notes-input').value = '';
+       switchActiveView('history', document.getElementById('nav-lbl-hist').parentNode);
+   }
+
+   async function triggerItemDeletionSequence(id, recordType) {
+       if (!confirm(activeLanguageGlobal === 'de' ? "Eintrag unwiderruflich löschen?" : "Permanently delete entry?")) return;
+
+       if (recordType === 'work') {
+           globalLoggedSessionsDatabaseMock = globalLoggedSessionsDatabaseMock.filter(item => item.id !== id);
+       } else {
+           vacationLoggedDaysArrayCache = vacationLoggedDaysArrayCache.filter(item => item.id !== id);
+       }
+
+       await forcePushLocalStateToCloudDatabase();
+       runGlobalApplicationMetricsEngine();
+   }
+
+   function calculateNetDurationInHours(startStr, endStr, breakMins) {
+       const [sh, sm] = startStr.split(':').map(Number);
+       const [eh, em] = endStr.split(':').map(Number);
+       
+       let diffMinutes = (eh * 60 + em) - (sh * 60 + sm);
+       if (diffMinutes < 0) diffMinutes += 24 * 60; 
+       
+       diffMinutes -= breakMins;
+       return Math.max(0, diffMinutes / 60);
+   }
+
+   function runGlobalApplicationMetricsEngine() {
+       let cumulativeNetHours = 0;
+       let cumulativeOvertimeBalance = 0;
+       const standardShiftTarget = parseFloat(document.getElementById('shift-target-constraint').value) || 8.5;
+
+       globalLoggedSessionsDatabaseMock.forEach(session => {
+           const duration = calculateNetDurationInHours(session.startTime, session.endTime, session.breakMinutes);
+           cumulativeNetHours += duration;
+           cumulativeOvertimeBalance += (duration - standardShiftTarget);
+       });
+
+       document.getElementById('dash-gross-hours').innerText = `${cumulativeNetHours.toFixed(2)} hrs`;
+       
+       const otField = document.getElementById('dash-overtime-hours');
+       if (cumulativeOvertimeBalance >= 0) {
+           otField.innerText = `+${cumulativeOvertimeBalance.toFixed(2)} hrs`;
+           otField.style.color = '#10b981';
+       } else {
+           otField.innerText = `${cumulativeOvertimeBalance.toFixed(2)} hrs`;
+           otField.style.color = '#e11d48';
+       }
+
+       renderUserHistoryLedgerView();
+   }
+
+   function renderUserHistoryLedgerView() {
+       const historyNode = document.getElementById('history-logs-render-node');
+       if(!historyNode) return;
+       historyNode.innerHTML = "";
+
+       const unifiedSortedManifest = [];
+       globalLoggedSessionsDatabaseMock.forEach(item => unifiedSortedManifest.push({ ...item, itemContextType: 'work' }));
+       vacationLoggedDaysArrayCache.forEach(item => unifiedSortedManifest.push({ ...item, itemContextType: 'leave' }));
+
+       unifiedSortedManifest.sort((a, b) => new Date(b.date || b.fromDate) - new Date(a.date || a.fromDate));
+
+       if (unifiedSortedManifest.length === 0) {
+           historyNode.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted); font-size:13px;">${activeLanguageGlobal === 'de' ? 'Keine Buchungen vorhanden.':'No log traces found.'}</div>`;
+           return;
+       }
+
+       unifiedSortedManifest.forEach(item => {
+           const cardRow = document.createElement('div');
+           cardRow.className = "history-item";
+
+           if (item.itemContextType === 'work') {
+               cardRow.style.borderLeftColor = 'var(--primary-blue)';
+               const duration = calculateNetDurationInHours(item.startTime, item.endTime, item.breakMinutes);
+               cardRow.innerHTML = `
+                   <div class="item-main-row">
+                       <div class="hist-left">
+                           <h5>${item.project}</h5>
+                           <p><i class="fa-solid fa-calendar-day"></i> ${formatCalendarDateLayout(item.date)} | <i class="fa-solid fa-clock"></i> ${item.startTime} - ${item.endTime} (${item.breakMinutes}m Break)</p>
+                           ${item.notes ? `<p style="margin-top:4px; font-style:italic; color:#475569;">${item.notes}</p>` : ''}
+                       </div>
+                       <div class="hist-right">
+                           <div>${duration.toFixed(2)} hrs</div>
+                           <button class="action-icon-btn" onclick="triggerItemDeletionSequence('${item.id}', 'work')"><i class="fa-solid fa-trash-can"></i></button>
+                       </div>
+                   </div>`;
+           } else {
+               const isSick = item.type === 'sick';
+               cardRow.style.borderLeftColor = isSick ? 'var(--primary-red)' : '#10b981';
+               cardRow.innerHTML = `
+                   <div class="item-main-row">
+                       <div class="hist-left">
+                           <h5>${isSick ? (activeLanguageGlobal === 'de' ? 'Arbeitsunfähigkeit (AU)':'Medical Leave') : (activeLanguageGlobal === 'de' ? 'Erholungsurlaub':'Vacation Leave')}</h5>
+                           <p><i class="fa-solid fa-calendar-days"></i> ${formatCalendarDateLayout(item.fromDate)} - ${formatCalendarDateLayout(item.toDate)}</p>
+                           ${item.notes ? `<p style="margin-top:4px; font-style:italic; color:#475569;">${item.notes}</p>` : ''}
+                       </div>
+                       <div class="hist-right">
+                           <div>${item.computedDays} ${activeLanguageGlobal === 'de'?'Tage':'Days'}</div>
+                           <button class="action-icon-btn" onclick="triggerItemDeletionSequence('${item.id}', 'leave')"><i class="fa-solid fa-trash-can"></i></button>
+                       </div>
+                   </div>`;
+           }
+           historyNode.appendChild(cardRow);
+       });
+   }
+
+   function formatCalendarDateLayout(isoString) {
+       if (!isoString) return "";
+       const [y, m, d] = isoString.split('-');
+       return `${d}.${m}.${y}`;
+   }
+
+   function setApplicationLanguage(l) {
+       activeLanguageGlobal = l;
+       document.getElementById('lang-btn-en').classList.toggle('active', l === 'en');
+       document.getElementById('lang-btn-de').classList.toggle('active', l === 'de');
+
+       const translationDict = applicationTranslationsMatrix[l];
+       for (const key in translationDict) {
+           const element = document.getElementById(`lbl-${convertCamelCaseToDashString(key)}`);
+           if (element) element.innerText = translationDict[key];
+           const navElement = document.getElementById(`nav-lbl-${convertCamelCaseToDashString(key)}`);
+           if (navElement) navElement.innerText = translationDict[key];
+           const cardElement = document.getElementById(`lbl-card-${convertCamelCaseToDashString(key)}`);
+           if (cardElement) cardElement.innerText = translationDict[key];
+           const formElement = document.getElementById(`lbl-form-${convertCamelCaseToDashString(key)}`);
+           if (formElement) formElement.innerText = translationDict[key];
+           const vacElement = document.getElementById(`lbl-vac-${convertCamelCaseToDashString(key)}`);
+           if (vacElement) vacElement.innerText = translationDict[key];
+           const setElement = document.getElementById(`lbl-set-${convertCamelCaseToDashString(key)}`);
+           if (setElement) setElement.innerText = translationDict[key];
+       }
+
+       document.getElementById('username').placeholder = l === 'de' ? "Name oder Email eintragen":"Enter name or email";
+       document.getElementById('log-project-name').placeholder = l === 'de' ? "Baustelle oder Kundenname eintragen":"Enter construction site or client name";
+       document.getElementById('log-notes').placeholder = l === 'de' ? "Besondere Vorkommnisse vermerken...":"Note down exceptional circumstances...";
+       document.getElementById('vacation-notes-input').placeholder = l === 'de' ? "z.B. Erholungsurlaub 2026...":"e.g., Annual leave tracking parameters...";
+
+       runGlobalApplicationMetricsEngine();
+   }
+
+   function convertCamelCaseToDashString(str) {
+       return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+   }
+
+   async function loadAndCompileGlobalAdminDashboardMetrics() {
+       const tableBody = document.getElementById('admin-global-table-body');
+       const filterDropdown = document.getElementById('admin-user-filter-dropdown');
+       if(!tableBody) return;
+
+       if (typeof firebase === 'undefined') {
+           tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--admin-text-muted);">Database environment offline.</td></tr>`;
+           return;
+       }
+
+       try {
+           const allProfilesSnapshot = await databaseReferenceEngine.collection("userProfiles").get();
+           let uniqueUsersSet = new Set();
+           let collectiveNetHoursSum = 0;
+           let collectiveAbsenceDaysSum = 0;
+
+           let masterAdminRegistryMatrix = [];
+           let registeredProfilesList = [];
+
+           allProfilesSnapshot.forEach(profileDoc => {
+               const profileId = profileDoc.id; // Raw Name (e.g. Amran Hiluf)
+               registeredProfilesList.push(profileId);
+               const data = profileDoc.data();
+
+               const userSessions = data.workSessions || [];
+               const userLeaves = data.leaveDays || [];
+
+               userSessions.forEach(s => {
+                   uniqueUsersSet.add(profileId);
+                   const hours = calculateNetDurationInHours(s.startTime, s.endTime, s.breakMinutes);
+                   collectiveNetHoursSum += hours;
+                   masterAdminRegistryMatrix.push({
+                       user: profileId,
+                       date: s.date,
+                       category: 'WORK',
+                       desc: `${s.project} (${s.startTime} - ${s.endTime})${s.notes ? ` - Msg: ${s.notes}` : ''}`,
+                       duration: `${hours.toFixed(2)} hrs`,
+                       rawDate: s.date
+                   });
+               });
+
+               userLeaves.forEach(l => {
+                   uniqueUsersSet.add(profileId);
+                   collectiveAbsenceDaysSum += (l.computedDays || 0);
+                   masterAdminRegistryMatrix.push({
+                       user: profileId,
+                       date: l.fromDate,
+                       category: l.type === 'sick' ? 'SICK' : 'VACATION',
+                       desc: `${formatCalendarDateLayout(l.fromDate)} bis ${formatCalendarDateLayout(l.toDate)}${l.notes ? ` - Context: ${l.notes}` : ''}`,
+                       duration: `${l.computedDays} Tage`,
+                       rawDate: l.fromDate
+                   });
+               });
+           });
+
+           // Rebuild selection criteria options matching user IDs cleanly
+           const currentSelectedFilterValue = filterDropdown.value;
+           filterDropdown.innerHTML = `<option value="ALL">${activeLanguageGlobal === 'de' ? 'Alle Mitarbeiter anzeigen':'Show All Users'}</option>`;
+           registeredProfilesList.sort().forEach(user => {
+               const option = new Option(user, user);
+               filterDropdown.add(option);
+           });
+           filterDropdown.value = currentSelectedFilterValue;
+
+           masterAdminRegistryMatrix.sort((a, b) => new Date(b.rawDate) - new Date(a.rawDate));
+           window.cachedMasterAdminRegistryMatrix = masterAdminRegistryMatrix;
+
+           document.getElementById('admin-stat-users').innerText = uniqueUsersSet.size;
+           document.getElementById('admin-stat-hours').innerText = collectiveNetHoursSum.toFixed(2);
+           document.getElementById('admin-stat-days').innerText = collectiveAbsenceDaysSum;
+
+           runGlobalAdminFilteringEngine();
+
+       } catch (error) {
+           console.error("Admin dataset gathering sequence runtime crash: ", error);
+           tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--primary-red);">Failed syncing data context metrics: ${error.message}</td></tr>`;
+       }
+   }
+
+   function runGlobalAdminFilteringEngine() {
+       const selectedUser = document.getElementById('admin-user-filter-dropdown').value;
+       const tableBody = document.getElementById('admin-global-table-body');
+       if (!tableBody || !window.cachedMasterAdminRegistryMatrix) return;
+
+       tableBody.innerHTML = "";
+       const filteredArray = window.cachedMasterAdminRegistryMatrix.filter(row => selectedUser === 'ALL' || row.user === selectedUser);
+
+       if (filteredArray.length === 0) {
+           tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--admin-text-muted);">No records discovered under criteria options matrix.</td></tr>`;
+           return;
+       }
+
+       filteredArray.forEach(row => {
+           const tr = document.createElement('tr');
+           let badgeClass = 'badge-type-w';
+           if (row.category === 'VACATION') badgeClass = 'badge-type-v';
+           if (row.category === 'SICK') badgeClass = 'badge-type-s';
+
+           tr.innerHTML = `
+               <td style="font-weight:700;">${row.user}</td>
+               <td>${formatCalendarDateLayout(row.date)}</td>
+               <td><span class="${badgeClass}">${row.category}</span></td>
+               <td style="max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${row.desc}">${row.desc}</td>
+               <td style="text-align:right; font-weight:700; color:#fff;">${row.duration}</td>
+           `;
+           tableBody.appendChild(tr);
+       });
+   }
+
+   function buildAndLaunchCustomReportModal() {
+       const bodyNode = document.getElementById('modal-report-content-body');
+       if(!bodyNode) return;
+       bodyNode.innerHTML = "";
+
+       let wHours = 0;
+       let vDays = 0;
+       let sDays = 0;
+
+       globalLoggedSessionsDatabaseMock.forEach(s => {
+           wHours += calculateNetDurationInHours(s.startTime, s.endTime, s.breakMinutes);
+       });
+       vacationLoggedDaysArrayCache.forEach(l => {
+           if (l.type === 'sick') sDays += l.computedDays;
+           else vDays += l.computedDays;
+       });
+
+       bodyNode.innerHTML = `
+           <div class="statement-summary-box">
+               <div style="font-size:14px; font-weight:800; color:var(--dark-slate); margin-bottom:10px; text-transform:uppercase; border-bottom:1px solid #cbd5e1; padding-bottom:4px;">
+                   <span>${activeLanguageGlobal === 'de' ? 'Konto-Übersicht':'Account Balance Trace'}</span>
+               </div>
+               <div><span>Geleistete Netto-Arbeitszeit:</span> <span style="color:var(--primary-blue); font-weight:700;">${wHours.toFixed(2)} Std</span></div>
+               <div><span>Eingebuchter Urlaub:</span> <span style="color:#10b981; font-weight:700;">${vDays} Tage</span></div>
+               <div><span>Krankheitstage gesamt:</span> <span style="color:var(--primary-red); font-weight:700;">${sDays} Tage</span></div>
+           </div>
+       `;
+       document.getElementById('custom-report-modal-backdrop').classList.add('show');
+   }
+
+   function closeCustomReportModal() {
+       document.getElementById('custom-report-modal-backdrop').classList.remove('show');
+   }
+
+   function triggerPDFExportEngine() {
+       const targetElement = document.getElementById('pdf-render-target');
+       const headerBannerElement = document.getElementById('pdf-custom-header');
+       
+       const selectedUser = document.getElementById('admin-user-filter-dropdown').value;
+       document.getElementById('pdf-user-placeholder').innerText = selectedUser === 'ALL' ? 'Alle Mitarbeiter' : selectedUser;
+       document.getElementById('pdf-date-placeholder').innerText = new Date().toLocaleDateString('de-DE');
+
+       headerBannerElement.style.display = 'block';
+
+       const conversionOptionsMap = {
+           margin: [15, 15, 15, 15],
+           filename: `Stundenzettel_Report_${selectedUser}.pdf`,
+           image: { type: 'jpeg', quality: 0.98 },
+           html2canvas: { scale: 2, useCORS: true },
+           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+       };
+
+       html2pdf().set(conversionOptionsMap).from(targetElement).save().then(() => {
+           headerBannerElement.style.display = 'none';
+       }).catch(err => {
+           console.error("PDF Export failed: ", err);
+           headerBannerElement.style.display = 'none';
+       });
+   }
  </script>
 </body>
 </html>
