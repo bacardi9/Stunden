@@ -211,7 +211,7 @@
              </div>
              <div class="form-group">
                  <label id="lbl-login-pass">Passwort / PIN-Code</label>
-                 <input type="password" id="login-password" placeholder="••••" required>
+                 <input type="password" id="login-password" placeholder="••••••" required>
              </div>
              <button type="submit" class="primary-btn" id="lbl-login-btn">Sicher Anmelden</button>
              <div id="login-status-message" class="message"></div>
@@ -279,7 +279,7 @@
                      <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted); letter-spacing:0.5px;" id="lbl-dash-status">Data Engine Synchronized</span>
                  </div>
                  <div class="metrics-grid">
-                     <div class="metric-card" style="border-top-color: var(--primary-blue);" onclick="switchActiveView('history', document.getElementById('nav-lbl-hist').parentNode)">
+                     <div class="metric-card" style="border-top-color: var(--primary-blue);" onclick="switchActiveView('history', document.getElementById('lbl-nav-hist').parentNode)">
                          <label id="lbl-card-hours">Arbeitszeit (Monat)</label>
                          <div class="value" id="dash-metric-hours-sum">0.00 Std</div>
                      </div>
@@ -522,7 +522,7 @@
     let activeLeaveFormTypeSelection = "VACATION"; 
     let temporalHistoryTrashBinFilterActive = false; 
 
-    // Databasing Mock Engine Arrays (Syncs Live to Firestore Cloud Infrastructure)
+    // Databasing System Caches (Syncs Live to Firestore Cloud Infrastructure)
     let globalLoggedSessionsDatabaseMock = [];
     let vacationLoggedDaysArrayCache = [];
     let recentlyDeletedItemsBinCache = [];
@@ -803,48 +803,79 @@
         }
     }
 
-    // Main Verification Engine Core Authenticator Login Matrix
-    function handleSecureLoginAttempt(event) {
+    // Corrected Firestore Live Login Authenticator Verification Engine
+    async function handleSecureLoginAttempt(event) {
         event.preventDefault();
         const nameInput = document.getElementById('login-username').value.trim();
-        const passInput = document.getElementById('login-password').value;
+        const passInput = document.getElementById('login-password').value.trim();
         const messageBox = document.getElementById('login-status-message');
         
         if (!nameInput || !passInput) return;
         
-        const lowName = nameInput.toLowerCase();
-        if (lowName === "admin" && passInput === "1234") {
-            authenticatedUserGlobal = "Admin Security Head";
-            authenticatedUserRoleGlobal = "admin";
-        } else if (passInput === "0000") {
-            authenticatedUserGlobal = nameInput;
-            authenticatedUserRoleGlobal = "user";
-        } else {
-            messageBox.innerHTML = activeLanguageGlobal === 'de' ? 
-                `Falsches Kennwort / PIN.<br><span style="font-size:11px;color:#777;font-weight:normal;">Zugangscode ungültig!</span>` : 
-                `Invalid passcode.<br><span style="font-size:11px;color:#777;font-weight:normal;">Access denied!</span>`;
+        messageBox.innerHTML = activeLanguageGlobal === 'de' ? "Verifiziere Identität..." : "Authenticating Token...";
+        messageBox.className = "message success";
+        messageBox.style.display = "block";
+
+        // Fallback configuration if Firestore component library fails to mount locally
+        if (typeof firebase === 'undefined') {
+            if (nameInput.toLowerCase() === "admin" && passInput === "123456") {
+                authenticatedUserGlobal = "Admin Security Head";
+                authenticatedUserRoleGlobal = "admin";
+                completeSessionLaunchUiTransitions();
+                return;
+            }
+            messageBox.innerHTML = activeLanguageGlobal === 'de' ? "Cloud Framework Offline." : "Cloud Framework Offline.";
             messageBox.className = 'message error';
             return;
         }
-        
-        messageBox.innerHTML = activeLanguageGlobal === 'de' ? "Verifiziere Identität..." : "Authenticating Token...";
-        messageBox.className = "message success";
-        
-        setTimeout(async () => {
-            document.getElementById('view-login').style.display = 'none';
-            document.getElementById('app-shell').style.display = 'block';
-            document.getElementById('drawer-user-fullname').textContent = authenticatedUserGlobal;
-            document.getElementById('drawer-user-role-token').textContent = authenticatedUserRoleGlobal === 'admin' ? "Executive Management Console" : "Standard Corporate Node Account";
-            
-            if (authenticatedUserRoleGlobal === 'admin') {
-                document.getElementById('nav-admin-link').style.display = 'flex';
-            } else {
-                document.getElementById('nav-admin-link').style.display = 'none';
+
+        try {
+            // Access the dynamic document using exact "Users" capitalization requested
+            const userDocRef = firebase.firestore().collection("Users").doc(nameInput);
+            const userSnapshot = await userDocRef.get();
+
+            if (!userSnapshot.exists) {
+                messageBox.innerHTML = activeLanguageGlobal === 'de' ? 
+                    "Mitarbeiter-Datensatz nicht gefunden." : "Employee record not found.";
+                messageBox.className = 'message error';
+                return;
             }
-            
-            setApplicationLanguage(activeLanguageGlobal);
-            await loadUserDataFromCloud();
-        }, 600);
+
+            const userDataPayload = userSnapshot.data();
+            // Read the "Code" string field exactly matching database screenshots
+            const databaseSecretCode = userDataPayload.Code ? String(userDataPayload.Code).trim() : "";
+            const userAssignedRole = userDataPayload.role ? String(userDataPayload.role).trim().toLowerCase() : "user";
+
+            if (databaseSecretCode === passInput && passInput !== "") {
+                authenticatedUserGlobal = nameInput;
+                authenticatedUserRoleGlobal = userAssignedRole;
+                completeSessionLaunchUiTransitions();
+            } else {
+                messageBox.innerHTML = activeLanguageGlobal === 'de' ? 
+                    "Falsches Kennwort / PIN-Code ungültig!" : "Invalid passcode. Access denied!";
+                messageBox.className = 'message error';
+            }
+        } catch (error) {
+            console.error("Login verification transaction error: ", error);
+            messageBox.innerHTML = `Error connecting to authentication matrix: ${error.message}`;
+            messageBox.className = 'message error';
+        }
+    }
+
+    function completeSessionLaunchUiTransitions() {
+        document.getElementById('view-login').style.display = 'none';
+        document.getElementById('app-shell').style.display = 'block';
+        document.getElementById('drawer-user-fullname').textContent = authenticatedUserGlobal;
+        document.getElementById('drawer-user-role-token').textContent = authenticatedUserRoleGlobal === 'admin' ? "Executive Management Console" : "Standard Corporate Node Account";
+        
+        if (authenticatedUserRoleGlobal === 'admin') {
+            document.getElementById('nav-admin-link').style.display = 'flex';
+        } else {
+            document.getElementById('nav-admin-link').style.display = 'none';
+        }
+        
+        setApplicationLanguage(activeLanguageGlobal);
+        loadUserDataFromCloud();
     }
 
     function terminateUserSessionState() {
@@ -1033,7 +1064,7 @@
         await forcePushLocalStateToCloudDatabase();
         if (authenticatedUserRoleGlobal === 'admin') await downloadGlobalCorporateLogsForAdminConsole();
         
-        switchActiveView('history', document.getElementById('nav-lbl-hist').parentNode);
+        switchActiveView('history', document.getElementById('lbl-nav-hist').parentNode);
     }
 
     async function handleVacationDayLogSubmission(e) {
@@ -1061,7 +1092,7 @@
         await forcePushLocalStateToCloudDatabase();
         if (authenticatedUserRoleGlobal === 'admin') await downloadGlobalCorporateLogsForAdminConsole();
         
-        switchActiveView('history', document.getElementById('nav-lbl-hist').parentNode);
+        switchActiveView('history', document.getElementById('lbl-nav-hist').parentNode);
     }
 
     // Transaction History Renderer Matrix
