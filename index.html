@@ -1404,9 +1404,21 @@
       <div class="panel-scroll-content">
         <div class="view-title">
           <span id="lbl-hist-title">Stundenzettel-Archiv</span>
-          <button class="primary-btn red-btn" id="btn-hist-export" style="width:auto; padding:8px 16px; font-size:13px;" onclick="triggerPDFExportEngine()">
-            <i class="fa-solid fa-file-pdf" style="margin-right:6px;"></i>PDF
-          </button>
+          <div style="display:flex;gap:8px;">
+            <button class="primary-btn" id="btn-hist-export-default" style="width:auto;padding:8px 14px;font-size:12px;background:var(--dark-slate);" onclick="triggerPDFExportEngine(false)" title="20. bis 20.">
+              <i class="fa-solid fa-calendar" style="margin-right:5px;"></i>20.–20.
+            </button>
+            <button class="primary-btn red-btn" id="btn-hist-export" style="width:auto; padding:8px 16px; font-size:13px;" onclick="triggerPDFExportEngine(true)">
+              <i class="fa-solid fa-file-pdf" style="margin-right:6px;"></i>PDF
+            </button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin:8px 0 16px;padding:10px;background:#f8fafc;border-radius:10px;flex-wrap:wrap;">
+          <label style="font-size:12px;font-weight:600;color:#475569;">Von:</label>
+          <input type="date" id="export-start-date" style="padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">
+          <label style="font-size:12px;font-weight:600;color:#475569;">Bis:</label>
+          <input type="date" id="export-end-date" style="padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">
+          <span style="font-size:11px;color:#64748b;margin-left:auto;">Standard: 20. bis 20.</span>
         </div>
         <div id="pdf-render-target">
           <div id="pdf-custom-header">
@@ -1808,6 +1820,15 @@
     document.getElementById('vacation-from-date-input').value = new Date().toISOString().split('T')[0];
     document.getElementById('vacation-to-date-input').value   = new Date().toISOString().split('T')[0];
     document.getElementById('schule-date-picker').value = new Date().toISOString().split('T')[0];
+    // Set default export period (20th-20th)
+    const def = getDefault20to20Period();
+    const startInput = document.getElementById('export-start-date');
+    const endInput = document.getElementById('export-end-date');
+    if (startInput && endInput) {
+      startInput.value = new Date(def.start.getTime() - def.start.getTimezoneOffset()*60000).toISOString().split('T')[0];
+      endInput.value = new Date(def.end.getTime() - def.end.getTimezoneOffset()*60000).toISOString().split('T')[0];
+    }
+
 
     // Reset times to default when date changes
     document.getElementById('log-date-picker').addEventListener('change', () => {
@@ -2124,7 +2145,26 @@
 
   function handleSecureSignOutRequest() {
     toggleSidebarDrawer(false);
-    showConfirmModal(activeLanguageGlobal === 'de' ? 'Wirklich abmelden?' : 'Sign out?', () => { auth.signOut().catch(()=>{}); localStorage.removeItem('schuermann_auth_user'); localStorage.removeItem('schuermann_auth_role'); authenticatedUserGlobal=''; authenticatedUserRoleGlobal='user'; switchToLoginView(); }); return;
+    showConfirmModal(activeLanguageGlobal === 'de' ? 'Wirklich abmelden?' : 'Sign out?', () => { 
+      auth.signOut().catch(()=>{}); 
+      localStorage.removeItem('schuermann_auth_user'); 
+      localStorage.removeItem('schuermann_auth_role'); 
+      authenticatedUserGlobal=''; 
+      authenticatedUserRoleGlobal='user'; 
+      // Clear caches
+      globalLoggedSessionsDatabaseMock = [];
+      vacationLoggedDaysArrayCache = [];
+      recentlyDeletedItemsBinCache = [];
+      adminAllEntriesCache = [];
+      // Show login view
+      document.getElementById('app-view').style.display = 'none';
+      document.getElementById('admin-full-view').style.display = 'none';
+      document.getElementById('login-view').style.display = 'flex';
+      document.body.classList.remove('admin-mode');
+      // Reset form
+      document.getElementById('login-username').value = '';
+      document.getElementById('login-password').value = '';
+    }); return;
     auth.signOut().catch(() => {});
     localStorage.removeItem('schuermann_auth_user');
     localStorage.removeItem('schuermann_auth_role');
@@ -2646,7 +2686,30 @@ function handleVacationDayLogSubmission(event) {
   }
 
   // ── PDF Export (History) ───────────────────────────────────────────────────
-  function triggerPDFExportEngine() {
+  
+  function getDefault20to20Period() {
+    const now = new Date();
+    const day = now.getDate();
+    let start, end;
+    if (day >= 20) {
+      start = new Date(now.getFullYear(), now.getMonth(), 20);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 20);
+    } else {
+      start = new Date(now.getFullYear(), now.getMonth() - 1, 20);
+      end = new Date(now.getFullYear(), now.getMonth(), 20);
+    }
+    // set to start of day
+    start.setHours(0,0,0,0);
+    end.setHours(23,59,59,999);
+    return { start, end };
+  }
+
+  function parseDMY(dmy) {
+    const [d,m,y] = dmy.split('/').map(Number);
+    return new Date(y, m-1, d);
+  }
+
+function triggerPDFExportEngine(useCustom = false) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -2656,11 +2719,30 @@ function handleVacationDayLogSubmission(event) {
 
     const user = authenticatedUserGlobal || 'Mitarbeiter';
     const sessions = (globalLoggedSessionsDatabaseMock || []).filter(s => s.type === 'work' || s.type === 'schule');
+    // ── Date range filtering (20th to 20th or custom) ──
+    let periodStart, periodEnd;
+    if (useCustom) {
+      const startVal = document.getElementById('export-start-date')?.value;
+      const endVal = document.getElementById('export-end-date')?.value;
+      if (startVal && endVal) {
+        periodStart = new Date(startVal); periodStart.setHours(0,0,0,0);
+        periodEnd = new Date(endVal); periodEnd.setHours(23,59,59,999);
+      } else {
+        const def = getDefault20to20Period(); periodStart = def.start; periodEnd = def.end;
+      }
+    } else {
+      const def = getDefault20to20Period(); periodStart = def.start; periodEnd = def.end;
+    }
+    const filteredSessions = sessions.filter(s => {
+      const d = parseDMY(s.date);
+      return d >= periodStart && d <= periodEnd;
+    });
+
     const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
     // Group sessions by date
     const groups = {};
-    sessions.forEach(s => { (groups[s.date] = groups[s.date] || []).push(s); });
+    filteredSessions.forEach(s => { (groups[s.date] = groups[s.date] || []).push(s); });
     const dateKeys = Object.keys(groups).sort((a, b) => {
       const [da, ma, ya] = a.split('/').map(Number);
       const [db, mb, yb] = b.split('/').map(Number);
@@ -2668,8 +2750,8 @@ function handleVacationDayLogSubmission(event) {
     });
 
     // Calculate totals
-    const totalNet = sessions.reduce((sum, s) => sum + ((s.duration || 0) - ((s.breakTime || 0) / 60)), 0);
-    const totalBreak = sessions.reduce((sum, s) => sum + ((s.breakTime || 0) / 60), 0);
+    const totalNet = filteredSessions.reduce((sum, s) => sum + ((s.duration || 0) - ((s.breakTime || 0) / 60)), 0);
+    const totalBreak = filteredSessions.reduce((sum, s) => sum + ((s.breakTime || 0) / 60), 0);
 
     // Colors
     const primaryRed = [192, 57, 43];
@@ -2718,7 +2800,7 @@ function handleVacationDayLogSubmission(event) {
     const cardHeight = 18;
     const cards = [
       { label: 'MITARBEITER', value: user, accent: false },
-      { label: 'EINTRÄGE', value: sessions.length.toString(), accent: false },
+      { label: 'EINTRÄGE', value: filteredSessions.length.toString(), accent: false },
       { label: 'GESAMTARBEITSZEIT', value: totalNet.toFixed(2) + ' h', accent: true }
     ];
 
@@ -3085,7 +3167,7 @@ function handleVacationDayLogSubmission(event) {
 
     // Filter data for this employee
     const empData = adminAllEntriesCache.filter(r => r.user === selectedUser);
-    const workEntries = empData.filter(r => r.category === 'WORK');
+    const workEntries = empDataFiltered.filter(r => r.category === 'WORK');
     const totalHours = workEntries.reduce((sum, r) => sum + r.hrs, 0);
     const vacationDays = empData.filter(r => r.category === 'VACATION').length;
     const sickDays = empData.filter(r => r.category === 'SICK').length;
@@ -3156,10 +3238,18 @@ function handleVacationDayLogSubmission(event) {
     const margin = 15;
 
     const empData     = adminAllEntriesCache.filter(r => r.user === employeeName);
-    const workEntries = empData.filter(r => r.category === 'WORK');
+    // Apply default 20th-20th period
+    const defPeriod = getDefault20to20Period();
+    const empDataFiltered = empData.filter(r => {
+      if (!r.date) return true;
+      const d = parseDMY(r.date);
+      return d >= defPeriod.start && d <= defPeriod.end;
+    });
+
+    const workEntries = empDataFiltered.filter(r => r.category === 'WORK');
     const totalHours  = workEntries.reduce((sum, r) => sum + r.hrs, 0);
-    const vacDays     = empData.filter(r => r.category === 'VACATION').length;
-    const sickDays    = empData.filter(r => r.category === 'SICK').length;
+    const vacDays     = empDataFiltered.filter(r => r.category === 'VACATION').length;
+    const sickDays    = empDataFiltered.filter(r => r.category === 'SICK').length;
     const today       = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
     // Group work entries by date → oldest first
