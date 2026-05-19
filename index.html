@@ -224,21 +224,24 @@
 <style>
   :root {
     --primary-red: #e11d48;
-    --primary-blue: #0259b6;
+    --primary-blue: #0ea5e9;
     --dark-slate: #0f172a;
-    --light-bg: #f8fafc;
-    --card-border: #e2e8f0;
-    --text-main: #334155;
-    --text-muted: #64748b;
-    --admin-dark: #0f172a;
-    --admin-card: #1e293b;
-    --admin-gold: #E30613;
-    --admin-border: #334155;
-    --admin-text-main: #f8fafc;
-    --admin-text-muted: #94a3b8;
+    --light-bg: #050a14;
+    --card-bg: #0b1220;
+    --card-border: #1e293b;
+    --text-main: #e2e8f0;
+    --text-muted: #94a3b8;
+    --admin-dark: #020617;
+    --admin-card: #0b1120;
+    --admin-gold: #e11d48;
+    --admin-border: #1e293b;
+    --admin-text-main: #f1f5f9;
+    --admin-text-muted: #64748b;
+    --enterprise-glow: rgba(14,165,233,0.15);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  body { background-color: var(--light-bg); color: var(--text-main); padding-bottom: 20px; -webkit-font-smoothing: antialiased; }
+  body { background: radial-gradient(ellipse at top, #0b1220 0%, #050a14 70%); color: var(--text-main); padding-bottom: 20px; -webkit-font-smoothing: antialiased; }
+body::before { content:""; position:fixed; inset:0; background: linear-gradient(transparent 0%, rgba(14,165,233,0.03) 100%), repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 40px), repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 40px); pointer-events:none; z-index:0; }
 
   /* ── Login Shell ── */
   .login-container {
@@ -255,7 +258,7 @@
       radial-gradient(circle at 50% 50%, #0f172a 0%, #000 80%);
     filter: blur(60px); z-index: 1; pointer-events: none;
   }
-  .login-card { background: rgba(15,23,42,0.85) !important; backdrop-filter: blur(20px);
+  .login-card { background: rgba(11,18,32,0.9) !important; backdrop-filter: blur(24px);
     background: rgba(255,255,255,0.98); padding: 40px 32px 28px;
     border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
     width: 100%; max-width: 420px; position: relative; z-index: 2;
@@ -774,7 +777,69 @@
 
 
   .primary-btn { background: linear-gradient(135deg, #E30613 0%, #b8000f 100%) !important; box-shadow: 0 8px 24px rgba(227,6,19,0.35) !important; }
-  .login-card { background: rgba(15,23,42,0.85) !important; backdrop-filter: blur(20px); border: 1px solid rgba(227,6,19,0.15) !important; }
+  .login-card { background: rgba(11,18,32,0.9) !important; backdrop-filter: blur(24px); border: 1px solid rgba(227,6,19,0.15) !important; }
+
+
+  /* ── Enterprise Dark Theme ── */
+  .main-container, .content-wrapper { position:relative; z-index:1; }
+  .metric-card, .form-card, .history-card, .settings-card {
+    background: linear-gradient(145deg, rgba(15,23,42,0.9), rgba(11,18,32,0.85)) !important;
+    border: 1px solid rgba(148,163,184,0.12) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(14,165,233,0.05) inset !important;
+    backdrop-filter: blur(12px);
+  }
+  .metric-card:hover { box-shadow: 0 12px 40px rgba(14,165,233,0.15), 0 0 20px var(--enterprise-glow) !important; transform: translateY(-2px); transition: all 0.3s ease; }
+  
+  /* Admin Enterprise AI Look */
+  body.admin-mode { background: #020617 !important; }
+  body.admin-mode::before {
+    background: 
+      radial-gradient(circle at 15% 20%, rgba(225,29,72,0.15) 0%, transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(14,165,233,0.12) 0%, transparent 40%),
+      linear-gradient(180deg, #020617 0%, #050a14 100%),
+      repeating-linear-gradient(0deg, rgba(148,163,184,0.03) 0 1px, transparent 1px 60px),
+      repeating-linear-gradient(90deg, rgba(148,163,184,0.03) 0 1px, transparent 1px 60px) !important;
+  }
+  .admin-header {
+    background: linear-gradient(90deg, rgba(2,6,23,0.95), rgba(11,17,32,0.9)) !important;
+    border-bottom: 1px solid rgba(225,29,72,0.3) !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 1px 0 rgba(14,165,233,0.1) inset !important;
+    backdrop-filter: blur(20px);
+  }
+  .admin-card, .admin-stat-card {
+    background: linear-gradient(145deg, #0b1120, #0f172a) !important;
+    border: 1px solid rgba(225,29,72,0.15) !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 30px rgba(225,29,72,0.05) inset !important;
+    position: relative;
+    overflow: hidden;
+  }
+  .admin-card::before, .admin-stat-card::before {
+    content: ""; position: absolute; top:0; left:-100%; width:100%; height:2px;
+    background: linear-gradient(90deg, transparent, rgba(14,165,233,0.8), transparent);
+    animation: scan 3s linear infinite;
+  }
+  @keyframes scan { 0% { left:-100%; } 100% { left:100%; } }
+  .admin-stat-card:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 15px 50px rgba(225,29,72,0.2) !important; }
+  
+  /* Buttons enterprise */
+  .primary-btn {
+    background: linear-gradient(135deg, var(--primary-red), #be123c) !important;
+    box-shadow: 0 4px 16px rgba(225,29,72,0.3), 0 0 0 1px rgba(255,255,255,0.1) inset !important;
+    position: relative; overflow: hidden;
+  }
+  .primary-btn::after {
+    content:""; position:absolute; top:-50%; left:-50%; width:200%; height:200%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    transform: rotate(45deg); transition: all 0.5s;
+  }
+  .primary-btn:hover::after { left:100%; }
+  
+  /* Header enterprise */
+  .app-header {
+    background: rgba(5,10,20,0.85) !important;
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(148,163,184,0.1) !important;
+  }
 
 </style>
 
@@ -797,7 +862,69 @@
     @media (prefers-color-scheme: dark) {
       input[type="date"] { color-scheme: dark; }
     }
-  </style>
+  
+  /* ── Enterprise Dark Theme ── */
+  .main-container, .content-wrapper { position:relative; z-index:1; }
+  .metric-card, .form-card, .history-card, .settings-card {
+    background: linear-gradient(145deg, rgba(15,23,42,0.9), rgba(11,18,32,0.85)) !important;
+    border: 1px solid rgba(148,163,184,0.12) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(14,165,233,0.05) inset !important;
+    backdrop-filter: blur(12px);
+  }
+  .metric-card:hover { box-shadow: 0 12px 40px rgba(14,165,233,0.15), 0 0 20px var(--enterprise-glow) !important; transform: translateY(-2px); transition: all 0.3s ease; }
+  
+  /* Admin Enterprise AI Look */
+  body.admin-mode { background: #020617 !important; }
+  body.admin-mode::before {
+    background: 
+      radial-gradient(circle at 15% 20%, rgba(225,29,72,0.15) 0%, transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(14,165,233,0.12) 0%, transparent 40%),
+      linear-gradient(180deg, #020617 0%, #050a14 100%),
+      repeating-linear-gradient(0deg, rgba(148,163,184,0.03) 0 1px, transparent 1px 60px),
+      repeating-linear-gradient(90deg, rgba(148,163,184,0.03) 0 1px, transparent 1px 60px) !important;
+  }
+  .admin-header {
+    background: linear-gradient(90deg, rgba(2,6,23,0.95), rgba(11,17,32,0.9)) !important;
+    border-bottom: 1px solid rgba(225,29,72,0.3) !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 1px 0 rgba(14,165,233,0.1) inset !important;
+    backdrop-filter: blur(20px);
+  }
+  .admin-card, .admin-stat-card {
+    background: linear-gradient(145deg, #0b1120, #0f172a) !important;
+    border: 1px solid rgba(225,29,72,0.15) !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 30px rgba(225,29,72,0.05) inset !important;
+    position: relative;
+    overflow: hidden;
+  }
+  .admin-card::before, .admin-stat-card::before {
+    content: ""; position: absolute; top:0; left:-100%; width:100%; height:2px;
+    background: linear-gradient(90deg, transparent, rgba(14,165,233,0.8), transparent);
+    animation: scan 3s linear infinite;
+  }
+  @keyframes scan { 0% { left:-100%; } 100% { left:100%; } }
+  .admin-stat-card:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 15px 50px rgba(225,29,72,0.2) !important; }
+  
+  /* Buttons enterprise */
+  .primary-btn {
+    background: linear-gradient(135deg, var(--primary-red), #be123c) !important;
+    box-shadow: 0 4px 16px rgba(225,29,72,0.3), 0 0 0 1px rgba(255,255,255,0.1) inset !important;
+    position: relative; overflow: hidden;
+  }
+  .primary-btn::after {
+    content:""; position:absolute; top:-50%; left:-50%; width:200%; height:200%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    transform: rotate(45deg); transition: all 0.5s;
+  }
+  .primary-btn:hover::after { left:100%; }
+  
+  /* Header enterprise */
+  .app-header {
+    background: rgba(5,10,20,0.85) !important;
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(148,163,184,0.1) !important;
+  }
+
+</style>
 
 
 <style id="dark-calendar-fix">
@@ -826,6 +953,68 @@
   @media (prefers-color-scheme: dark) {
     ::-webkit-calendar-picker { background: #1e293b; color: #fff; }
   }
+
+  /* ── Enterprise Dark Theme ── */
+  .main-container, .content-wrapper { position:relative; z-index:1; }
+  .metric-card, .form-card, .history-card, .settings-card {
+    background: linear-gradient(145deg, rgba(15,23,42,0.9), rgba(11,18,32,0.85)) !important;
+    border: 1px solid rgba(148,163,184,0.12) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(14,165,233,0.05) inset !important;
+    backdrop-filter: blur(12px);
+  }
+  .metric-card:hover { box-shadow: 0 12px 40px rgba(14,165,233,0.15), 0 0 20px var(--enterprise-glow) !important; transform: translateY(-2px); transition: all 0.3s ease; }
+  
+  /* Admin Enterprise AI Look */
+  body.admin-mode { background: #020617 !important; }
+  body.admin-mode::before {
+    background: 
+      radial-gradient(circle at 15% 20%, rgba(225,29,72,0.15) 0%, transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(14,165,233,0.12) 0%, transparent 40%),
+      linear-gradient(180deg, #020617 0%, #050a14 100%),
+      repeating-linear-gradient(0deg, rgba(148,163,184,0.03) 0 1px, transparent 1px 60px),
+      repeating-linear-gradient(90deg, rgba(148,163,184,0.03) 0 1px, transparent 1px 60px) !important;
+  }
+  .admin-header {
+    background: linear-gradient(90deg, rgba(2,6,23,0.95), rgba(11,17,32,0.9)) !important;
+    border-bottom: 1px solid rgba(225,29,72,0.3) !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 1px 0 rgba(14,165,233,0.1) inset !important;
+    backdrop-filter: blur(20px);
+  }
+  .admin-card, .admin-stat-card {
+    background: linear-gradient(145deg, #0b1120, #0f172a) !important;
+    border: 1px solid rgba(225,29,72,0.15) !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 30px rgba(225,29,72,0.05) inset !important;
+    position: relative;
+    overflow: hidden;
+  }
+  .admin-card::before, .admin-stat-card::before {
+    content: ""; position: absolute; top:0; left:-100%; width:100%; height:2px;
+    background: linear-gradient(90deg, transparent, rgba(14,165,233,0.8), transparent);
+    animation: scan 3s linear infinite;
+  }
+  @keyframes scan { 0% { left:-100%; } 100% { left:100%; } }
+  .admin-stat-card:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 15px 50px rgba(225,29,72,0.2) !important; }
+  
+  /* Buttons enterprise */
+  .primary-btn {
+    background: linear-gradient(135deg, var(--primary-red), #be123c) !important;
+    box-shadow: 0 4px 16px rgba(225,29,72,0.3), 0 0 0 1px rgba(255,255,255,0.1) inset !important;
+    position: relative; overflow: hidden;
+  }
+  .primary-btn::after {
+    content:""; position:absolute; top:-50%; left:-50%; width:200%; height:200%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    transform: rotate(45deg); transition: all 0.5s;
+  }
+  .primary-btn:hover::after { left:100%; }
+  
+  /* Header enterprise */
+  .app-header {
+    background: rgba(5,10,20,0.85) !important;
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(148,163,184,0.1) !important;
+  }
+
 </style>
 
 
@@ -846,7 +1035,69 @@
     .flatpickr-prev-month svg, .flatpickr-next-month svg { fill: #94a3b8 !important; }
     .numInputWrapper span { border-color: #475569 !important; }
     .flatpickr-input { background: #334155 !important; color: #fff !important; }
-  </style>
+  
+  /* ── Enterprise Dark Theme ── */
+  .main-container, .content-wrapper { position:relative; z-index:1; }
+  .metric-card, .form-card, .history-card, .settings-card {
+    background: linear-gradient(145deg, rgba(15,23,42,0.9), rgba(11,18,32,0.85)) !important;
+    border: 1px solid rgba(148,163,184,0.12) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(14,165,233,0.05) inset !important;
+    backdrop-filter: blur(12px);
+  }
+  .metric-card:hover { box-shadow: 0 12px 40px rgba(14,165,233,0.15), 0 0 20px var(--enterprise-glow) !important; transform: translateY(-2px); transition: all 0.3s ease; }
+  
+  /* Admin Enterprise AI Look */
+  body.admin-mode { background: #020617 !important; }
+  body.admin-mode::before {
+    background: 
+      radial-gradient(circle at 15% 20%, rgba(225,29,72,0.15) 0%, transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(14,165,233,0.12) 0%, transparent 40%),
+      linear-gradient(180deg, #020617 0%, #050a14 100%),
+      repeating-linear-gradient(0deg, rgba(148,163,184,0.03) 0 1px, transparent 1px 60px),
+      repeating-linear-gradient(90deg, rgba(148,163,184,0.03) 0 1px, transparent 1px 60px) !important;
+  }
+  .admin-header {
+    background: linear-gradient(90deg, rgba(2,6,23,0.95), rgba(11,17,32,0.9)) !important;
+    border-bottom: 1px solid rgba(225,29,72,0.3) !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 1px 0 rgba(14,165,233,0.1) inset !important;
+    backdrop-filter: blur(20px);
+  }
+  .admin-card, .admin-stat-card {
+    background: linear-gradient(145deg, #0b1120, #0f172a) !important;
+    border: 1px solid rgba(225,29,72,0.15) !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 30px rgba(225,29,72,0.05) inset !important;
+    position: relative;
+    overflow: hidden;
+  }
+  .admin-card::before, .admin-stat-card::before {
+    content: ""; position: absolute; top:0; left:-100%; width:100%; height:2px;
+    background: linear-gradient(90deg, transparent, rgba(14,165,233,0.8), transparent);
+    animation: scan 3s linear infinite;
+  }
+  @keyframes scan { 0% { left:-100%; } 100% { left:100%; } }
+  .admin-stat-card:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 15px 50px rgba(225,29,72,0.2) !important; }
+  
+  /* Buttons enterprise */
+  .primary-btn {
+    background: linear-gradient(135deg, var(--primary-red), #be123c) !important;
+    box-shadow: 0 4px 16px rgba(225,29,72,0.3), 0 0 0 1px rgba(255,255,255,0.1) inset !important;
+    position: relative; overflow: hidden;
+  }
+  .primary-btn::after {
+    content:""; position:absolute; top:-50%; left:-50%; width:200%; height:200%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    transform: rotate(45deg); transition: all 0.5s;
+  }
+  .primary-btn:hover::after { left:100%; }
+  
+  /* Header enterprise */
+  .app-header {
+    background: rgba(5,10,20,0.85) !important;
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(148,163,184,0.1) !important;
+  }
+
+</style>
 
 </head>
 <body>
@@ -2958,6 +3209,10 @@ function triggerPDFExportEngine(useCustom = false) {
       doc.text('Schürmann Gebäude + Energie', margin, pageHeight - 8);
       doc.text('Erstellt am ' + today, pageWidth / 2, pageHeight - 8, { align: 'center' });
       doc.text('Seite ' + i + ' von ' + totalPages, pageWidth - margin, pageHeight - 8, { align: 'right' });
+      // Website footer
+      doc.setFontSize(8);
+      doc.setTextColor(150,150,150);
+      doc.text('https://meinestunden.online/', pageWidth/2, pageHeight - 4, {align:'center'});
     }
 
     // Save the PDF
@@ -3167,7 +3422,7 @@ function triggerPDFExportEngine(useCustom = false) {
 
     // Filter data for this employee
     const empData = adminAllEntriesCache.filter(r => r.user === selectedUser);
-    const workEntries = empDataFiltered.filter(r => r.category === 'WORK');
+    const workEntries = empData.filter(r => r.category === 'WORK');
     const totalHours = workEntries.reduce((sum, r) => sum + r.hrs, 0);
     const vacationDays = empData.filter(r => r.category === 'VACATION').length;
     const sickDays = empData.filter(r => r.category === 'SICK').length;
@@ -3178,17 +3433,24 @@ function triggerPDFExportEngine(useCustom = false) {
     document.getElementById('emp-stat-vacation').textContent = vacationDays;
     document.getElementById('emp-stat-sick').textContent = sickDays;
     
-    // Calculate overtime (Überstunden)
-    const targetHours = parseFloat(document.getElementById('shift-target-hours')?.value) || 8.0;
-    const dailyTotals = {};
+    // Calculate overtime (Überstunden) - Mo-Do 8.5h, Fr 6h
+    const baseTarget = parseFloat(document.getElementById('shift-target-constraint')?.value) || 8.5;
+    const daily = {};
+    // Nur echte Arbeitszeiten, keine Schule
     workEntries.forEach(r => {
-      const dateKey = r.date;
-      dailyTotals[dateKey] = (dailyTotals[dateKey] || 0) + r.hrs;
+      if (!r.hrs || r.hrs <= 0) return;
+      if (r.project && /BERUFSSCHULE/i.test(r.project)) return;
+      const key = r.date;
+      daily[key] = (daily[key] || 0) + r.hrs;
     });
     let overtimeTotal = 0;
-    Object.values(dailyTotals).forEach(dayHrs => {
-      overtimeTotal += (dayHrs - targetHours);
-    });
+    for (const [dStr, hrs] of Object.entries(daily)) {
+      const [dd,mm,yy] = dStr.split('/');
+      const d = new Date(+yy, +mm-1, +dd);
+      const wd = d.getDay();
+      const soll = wd===5 ? 6 : (wd===0||wd===6 ? 0 : baseTarget);
+      if (soll>0) overtimeTotal += (hrs - soll);
+    }
     const otEl = document.getElementById('emp-stat-overtime');
     if (otEl) {
       const sign = overtimeTotal >= 0 ? '+' : '';
@@ -3238,18 +3500,19 @@ function triggerPDFExportEngine(useCustom = false) {
     const margin = 15;
 
     const empData     = adminAllEntriesCache.filter(r => r.user === employeeName);
-    // Apply default 20th-20th period
+    // Apply default 20th-20th period for PDF
     const defPeriod = getDefault20to20Period();
-    const empDataFiltered = empData.filter(r => {
+    const empDataPeriod = empData.filter(r => {
       if (!r.date) return true;
-      const d = parseDMY(r.date);
-      return d >= defPeriod.start && d <= defPeriod.end;
+      try {
+        const d = r.date.includes('/') ? parseDMY(r.date) : new Date(r.date);
+        return d >= defPeriod.start && d <= defPeriod.end;
+      } catch(e) { return true; }
     });
-
-    const workEntries = empDataFiltered.filter(r => r.category === 'WORK');
+    const workEntries = empDataPeriod.filter(r => r.category === 'WORK');
     const totalHours  = workEntries.reduce((sum, r) => sum + r.hrs, 0);
-    const vacDays     = empDataFiltered.filter(r => r.category === 'VACATION').length;
-    const sickDays    = empDataFiltered.filter(r => r.category === 'SICK').length;
+    const vacDays     = empDataPeriod.filter(r => r.category === 'VACATION').length;
+    const sickDays    = empDataPeriod.filter(r => r.category === 'SICK').length;
     const today       = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
     // Group work entries by date → oldest first
@@ -3421,6 +3684,9 @@ function triggerPDFExportEngine(useCustom = false) {
         doc.text('Schürmann Gebäude + Energie', margin, pageHeight - 8);
         doc.text(employeeName + '  |  ' + today, pageWidth / 2, pageHeight - 8, { align: 'center' });
         doc.text('Seite ' + pg, pageWidth - margin, pageHeight - 8, { align: 'right' });
+        doc.setFontSize(8);
+        doc.setTextColor(150,150,150);
+        doc.text('https://meinestunden.online/', pageWidth/2, pageHeight - 4, {align:'center'});
       }
     });
 
@@ -3512,5 +3778,5 @@ function triggerPDFExportEngine(useCustom = false) {
     });
 
   </script>
-</body>
+<script>document.addEventListener("DOMContentLoaded",()=>{const h=document.querySelector("h1, h2"); if(h && h.textContent.includes("Mitarbeiter-Verwaltung")){const s=document.createElement("span");s.textContent=" v7";s.style.fontSize="10px";s.style.opacity=".6";h.appendChild(s);}});</script></body>
 </html>
