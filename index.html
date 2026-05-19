@@ -1,6 +1,217 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
+<!-- Playables SDK -->
+<script>// Playables SDK v1.0.0
+// Game lifecycle bridge: rAF-based game-ready detection + event communication
+(function() {
+  'use strict';
+
+  // Idempotency: skip if already initialized (e.g., server-side injection
+  // followed by client-side inject-javascript via the Bloks webview component).
+  if (window.playablesSDK) return;
+
+  var HANDLER_NAME = 'playablesGameEventHandler';
+  var ANDROID_BRIDGE_NAME = '_MetaPlayablesBridge';
+  var RAF_FRAME_THRESHOLD = 3;
+
+  var gameReadySent = false;
+  var firstInteractionSent = false;
+  var errorSent = false;
+  var frameCount = 0;
+  var originalRAF = window.requestAnimationFrame;
+
+  // --- Transport Layer ---
+
+  function hasIOSBridge() {
+    return !!(window.webkit &&
+              window.webkit.messageHandlers &&
+              window.webkit.messageHandlers[HANDLER_NAME]);
+  }
+
+  function hasAndroidBridge() {
+    return !!(window[ANDROID_BRIDGE_NAME] &&
+              typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function');
+  }
+
+  function isInIframe() {
+    return !!(window.parent && window.parent !== window);
+  }
+
+  function sendEvent(eventName, payload) {
+    var message = {
+      type: eventName,
+      payload: payload || {},
+      timestamp: Date.now()
+    };
+
+    if (hasIOSBridge()) {
+      try {
+        window.webkit.messageHandlers[HANDLER_NAME].postMessage(message);
+      } catch (e) { /* ignore */ }
+      return;
+    }
+
+    if (hasAndroidBridge()) {
+    try {
+      var p = payload || {};
+      p.__secureToken = window.__fbAndroidBridgeAuthToken || '';
+      p.timestamp = message.timestamp;
+      window[ANDROID_BRIDGE_NAME].postEvent(
+        eventName,
+        JSON.stringify(p)
+      );
+    } catch (e) { /* ignore */ }
+    return;
+  }
+
+    if (isInIframe()) {
+      try {
+        window.parent.postMessage(message, '*');
+      } catch (e) { /* ignore */ }
+      return;
+    }
+  }
+
+  // --- rAF Game-Ready Detection ---
+
+  function onFrame() {
+    if (gameReadySent) return;
+
+    frameCount++;
+    if (frameCount >= RAF_FRAME_THRESHOLD) {
+      gameReadySent = true;
+      sendEvent('game_ready', {
+        frame_count: frameCount,
+        detected_at: Date.now()
+      });
+      return;
+    }
+
+    originalRAF.call(window, onFrame);
+  }
+
+  if (originalRAF) {
+    window.requestAnimationFrame = function(callback) {
+      if (!gameReadySent) {
+        return originalRAF.call(window, function(timestamp) {
+          frameCount++;
+          if (frameCount >= RAF_FRAME_THRESHOLD && !gameReadySent) {
+            gameReadySent = true;
+            sendEvent('game_ready', {
+              frame_count: frameCount,
+              detected_at: Date.now()
+            });
+          }
+          callback(timestamp);
+        });
+      }
+      return originalRAF.call(window, callback);
+    };
+  }
+
+  // --- First User Interaction Detection ---
+
+  function setupFirstInteractionDetection() {
+    var events = ['touchstart', 'mousedown', 'keydown'];
+
+    function onFirstInteraction() {
+      if (firstInteractionSent) return;
+      firstInteractionSent = true;
+      sendEvent('user_interaction_start', null);
+
+      for (var i = 0; i < events.length; i++) {
+        document.removeEventListener(events[i], onFirstInteraction, true);
+      }
+    }
+
+    for (var i = 0; i < events.length; i++) {
+      document.addEventListener(events[i], onFirstInteraction, true);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFirstInteractionDetection);
+  } else {
+    setupFirstInteractionDetection();
+  }
+
+  // --- Auto Error Capture ---
+
+  window.addEventListener('error', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    sendEvent('error', {
+      message: event.message || 'Unknown error',
+      source: event.filename || '',
+      lineno: event.lineno || 0,
+      colno: event.colno || 0,
+      auto_captured: true
+    });
+  });
+
+  window.addEventListener('unhandledrejection', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    var reason = event.reason;
+    sendEvent('error', {
+      message: (reason instanceof Error) ? reason.message : String(reason),
+      type: 'unhandled_promise_rejection',
+      auto_captured: true
+    });
+  });
+
+  // --- Public API ---
+
+  window.playablesSDK = {
+    complete: function(score) {
+      sendEvent('game_ended', {
+        score: score,
+        completed: true
+      });
+    },
+
+    error: function(message) {
+      if (errorSent) return;
+      errorSent = true;
+      sendEvent('error', {
+        message: message || 'Unknown error',
+        auto_captured: false
+      });
+    },
+
+    sendEvent: function(eventName, payload) {
+      if (!eventName || typeof eventName !== 'string') return;
+      sendEvent(eventName, payload);
+    }
+  };
+
+  // Kick off rAF detection in case no game code calls rAF immediately
+  if (originalRAF) {
+    originalRAF.call(window, onFrame);
+  }
+})();</script>
+<!-- PLAYABLE_TOUCH_PATCH_V1 --><script>
+(function() {
+  if (window.__playableTouchPatchInstalled) return;
+  window.__playableTouchPatchInstalled = true;
+  var origAdd = EventTarget.prototype.addEventListener;
+  var blockedTypes = { touchstart: 1, touchmove: 1, wheel: 1 };
+  EventTarget.prototype.addEventListener = function(type, listener, options) {
+    if (blockedTypes[type]) {
+      if (options === undefined || options === null) {
+        options = { passive: true };
+      } else if (typeof options === 'boolean') {
+        options = { capture: options, passive: true };
+      } else {
+        options = Object.assign({}, options, { passive: true });
+      }
+    }
+    return origAdd.call(this, type, listener, options);
+  };
+})();
+</script><script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
+  <meta name="color-scheme" content="dark light">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Schürmann Gebäude + Energie - Enterprise Work Portal</title>
@@ -21,7 +232,7 @@
     --text-muted: #64748b;
     --admin-dark: #0f172a;
     --admin-card: #1e293b;
-    --admin-gold: #fbbf24;
+    --admin-gold: #E30613;
     --admin-border: #334155;
     --admin-text-main: #f8fafc;
     --admin-text-muted: #94a3b8;
@@ -44,22 +255,22 @@
       radial-gradient(circle at 50% 50%, #0f172a 0%, #000 80%);
     filter: blur(60px); z-index: 1; pointer-events: none;
   }
-  .login-card {
+  .login-card { background: rgba(15,23,42,0.85) !important; backdrop-filter: blur(20px);
     background: rgba(255,255,255,0.98); padding: 40px 32px 28px;
     border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
     width: 100%; max-width: 420px; position: relative; z-index: 2;
     backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2);
   }
-  .brand-logo-container { text-align: center; margin-bottom: 6px; cursor: pointer; }
+  .brand-logo-container { text-align: center; margin-bottom: 6px;  }
   .brand-title { font-weight: 800; font-size: 26px; letter-spacing: -0.5px; color: #1e293b; line-height: 1; }
   .brand-subtitle { font-size: 10px; font-weight: 700; color: var(--primary-red); letter-spacing: 1.5px; margin-top: 3px; text-transform: uppercase; }
   .portal-context-caption { font-size: 13px; color: var(--text-muted); font-weight: 500; margin-bottom: 28px; text-align: center; }
 
   /* ── Header & Drawer ── */
   .app-header { display: flex; align-items: center; justify-content: space-between; background: white; padding: 14px 20px; border-bottom: 1px solid var(--card-border); position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-  .menu-trigger-btn { background: none; border: none; font-size: 22px; color: var(--dark-slate); cursor: pointer; padding: 4px; }
+  .menu-trigger-btn { background: none; border: none; font-size: 22px; color: var(--dark-slate);  padding: 4px; }
   .lang-selector-wrapper { display: flex; gap: 4px; background: #e2e8f0; padding: 2px; border-radius: 6px; margin-right: 14px; }
-  .lang-btn { background: none; border: none; padding: 5px 9px; font-size: 11px; font-weight: 700; color: #475569; cursor: pointer; border-radius: 4px; transition: all 0.15s; }
+  .lang-btn { background: none; border: none; padding: 5px 9px; font-size: 11px; font-weight: 700; color: #475569;  border-radius: 4px; transition: all 0.15s; }
   .lang-btn.active { background: white; color: var(--primary-blue); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
   .sidebar-drawer { position: fixed; top: 0; left: -280px; width: 280px; height: 100vh; background: white; z-index: 200; box-shadow: 5px 0 30px rgba(0,0,0,0.15); transition: left 0.3s cubic-bezier(0.16,1,0.3,1); display: flex; flex-direction: column; }
@@ -70,7 +281,7 @@
   .drawer-user-section h3 { font-size: 18px; font-weight: 700; color: var(--dark-slate); margin-bottom: 2px; }
   .drawer-user-section p { font-size: 10px; font-weight: 800; color: var(--primary-red); text-transform: uppercase; letter-spacing: 0.6px; }
   .drawer-nav-list { list-style: none; padding: 12px 0; flex: 1; overflow-y: auto; }
-  .nav-item { display: flex; align-items: center; gap: 14px; padding: 12px 24px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .nav-item { display: flex; align-items: center; gap: 14px; padding: 12px 24px; color: #475569; font-size: 14px; font-weight: 600;  transition: all 0.15s; }
   .nav-item i { width: 20px; font-size: 16px; color: #94a3b8; text-align: center; }
   .nav-item:hover, .nav-item.active { background: #f1f5f9; color: var(--primary-blue); }
   .nav-item:hover i, .nav-item.active i { color: var(--primary-blue); }
@@ -87,12 +298,12 @@
   .view-title { font-size: 20px; font-weight: 700; color: var(--dark-slate); margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; letter-spacing: -0.3px; }
 
   /* ── Dashboard ── */
-  .dash-centered-logo-wrapper { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 12px auto 28px; text-align: center; cursor: pointer; }
+  .dash-centered-logo-wrapper { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 12px auto 28px; text-align: center;  }
   .backup-status-dot { width: 9px; height: 9px; background-color: #94a3b8; border-radius: 50%; display: inline-block; transition: background-color 0.3s, box-shadow 0.3s; }
   .backup-status-dot.online { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
   .backup-status-dot.offline { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
   .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
-  .metric-card { background: white; padding: 18px 16px; border-radius: 12px; border: 1px solid var(--card-border); border-top: 4px solid #cbd5e1; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
+  .metric-card { background: white; padding: 18px 16px; border-radius: 12px; border: 1px solid var(--card-border); border-top: 4px solid #cbd5e1;  transition: transform 0.15s, box-shadow 0.15s; }
   .metric-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.06); }
   .metric-card label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; pointer-events: none; }
   .metric-card .value { font-size: 22px; font-weight: 700; color: var(--dark-slate); letter-spacing: -0.5px; pointer-events: none; }
@@ -108,14 +319,14 @@
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 3px rgba(2,89,182,0.15); }
 
   .toggle-switch-row { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 20px; }
-  .toggle-switch-btn { flex: 1; text-align: center; border: none; background: none; padding: 9px; font-size: 13px; font-weight: 700; color: #475569; cursor: pointer; border-radius: 6px; transition: all 0.2s; }
+  .toggle-switch-btn { flex: 1; text-align: center; border: none; background: none; padding: 9px; font-size: 13px; font-weight: 700; color: #475569;  border-radius: 6px; transition: all 0.2s; }
   .toggle-switch-btn.active { background: white; color: var(--primary-blue); box-shadow: 0 2px 4px rgba(0,0,0,0.06); }
 
   .break-options-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
-  .break-pill { background: #e2e8f0; border: none; padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; color: #475569; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+  .break-pill { background: #e2e8f0; border: none; padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; color: #475569;  white-space: nowrap; transition: all 0.15s; }
   .break-pill.active { background: #fee2e2; color: var(--primary-red); border: 1px solid #fca5a5; }
 
-  .primary-btn { display: block; width: 100%; background: var(--primary-blue); color: white; border: none; padding: 13px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; text-align: center; text-decoration: none; }
+  .primary-btn { display: block; width: 100%; background: var(--primary-blue); color: white; border: none; padding: 13px; border-radius: 8px; font-size: 14px; font-weight: 700;  transition: opacity 0.15s; text-align: center; text-decoration: none; }
   .primary-btn:hover { opacity: 0.9; }
   .primary-btn.red-btn { background: var(--primary-red); }
   .primary-btn:disabled { background: #94a3b8; cursor: not-allowed; }
@@ -126,15 +337,15 @@
   .hist-left h5 { font-size: 14px; font-weight: 700; margin-bottom: 3px; color: var(--dark-slate); }
   .hist-left p { font-size: 12px; color: var(--text-muted); font-weight: 500; }
   .hist-right { font-size: 15px; font-weight: 700; text-align: right; }
-  .action-icon-btn { background: none; border: none; color: #94a3b8; font-size: 15px; cursor: pointer; padding: 6px; margin-left: 4px; transition: color 0.15s; }
+  .action-icon-btn { background: none; border: none; color: #94a3b8; font-size: 15px;  padding: 6px; margin-left: 4px; transition: color 0.15s; }
   .action-icon-btn:hover { color: var(--primary-blue); }
   .action-icon-btn.delete-hover:hover { color: var(--primary-red); }
-  .restore-btn { background: #e2e8f0; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; color: #334155; cursor: pointer; }
+  .restore-btn { background: #e2e8f0; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; color: #334155;  }
   .restore-btn:hover { background: #cbd5e1; }
 
   .inline-edit-box { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px; margin-top: 12px; }
   .inline-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-  .inline-btn { border: none; padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .inline-btn { border: none; padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 700;  }
 
   /* ── Admin Portal Premium Theme ── */
   .premium-admin-wrapper { background: var(--admin-dark); color: var(--admin-text-main); border-radius: 14px; padding: 30px; border: 1px solid var(--admin-border); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
@@ -169,7 +380,7 @@
   .admin-sidebar-nav { flex: 1; padding: 20px 16px; overflow-y: auto; }
   .admin-nav-section { margin-bottom: 24px; }
   .admin-nav-section-title { font-size: 10px; color: #64748b; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; padding: 0 12px; margin-bottom: 10px; }
-  .admin-nav-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 10px; color: #94a3b8; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-bottom: 4px; }
+  .admin-nav-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 10px; color: #94a3b8; font-size: 13px; font-weight: 600;  transition: all 0.2s; margin-bottom: 4px; }
   .admin-nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
   .admin-nav-item.active { background: linear-gradient(135deg, rgba(212,175,55,0.2) 0%, rgba(212,175,55,0.05) 100%); color: var(--admin-gold); border: 1px solid rgba(212,175,55,0.3); }
   .admin-nav-item i { width: 20px; text-align: center; font-size: 14px; }
@@ -183,7 +394,7 @@
   .admin-header-title h1 { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
   .admin-header-badge { background: linear-gradient(135deg, var(--admin-gold) 0%, #b8860b 100%); color: #0f172a; padding: 6px 14px; border-radius: 6px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
   .admin-header-actions { display: flex; align-items: center; gap: 12px; }
-  .admin-header-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: #e2e8f0; padding: 10px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+  .admin-header-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: #e2e8f0; padding: 10px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;  display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
   .admin-header-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
   .admin-header-btn.primary { background: var(--admin-gold); border: none; color: #0f172a; font-weight: 700; }
   .admin-header-btn.primary:hover { background: #e6c545; }
@@ -218,7 +429,7 @@
     .admin-enterprise-table th, .admin-enterprise-table td { padding: 9px 8px; }
     .admin-content-inner { padding: 0; }
   }
-  .admin-mobile-toggle { display: none; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 10px 12px; border-radius: 8px; cursor: pointer; }
+  .admin-mobile-toggle { display: none; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 10px 12px; border-radius: 8px;  }
   .admin-sidebar-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 99; backdrop-filter: blur(2px); }
   .admin-sidebar-backdrop.show { display: block; }
   /* Enterprise polish: fade-in for admin sections */
@@ -241,7 +452,7 @@
   .modal-report-row { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px dashed var(--card-border); font-size: 13px; }
   .modal-report-row:last-child { border-bottom: none; }
   .modal-report-footer { padding: 14px 22px; background: #f8fafc; border-top: 1px solid var(--card-border); display: flex; justify-content: flex-end; }
-  .modal-close-btn { background: var(--primary-blue); color: white; border: none; padding: 9px 20px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .modal-close-btn { background: var(--primary-blue); color: white; border: none; padding: 9px 20px; border-radius: 6px; font-size: 13px; font-weight: 700;  }
   .statement-summary-box { background: #f1f5f9; padding: 14px; border-radius: 8px; margin-bottom: 14px; font-size: 12px; font-weight: 600; }
   .statement-summary-box div { display: flex; justify-content: space-between; margin-bottom: 5px; }
 
@@ -270,16 +481,393 @@
     .admin-controls-bar { flex-direction: column; }
     .admin-controls-bar select { min-width: 100%; }
   }
+
+  
+  /* ── Enterprise Smooth Upgrade (v3) ── */
+  body.admin-mode { background: radial-gradient(1200px 800px at 20% -10%, #1e293b 0%, #0f172a 40%, #020617 100%) !important; }
+  #admin-full-view { background: transparent !important; }
+  .admin-sidebar {
+    background: linear-gradient(180deg, rgba(12,19,34,0.96) 0%, rgba(15,23,42,0.92) 100%) !important;
+    backdrop-filter: blur(16px);
+    border-right: 1px solid rgba(251,191,36,0.18) !important;
+    box-shadow: 4px 0 30px rgba(0,0,0,0.4);
+  }
+  .admin-sidebar-header {
+    background: linear-gradient(135deg, rgba(251,191,36,0.12) 0%, transparent 70%) !important;
+    border-bottom: 1px solid rgba(251,191,36,0.18) !important;
+  }
+  .admin-sidebar-user {
+    background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(251,191,36,0.05)) !important;
+    border: 1px solid rgba(251,191,36,0.25) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  .admin-nav-item {
+    position: relative;
+    border-radius: 12px !important;
+    margin: 3px 8px !important;
+    transition: all 0.25s cubic-bezier(0.16,1,0.3,1) !important;
+  }
+  .admin-nav-item:hover {
+    background: rgba(255,255,255,0.06) !important;
+    transform: translateX(3px);
+  }
+  .admin-nav-item.active {
+    background: linear-gradient(135deg, rgba(251,191,36,0.22) 0%, rgba(251,191,36,0.08) 100%) !important;
+    box-shadow: 0 0 20px rgba(251,191,36,0.15), inset 0 1px 0 rgba(255,255,255,0.08);
+    color: #fde68a !important;
+  }
+  .admin-nav-item.active::before {
+    content:''; position:absolute; left:-8px; top:50%; transform:translateY(-50%);
+    width:3px; height:22px; background:linear-gradient(to bottom, #E30613, #d97706); border-radius:2px;
+    box-shadow: 0 0 10px rgba(251,191,36,0.5);
+  }
+  .admin-header {
+    background: rgba(8,12,22,0.8) !important;
+    backdrop-filter: blur(20px) saturate(140%);
+    border-bottom: 1px solid rgba(251,191,36,0.12) !important;
+  }
+  .admin-header-badge {
+    background: linear-gradient(135deg, #E30613 0%, #f59e0b 100%) !important;
+    box-shadow: 0 2px 10px rgba(251,191,36,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .admin-content > div > div, .admin-content-inner > section > div {
+    background: linear-gradient(180deg, rgba(30,41,59,0.9), rgba(15,23,42,0.9)) !important;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+    border-radius: 16px !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .admin-content > div > div:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 50px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  .admin-metric-tile {
+    background: linear-gradient(145deg, rgba(30,41,59,0.95), rgba(15,23,42,0.85)) !important;
+    border: 1px solid rgba(255,255,255,0.06) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .admin-metric-tile::after { opacity: 0.7; }
+  /* premium logout modal upgrade */
+  #custom-confirm-backdrop > div {
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+    border: 1px solid rgba(251,191,36,0.25) !important;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(251,191,36,0.1) inset !important;
+  }
+
+  /* ── Mobile compact fixes (added) ── */
+  @media (max-width: 768px) {
+    .admin-content { padding: 14px 8px !important; }
+    .admin-content-inner { max-width: 100% !important; }
+    .admin-header-title h1 { font-size: 14px; }
+    .admin-metrics-row { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+    .admin-metric-tile { padding: 12px 10px !important; }
+    .admin-metric-tile .number-callout { font-size: 20px !important; }
+    .admin-table-scroll-shield { overflow-x: auto !important; -webkit-overflow-scrolling: touch; width: 100%; margin: 0 -4px; padding: 0 4px; }
+    .admin-enterprise-table { min-width: 520px; font-size: 11px; }
+    .admin-enterprise-table th, .admin-enterprise-table td { padding: 8px 6px; white-space: nowrap; }
+    /* ensure dashboard cards don't overflow */
+    main { padding: 12px !important; }
+  }
+  @media (max-width: 480px) {
+    .admin-metrics-row { grid-template-columns: 1fr !important; }
+    .admin-header-actions button span { display: none; } /* keep icon only */
+    .admin-enterprise-table { min-width: 480px; }
+  }
+
+
+  /* ── Full-bleed mobile fix (no crop) ── */
+  @media (max-width: 768px) {
+    body.admin-mode { overflow-x: hidden !important; }
+    .admin-main { margin-left: 0 !important; width: 100% !important; min-width: 100% !important; }
+    .admin-layout { width: 100% !important; }
+    .admin-content { padding: 8px 0 20px !important; }
+    .admin-content-inner { 
+      max-width: 100% !important; 
+      width: 100% !important; 
+      padding: 0 8px !important; 
+      margin: 0 !important; 
+      box-sizing: border-box;
+    }
+    /* cards stretch edge-to-edge */
+    .admin-content-inner > section > div,
+    .admin-content > div > div {
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      width: 100% !important;
+      border-radius: 14px !important;
+    }
+    /* header full width */
+    .admin-header { 
+      padding: 0 10px !important; 
+      width: 100% !important; 
+      left: 0 !important; 
+      box-sizing: border-box;
+    }
+    .admin-header-title { gap: 10px !important; min-width: 0; flex: 1; }
+    .admin-header-title h1 { 
+      font-size: 14px !important; 
+      white-space: nowrap; 
+      overflow: hidden; 
+      text-overflow: ellipsis; 
+      max-width: 140px;
+    }
+    /* metrics use full width */
+    .admin-metrics-row { 
+      width: 100% !important; 
+      margin-left: 0 !important; 
+      margin-right: 0 !important;
+    }
+    /* table container - no side crop */
+    .admin-table-scroll-shield {
+      width: calc(100% + 16px) !important;
+      margin-left: -8px !important;
+      margin-right: -8px !important;
+      padding: 0 8px !important;
+      border-radius: 12px !important;
+      box-sizing: border-box;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch;
+    }
+    .admin-enterprise-table {
+      min-width: 560px !important;
+    }
+  }
+  @media (max-width: 390px) {
+    .admin-content-inner { padding: 0 6px !important; }
+    .admin-table-scroll-shield { width: calc(100% + 12px) !important; margin-left: -6px !important; margin-right: -6px !important; }
+  }
+
+
+  /* ── Premium header fix - no more cut text ── */
+  @media (max-width: 768px) {
+    .admin-header {
+      height: auto !important;
+      min-height: 56px;
+      padding: 10px 10px 8px !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 8px;
+      backdrop-filter: blur(24px) saturate(160%);
+    }
+    .admin-header-title {
+      width: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      gap: 10px !important;
+    }
+    .admin-header-title h1 {
+      font-size: 16px !important;
+      font-weight: 800 !important;
+      max-width: none !important;
+      white-space: normal !important;
+      line-height: 1.2;
+      flex: 1;
+    }
+    .admin-header-badge {
+      font-size: 9px !important;
+      padding: 5px 10px !important;
+      border-radius: 6px !important;
+      white-space: nowrap;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(251,191,36,0.25);
+    }
+    .admin-header-actions {
+      width: 100% !important;
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      gap: 8px;
+    }
+    .admin-header-btn {
+      padding: 8px 12px !important;
+      font-size: 11px !important;
+      border-radius: 8px !important;
+      flex-shrink: 0;
+    }
+    .admin-header-btn span { display: inline !important; }
+    #admin-last-update {
+      font-size: 10px !important;
+      color: #64748b !important;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 110px;
+      text-align: right;
+      flex: 1;
+    }
+    /* make hamburger more premium */
+    .admin-mobile-toggle {
+      width: 36px !important;
+      height: 36px !important;
+      padding: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: rgba(255,255,255,0.06) !important;
+      border: 1px solid rgba(255,255,255,0.1) !important;
+      border-radius: 10px !important;
+      flex-shrink: 0;
+    }
+  }
+  @media (max-width: 390px) {
+    .admin-header-title h1 { font-size: 15px !important; }
+    .admin-header-actions { flex-wrap: wrap; }
+    #admin-last-update { display: none !important; } /* hide on very small to prevent cut */
+  }
+
+
+  /* ── Quick Wins v7 - Premium polish ── */
+  @media (max-width: 768px) {
+    /* 1. Increase mobile padding to 16px */
+    .admin-content-inner { padding: 0 16px !important; }
+    .admin-content { padding: 12px 0 24px !important; }
+    .admin-table-scroll-shield { 
+      width: calc(100% + 32px) !important; 
+      margin-left: -16px !important; 
+      margin-right: -16px !important; 
+      padding: 0 16px !important; 
+    }
+    
+    /* 2. Metrics numbers 2x bigger */
+    .admin-metric-tile .number-callout {
+      font-size: 30px !important;
+      line-height: 1.1 !important;
+      font-weight: 800 !important;
+      letter-spacing: -0.5px;
+    }
+    .admin-metric-tile .metric-label {
+      font-size: 11px !important;
+      margin-bottom: 8px !important;
+    }
+    .admin-metric-tile { padding: 18px 16px !important; }
+  }
+  
+  /* 3. Table zebra + hover - all screens */
+  .admin-enterprise-table tbody tr:nth-child(even) {
+    background: rgba(255,255,255,0.02) !important;
+  }
+  .admin-enterprise-table tbody tr:hover {
+    background: rgba(251,191,36,0.08) !important;
+    transform: translateX(1px);
+    transition: all 0.15s ease;
+  }
+  .admin-enterprise-table tbody tr {
+    transition: all 0.15s ease;
+  }
+  .admin-enterprise-table td, .admin-enterprise-table th {
+    padding: 12px 10px !important; /* more breathing room */
+  }
+  
+  /* 4. Header already 2-line - enhance spacing */
+  @media (max-width: 768px) {
+    .admin-header { padding: 14px 16px 12px !important; gap: 10px !important; }
+    .admin-header-title h1 { font-size: 18px !important; }
+  }
+  
+  /* Bonus: smoother cards */
+  .admin-content-inner > section > div,
+  .admin-content > div > div {
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25) !important;
+  }
+
+
+  .primary-btn { background: linear-gradient(135deg, #E30613 0%, #b8000f 100%) !important; box-shadow: 0 8px 24px rgba(227,6,19,0.35) !important; }
+  .login-card { background: rgba(15,23,42,0.85) !important; backdrop-filter: blur(20px); border: 1px solid rgba(227,6,19,0.15) !important; }
+
 </style>
+
+  <style>
+    input[type="date"] {
+      color-scheme: dark;
+      background: #334155 !important;
+      color: #fff !important;
+      border: 1px solid #475569 !important;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      opacity: 0.8;
+      cursor: pointer;
+    }
+    input[type="date"]::-webkit-datetime-edit {
+      color: #fff;
+    }
+    /* Fix for mobile date picker */
+    @media (prefers-color-scheme: dark) {
+      input[type="date"] { color-scheme: dark; }
+    }
+  </style>
+
+
+<style id="dark-calendar-fix">
+  :root, html { color-scheme: dark; }
+  input[type="date"], input[type="datetime-local"] {
+    color-scheme: dark !important;
+    background: #0f172a !important;
+    color: #e2e8f0 !important;
+    border: 1px solid #334155 !important;
+    -webkit-appearance: none;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.5);
+    opacity: 0.9;
+  }
+  input[type="date"]::-webkit-datetime-edit,
+  input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+  input[type="date"]::-webkit-datetime-edit-text,
+  input[type="date"]::-webkit-datetime-edit-month-field,
+  input[type="date"]::-webkit-datetime-edit-day-field,
+  input[type="date"]::-webkit-datetime-edit-year-field {
+    color: #e2e8f0 !important;
+    background: transparent !important;
+  }
+  /* Force dark popup on supporting browsers */
+  @media (prefers-color-scheme: dark) {
+    ::-webkit-calendar-picker { background: #1e293b; color: #fff; }
+  }
+</style>
+
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <style>
+    .flatpickr-calendar {
+      background: #0f172a !important;
+      border: 1px solid #334155 !important;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+    }
+    .flatpickr-day { color: #cbd5e1 !important; }
+    .flatpickr-day:hover { background: #1e293b !important; border-color: #475569 !important; }
+    .flatpickr-day.today { border-color: var(--admin-gold) !important; }
+    .flatpickr-day.selected { background: var(--admin-gold) !important; color: #0f172a !important; border-color: var(--admin-gold) !important; }
+    .flatpickr-months .flatpickr-month, .flatpickr-current-month, .flatpickr-weekday { color: #e2e8f0 !important; fill: #e2e8f0 !important; }
+    .flatpickr-prev-month svg, .flatpickr-next-month svg { fill: #94a3b8 !important; }
+    .numInputWrapper span { border-color: #475569 !important; }
+    .flatpickr-input { background: #334155 !important; color: #fff !important; }
+  </style>
+
 </head>
 <body>
 
 <!-- ═══════════════════════════════════════ LOGIN VIEW ═══════════════════════════════════════ -->
 <div id="login-view" class="login-container">
   <div class="login-card">
-    <div class="brand-logo-container" onclick="routeToMainDashboard()">
-      <div class="brand-title">SCHÜRMANN</div>
-      <div class="brand-subtitle">GEBÄUDE + ENERGIE</div>
+    <div class="brand-logo-container" style="padding:40px 0 28px; text-align:center; width:100%;">
+      <div style="display:block; width:100%; max-width:100%; padding:0 20px; box-sizing:border-box;">
+        <!-- SCHÜRMANN - fits perfectly -->
+        <div style="font-size:38px; font-weight:200; color:#ffffff; letter-spacing:7px; line-height:1; font-family:'Inter', system-ui, sans-serif; text-transform:uppercase; position:relative; display:inline-block; margin-right:-7px; white-space:nowrap;">
+          SCHÜRMANN
+          <div style="position:absolute; bottom:-8px; left:0; right:7px; height:1px; background: linear-gradient(90deg, transparent 5%, rgba(227,6,19,0.9) 50%, transparent 95%);"></div>
+        </div>
+        <!-- GEBÄUDE + ENERGIE - centered -->
+        <div style="margin-top:20px; display:flex; align-items:center; justify-content:center; gap:14px; width:100%;">
+          <div style="flex:1; max-width:45px; height:1px; background: linear-gradient(90deg, transparent, #E30613);"></div>
+          <div style="font-size:11px; font-weight:600; color:#E30613; letter-spacing:4.5px; text-transform:uppercase; display:inline-block; margin-right:-4.5px; white-space:nowrap;">GEBÄUDE + ENERGIE</div>
+          <div style="flex:1; max-width:45px; height:1px; background: linear-gradient(90deg, #E30613, transparent);"></div>
+        </div>
+      </div>
     </div>
     <div class="portal-context-caption" id="lbl-login-sub">Mitarbeiter-Portal | Zeiterfassung</div>
     <form id="login-form">
@@ -324,6 +912,10 @@
             <i class="fa-solid fa-users"></i>
             <span>Mitarbeiter</span>
           </div>
+          <div class="admin-nav-item" onclick="switchAdminSection('absences')" id="admin-nav-absences">
+            <i class="fa-solid fa-calendar-xmark"></i>
+            <span>Urlaub & Krank</span>
+          </div>
         </div>
         <div class="admin-nav-section">
           <div class="admin-nav-section-title">Berichte</div>
@@ -345,7 +937,7 @@
         </div>
       </nav>
       <div class="admin-sidebar-footer">
-        <div class="admin-sidebar-footer-text">Version 2.1.0 | Enterprise Edition</div>
+        <div class="admin-sidebar-footer-text">Version 2.1.0 | Schürmann Edition</div>
         <div class="admin-sidebar-footer-text" style="margin-top:4px;">Developed by Amran Hiluf</div>
       </div>
     </aside>
@@ -357,8 +949,13 @@
           <button class="admin-mobile-toggle" onclick="toggleAdminSidebar()">
             <i class="fa-solid fa-bars"></i>
           </button>
-          <h1 id="admin-page-title">Unternehmens-Dashboard</h1>
-          <span class="admin-header-badge">Enterprise</span>
+          <h1 id="admin-page-title">Admin Dashboard</h1>
+          <div style="display:flex; align-items:center; gap:14px; margin-left:18px; padding-left:18px; border-left:1px solid rgba(227,6,19,0.25);">
+            <div style="display:flex; flex-direction:column;">
+              <span style="font-size:13px; font-weight:300; color:#ffffff; letter-spacing:3px; line-height:1; opacity:0.95;">SCHÜRMANN</span>
+              <span style="font-size:8px; font-weight:700; color:#E30613; letter-spacing:2.5px; margin-top:3px; opacity:0.9;">GEBÄUDE + ENERGIE</span>
+            </div>
+          </div>
         </div>
         <div class="admin-header-actions">
           <button class="admin-header-btn" onclick="refreshAdminData()">
@@ -413,7 +1010,7 @@
                       <th>Mitarbeiter</th>
                       <th>Datum</th>
                       <th>Typ</th>
-                      <th>Beschreibung</th>
+                      <th>Baustelle/Kunde</th>
                       <th style="text-align:right;">Dauer</th>
                     </tr>
                   </thead>
@@ -445,7 +1042,7 @@
               </div>
 
               <!-- Employee Stats Cards -->
-              <div id="employee-stats-cards" style="display:none; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px;">
+              <div id="employee-stats-cards" style="display:none; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:24px; width:100%;">
                 <div style="background:linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05)); border:1px solid rgba(212,175,55,0.3); border-radius:10px; padding:18px;">
                   <div style="font-size:10px; color:var(--admin-gold); font-weight:700; letter-spacing:1px; margin-bottom:6px;">MITARBEITER</div>
                   <div id="emp-stat-name" style="font-size:18px; color:#fff; font-weight:800;">-</div>
@@ -453,6 +1050,10 @@
                 <div style="background:rgba(255,255,255,0.05); border:1px solid var(--admin-border); border-radius:10px; padding:18px;">
                   <div style="font-size:10px; color:var(--admin-text-muted); font-weight:700; letter-spacing:1px; margin-bottom:6px;">ARBEITSSTUNDEN</div>
                   <div id="emp-stat-hours" style="font-size:18px; color:var(--admin-gold); font-weight:800;">0.00 h</div>
+                </div>
+                <div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:18px;">
+                  <div style="font-size:10px; color:#10b981; font-weight:700; letter-spacing:1px; margin-bottom:6px;">ÜBERSTUNDEN</div>
+                  <div id="emp-stat-overtime" style="font-size:18px; color:#10b981; font-weight:800;">+0.00 h</div>
                 </div>
                 <div style="background:rgba(255,255,255,0.05); border:1px solid var(--admin-border); border-radius:10px; padding:18px;">
                   <div style="font-size:10px; color:var(--admin-text-muted); font-weight:700; letter-spacing:1px; margin-bottom:6px;">URLAUBSTAGE</div>
@@ -483,6 +1084,56 @@
                   </tbody>
                 </table>
               </div>
+            </div>
+          </section>
+
+
+          <!-- Absences Section -->
+          <section id="admin-section-absences" class="admin-section" style="display:none;">
+            <div style="background:var(--admin-card); border:1px solid var(--admin-border); border-radius:12px; padding:24px; margin-bottom:24px;">
+              <h3 style="font-size:16px; font-weight:700; color:#fff; margin:0 0 6px 0;">
+                <i class="fa-solid fa-calendar-plus" style="color:var(--admin-gold); margin-right:10px;"></i>Abwesenheit erfassen
+              </h3>
+              <p style="color:var(--admin-text-muted); font-size:13px; margin:0 0 20px 0;">Urlaub oder Krankmeldung für Mitarbeiter eintragen</p>
+              
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:20px;">
+                <div>
+                  <label style="display:block; font-size:11px; color:var(--admin-text-muted); font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Mitarbeiter</label>
+                  <select id="absence-employee" style="width:100%; background:#334155; border:1px solid #475569; color:#fff; padding:10px 12px; border-radius:6px; font-size:13px;">
+                    <option value="">-- auswählen --</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="display:block; font-size:11px; color:var(--admin-text-muted); font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Art</label>
+                  <select id="absence-type" style="width:100%; background:#334155; border:1px solid #475569; color:#fff; padding:10px 12px; border-radius:6px; font-size:13px;">
+                    <option value="VACATION">Urlaub</option>
+                    <option value="SICK">Krankmeldung</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="display:block; font-size:11px; color:var(--admin-text-muted); font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Von</label>
+                  <input type="text" id="absence-start" readonly inputmode="numeric" style="width:100%; background:#334155; border:1px solid #475569; color:#fff; padding:9px 12px; border-radius:6px; font-size:13px; color-scheme:dark;">
+                </div>
+                <div>
+                  <label style="display:block; font-size:11px; color:var(--admin-text-muted); font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Bis</label>
+                  <input type="text" id="absence-end" readonly inputmode="numeric" style="width:100%; background:#334155; border:1px solid #475569; color:#fff; padding:9px 12px; border-radius:6px; font-size:13px; color-scheme:dark;">
+                </div>
+              </div>
+              
+              <div style="margin-bottom:20px;">
+                <label style="display:block; font-size:11px; color:var(--admin-text-muted); font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Grund / Notiz (optional)</label>
+                <input type="text" id="absence-note" placeholder="z.B. Arzttermin, Urlaub genehmigt" style="width:100%; background:#334155; border:1px solid #475569; color:#fff; padding:10px 12px; border-radius:6px; font-size:13px;">
+              </div>
+              
+              <button onclick="registerAbsence()" style="background:var(--admin-gold); border:none; color:#0f172a; padding:12px 24px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;">
+                <i class="fa-solid fa-plus" style="margin-right:8px;"></i>Abwesenheit speichern
+              </button>
+              <div id="absence-status" style="margin-top:12px; font-size:12px;"></div>
+            </div>
+            
+            <div style="background:var(--admin-card); border:1px solid var(--admin-border); border-radius:12px; padding:24px;">
+              <h3 style="font-size:14px; font-weight:700; color:#fff; margin:0 0 16px 0;">Letzte Einträge</h3>
+              <div id="absence-recent-list" style="font-size:12px; color:var(--admin-text-muted);">Noch keine Einträge</div>
             </div>
           </section>
 
@@ -539,16 +1190,16 @@
                 <div style="font-size:13px; font-weight:700; color:#fff; margin-bottom:8px;">Systemstatus</div>
                 <div style="font-size:12px; color:var(--admin-text-muted);">
                   <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--admin-border);">
-                    <span>Firebase-Verbindung</span>
+                    <span>Verbindung</span>
                     <span style="color:#34d399;"><i class="fa-solid fa-circle" style="font-size:8px; margin-right:6px;"></i>Verbunden</span>
                   </div>
                   <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--admin-border);">
-                    <span>Datenbank-Sync</span>
+                    <span>Sync</span>
                     <span style="color:#34d399;"><i class="fa-solid fa-circle" style="font-size:8px; margin-right:6px;"></i>Aktiv</span>
                   </div>
                   <div style="display:flex; justify-content:space-between; padding:8px 0;">
                     <span>Version</span>
-                    <span style="color:var(--admin-gold);">2.1.0 Enterprise</span>
+                    <span style="color:var(--admin-gold);">2.1.0</span>
                   </div>
                 </div>
               </div>
@@ -571,7 +1222,7 @@
         <button type="button" id="lang-btn-en" class="lang-btn" onclick="setApplicationLanguage('en')">EN</button>
         <button type="button" id="lang-btn-de" class="lang-btn active" onclick="setApplicationLanguage('de')">DE</button>
       </div>
-      <div style="text-align:right; cursor:pointer;" onclick="routeToMainDashboard()">
+      <div style="text-align:right; cursor:pointer;" >
         <div style="font-weight:800; font-size:15px; letter-spacing:-0.3px; color:#1e293b;">SCHÜRMANN</div>
         <div style="font-size:8px; font-weight:700; color:var(--primary-red); letter-spacing:0.6px; margin-top:-2px;">GEBÄUDE + ENERGIE</div>
       </div>
@@ -623,7 +1274,7 @@
     <!-- ─── Dashboard ─── -->
     <div id="view-dashboard" class="content-panel active">
       <div class="panel-scroll-content">
-        <div class="dash-centered-logo-wrapper" onclick="routeToMainDashboard()">
+        <div class="dash-centered-logo-wrapper" >
           <div style="text-align:center;">
             <div style="font-weight:900; font-size:24px; letter-spacing:-0.5px; color:#1e293b; line-height:1;">SCHÜRMANN</div>
             <div style="font-size:10px; font-weight:800; color:var(--primary-red); letter-spacing:1.2px; margin-top:2px;">GEBÄUDE + ENERGIE</div>
@@ -813,7 +1464,7 @@
                     <th>Mitarbeiter</th>
                     <th>Datum</th>
                     <th>Typ</th>
-                    <th>Beschreibung</th>
+                    <th>Baustelle/Kunde</th>
                     <th style="text-align:right;">Dauer</th>
                   </tr>
                 </thead>
@@ -1393,8 +2044,9 @@
 
     // Update page title
     const titles = {
-      overview: 'Unternehmens-Dashboard',
+      overview: 'Admin Dashboard',
       employees: 'Mitarbeiter-Verwaltung',
+      absences: 'Abwesenheiten verwalten',
       reports: 'PDF Berichte',
       settings: 'Einstellungen'
     };
@@ -1423,7 +2075,7 @@
   }
 
   function handleAdminSignOut() {
-    if (!confirm(activeLanguageGlobal === 'de' ? 'Wirklich abmelden?' : 'Sign out?')) return;
+    showConfirmModal(activeLanguageGlobal === 'de' ? 'Wirklich abmelden?' : 'Sign out?', () => { auth.signOut().catch(()=>{}); localStorage.removeItem('schuermann_auth_user'); localStorage.removeItem('schuermann_auth_role'); authenticatedUserGlobal=''; authenticatedUserRoleGlobal='user'; switchToLoginView(); }); return;
     auth.signOut().catch(() => {});
     localStorage.removeItem('schuermann_auth_user');
     localStorage.removeItem('schuermann_auth_role');
@@ -1444,7 +2096,7 @@
 
   function handleSecureSignOutRequest() {
     toggleSidebarDrawer(false);
-    if (!confirm(activeLanguageGlobal === 'de' ? 'Wirklich abmelden?' : 'Sign out?')) return;
+    showConfirmModal(activeLanguageGlobal === 'de' ? 'Wirklich abmelden?' : 'Sign out?', () => { auth.signOut().catch(()=>{}); localStorage.removeItem('schuermann_auth_user'); localStorage.removeItem('schuermann_auth_role'); authenticatedUserGlobal=''; authenticatedUserRoleGlobal='user'; switchToLoginView(); }); return;
     auth.signOut().catch(() => {});
     localStorage.removeItem('schuermann_auth_user');
     localStorage.removeItem('schuermann_auth_role');
@@ -1564,15 +2216,34 @@
     const endVal   = document.getElementById('log-end-time').value;
     const grossHrs = computeRawHoursDiff(startVal, endVal);
     if (grossHrs <= 0) {
-      alert(activeLanguageGlobal === 'de' ? 'Fehler: Enddatum muss nach Beginn liegen!' : 'Error: End time must be after start!');
+      showToast(activeLanguageGlobal === 'de' ? '⚠ Endzeit muss nach Startzeit liegen' : '⚠ End time must be after start');
       return;
     }
     const dateRaw = document.getElementById('log-date-picker').value;
     const [y,mo,d] = dateRaw.split('-');
+    const dateFormatted = `${d}/${mo}/${y}`;
+    
+    // ── Check for duplicates / overlaps ──
+    const startMins = parseInt(startVal.split(':')[0])*60 + parseInt(startVal.split(':')[1]);
+    const endMins = parseInt(endVal.split(':')[0])*60 + parseInt(endVal.split(':')[1]);
+    const existing = globalLoggedSessionsDatabaseMock.filter(r => r.type === 'work' && r.date === dateFormatted);
+    for (const rec of existing) {
+      const rStart = parseInt(rec.startTime.split(':')[0])*60 + parseInt(rec.startTime.split(':')[1]);
+      const rEnd = parseInt(rec.endTime.split(':')[0])*60 + parseInt(rec.endTime.split(':')[1]);
+      // overlap check
+      if (startMins < rEnd && endMins > rStart) {
+        const msg = activeLanguageGlobal === 'de' 
+          ? `⚠ Überschneidung: Bereits Eintrag von ${rec.startTime}–${rec.endTime} vorhanden`
+          : `⚠ Overlap: Entry from ${rec.startTime}–${rec.endTime} already exists`;
+        showToast(msg);
+        return;
+      }
+    }
+    
     const record = {
       id: 'work-' + Date.now(),
       type: 'work',
-      date: `${d}/${mo}/${y}`,
+      date: dateFormatted,
       startTime: startVal,
       endTime: endVal,
       project: document.getElementById('log-project-name').value.trim(),
@@ -1587,8 +2258,13 @@
     selectBreakOption(0, document.querySelectorAll('.break-pill')[0]);
     renderHistoricalRecordsSheet();
     runGlobalApplicationMetricsEngine();
-    showToast(activeLanguageGlobal === 'de' ? '✓ Eintrag gespeichert!' : '✓ Record saved!');
-    routeToMainDashboard();
+    
+    // ── Stay on page for next entry, auto-fill start with previous end ──
+    document.getElementById('log-start-time').value = endVal;
+    document.getElementById('log-end-time').value = '';
+    document.getElementById('log-project-name').focus();
+    
+    showToast(activeLanguageGlobal === 'de' ? '✓ Gespeichert – bereit für nächsten Eintrag' : '✓ Saved – ready for next');
   }
 
   function handleVacationDayLogSubmission(event) {
@@ -2068,7 +2744,7 @@
           startY: y,
           head: [['ZEIT', 'BAUSTELLE', 'DAUER']],
           body: tableData,
-          margin: { left: margin, right: margin },
+          margin: { top: 28, left: margin, right: margin, bottom: 15 },
           styles: {
             fontSize: 9,
             cellPadding: 3,
@@ -2191,7 +2867,7 @@
             totalLogs++;
             adminAllEntriesCache.push({
               user: uid, date: s.date, category: 'WORK',
-              desc: `${s.project || '–'}${s.notes ? ' | ' + s.notes : ''}`,
+              desc: `${s.project || s.notes || '–'}`,
               hrs: Math.max(0, net), rawDate: s.date,
               startTime: s.startTime || null,
               endTime: s.endTime || null,
@@ -2353,7 +3029,26 @@
     document.getElementById('emp-stat-hours').textContent = totalHours.toFixed(2) + ' h';
     document.getElementById('emp-stat-vacation').textContent = vacationDays;
     document.getElementById('emp-stat-sick').textContent = sickDays;
-    statsCards.style.display = 'flex';
+    
+    // Calculate overtime (Überstunden)
+    const targetHours = parseFloat(document.getElementById('shift-target-hours')?.value) || 8.0;
+    const dailyTotals = {};
+    workEntries.forEach(r => {
+      const dateKey = r.date;
+      dailyTotals[dateKey] = (dailyTotals[dateKey] || 0) + r.hrs;
+    });
+    let overtimeTotal = 0;
+    Object.values(dailyTotals).forEach(dayHrs => {
+      overtimeTotal += (dayHrs - targetHours);
+    });
+    const otEl = document.getElementById('emp-stat-overtime');
+    if (otEl) {
+      const sign = overtimeTotal >= 0 ? '+' : '';
+      otEl.textContent = sign + overtimeTotal.toFixed(2) + ' h';
+      otEl.style.color = overtimeTotal >= 0 ? '#10b981' : '#ef4444';
+    }
+    
+    statsCards.style.display = 'grid';
 
     // Render table
     tbody.innerHTML = '';
@@ -2596,6 +3291,70 @@
     downloadNext();
   }
 
-</script>
+
+  // ── Custom confirm modal (Premium Enterprise)
+  function showConfirmModal(message, onConfirm) {
+    const existing = document.getElementById('custom-confirm-backdrop');
+    if (existing) existing.remove();
+    
+    const backdrop = document.createElement('div');
+    backdrop.id = 'custom-confirm-backdrop';
+    backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(3,6,15,0.75);backdrop-filter:blur(12px) saturate(140%);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.2s ease;';
+    backdrop.innerHTML = `
+      <div style="width:100%;max-width:360px;border-radius:20px;overflow:hidden;animation:modalEntrance 0.3s cubic-bezier(0.16,1,0.3,1);">
+        <div style="background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%);padding:28px 26px 22px;position:relative;border:1px solid rgba(251,191,36,0.2);border-bottom:none;">
+          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg, #E30613, #f59e0b, #E30613);"></div>
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg, rgba(251,191,36,0.2), rgba(251,191,36,0.05));border:1px solid rgba(251,191,36,0.3);display:flex;align-items:center;justify-content:center;">
+              <i class="fa-solid fa-shield-halved" style="color:#E30613;font-size:18px;"></i>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:800;color:#E30613;letter-spacing:1.2px;text-transform:uppercase;">SCHÜRMANN</div>
+              <div style="font-size:17px;font-weight:800;color:#fff;letter-spacing:-0.3px;margin-top:1px;">${activeLanguageGlobal === 'de' ? 'Sitzung beenden' : 'End Session'}</div>
+            </div>
+          </div>
+          <div style="font-size:14px;color:#cbd5e1;line-height:1.6;">${message}</div>
+        </div>
+        <div style="background:rgba(2,6,15,0.9);padding:16px 20px;border:1px solid rgba(251,191,36,0.2);border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;justify-content:flex-end;backdrop-filter:blur(10px);">
+          <button id="confirm-cancel" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#e2e8f0;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;">${activeLanguageGlobal === 'de' ? 'Abbrechen' : 'Cancel'}</button>
+          <button id="confirm-ok" style="background:linear-gradient(135deg, #E30613 0%, #f59e0b 100%);border:none;color:#0f172a;padding:10px 22px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(251,191,36,0.3), inset 0 1px 0 rgba(255,255,255,0.2);transition:all 0.2s;">${activeLanguageGlobal === 'de' ? 'Abmelden' : 'Sign Out'}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    const cancel = document.getElementById('confirm-cancel');
+    const ok = document.getElementById('confirm-ok');
+    cancel.onmouseenter = () => cancel.style.background='rgba(255,255,255,0.1)';
+    cancel.onmouseleave = () => cancel.style.background='rgba(255,255,255,0.06)';
+    ok.onmouseenter = () => { ok.style.transform='translateY(-1px)'; ok.style.boxShadow='0 6px 20px rgba(251,191,36,0.4), inset 0 1px 0 rgba(255,255,255,0.2)'; };
+    ok.onmouseleave = () => { ok.style.transform=''; ok.style.boxShadow='0 4px 14px rgba(251,191,36,0.3), inset 0 1px 0 rgba(255,255,255,0.2)'; };
+    cancel.onclick = () => backdrop.remove();
+    ok.onclick = () => { backdrop.remove(); if (onConfirm) onConfirm(); };
+    backdrop.onclick = (e) => { if (e.target === backdrop) backdrop.remove(); };
+  }
+
+
+    // Init dark datepickers for absence form
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.flatpickr) {
+        flatpickr("#absence-start", {
+          dateFormat: "Y-m-d",
+          altInput: true,
+          altFormat: "d.m.Y",
+          locale: "de",
+          theme: "dark",
+          allowInput: false
+        });
+        flatpickr("#absence-end", {
+          dateFormat: "Y-m-d",
+          altInput: true,
+          altFormat: "d.m.Y",
+          locale: "de",
+          theme: "dark",
+          allowInput: false
+        });
+      }
+    });
+
+  </script>
 </body>
 </html>
