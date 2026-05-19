@@ -460,7 +460,7 @@
 
   /* ── Toast Notification ── */
   #toast-notification {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%) translateY(-100px);
     background: #1e293b; color: white; padding: 13px 20px; border-radius: 12px;
     font-size: 13px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     z-index: 9999; transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
@@ -1341,6 +1341,24 @@
             <button type="submit" id="btn-form-save" class="primary-btn">Buchung abschließen</button>
           </form>
         </div>
+
+        <!-- Schule Option -->
+        <div class="app-card" style="margin-top:16px; border-left:4px solid var(--primary-blue);">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <div>
+              <h4 style="font-size:15px; font-weight:700; color:var(--dark-slate); margin:0;">Berufsschule</h4>
+              <p style="font-size:12px; color:var(--text-muted); margin:2px 0 0;">Für Auszubildende – Schultag ohne Arbeitszeit</p>
+            </div>
+            <i class="fa-solid fa-graduation-cap" style="font-size:22px; color:var(--primary-blue); opacity:0.8;"></i>
+          </div>
+          <div class="form-group">
+            <label>Schultag auswählen</label>
+            <input type="date" id="schule-date-picker" style="width:100%;">
+          </div>
+          <button type="button" class="primary-btn" style="background:var(--primary-blue);" onclick="handleSchuleSubmission()">
+            <i class="fa-solid fa-plus" style="margin-right:6px;"></i>Schultag buchen
+          </button>
+        </div>
       </div>
       <div class="developer-signature">Developed by Amran Hiluf</div>
     </div>
@@ -1789,6 +1807,16 @@
     document.getElementById('log-date-picker').value = new Date().toISOString().split('T')[0];
     document.getElementById('vacation-from-date-input').value = new Date().toISOString().split('T')[0];
     document.getElementById('vacation-to-date-input').value   = new Date().toISOString().split('T')[0];
+    document.getElementById('schule-date-picker').value = new Date().toISOString().split('T')[0];
+
+    // Reset times to default when date changes
+    document.getElementById('log-date-picker').addEventListener('change', () => {
+      document.getElementById('log-start-time').value = '07:00';
+      document.getElementById('log-end-time').value = '16:15';
+      document.querySelectorAll('.break-pill').forEach(p => p.classList.remove('active'));
+      document.querySelector('.break-pill').classList.add('active');
+      activeSelectedFormBreakDuration = 0;
+    });
 
     setInterval(enforceTrashLifespanPurgeEngine, 60000);
     window.addEventListener('online',  updateCloudBackupStatusIndicator);
@@ -2168,7 +2196,7 @@
       for (let m of ['00','15','30','45']) {
         const t = `${String(h).padStart(2,'0')}:${m}`;
         const os = document.createElement('option'); os.value = t; os.textContent = t; if (t === '07:00') os.selected = true; startSel.appendChild(os);
-        const oe = document.createElement('option'); oe.value = t; oe.textContent = t; if (t === '16:30') oe.selected = true; endSel.appendChild(oe);
+        const oe = document.createElement('option'); oe.value = t; oe.textContent = t; if (t === '16:15') oe.selected = true; endSel.appendChild(oe);
       }
     }
   }
@@ -2267,7 +2295,42 @@
     showToast(activeLanguageGlobal === 'de' ? '✓ Gespeichert – bereit für nächsten Eintrag' : '✓ Saved – ready for next');
   }
 
-  function handleVacationDayLogSubmission(event) {
+  
+  function handleSchuleSubmission() {
+    const dateRaw = document.getElementById('schule-date-picker').value;
+    if (!dateRaw) {
+      showToast(activeLanguageGlobal === 'de' ? '⚠ Bitte Datum wählen' : '⚠ Please select date', 'error');
+      return;
+    }
+    const [y,mo,d] = dateRaw.split('-');
+    const dateFormatted = `${d}/${mo}/${y}`;
+    
+    // Check duplicate
+    const exists = globalLoggedSessionsDatabaseMock.find(r => r.date === dateFormatted && (r.type === 'schule' || r.type === 'work'));
+    if (exists) {
+      showToast(activeLanguageGlobal === 'de' ? '⚠ Für diesen Tag existiert bereits ein Eintrag' : '⚠ Entry already exists for this date', 'error');
+      return;
+    }
+    
+    const record = {
+      id: 'schule-' + Date.now(),
+      type: 'schule',
+      date: dateFormatted,
+      startTime: null,
+      endTime: null,
+      project: 'BERUFSSCHULE',
+      duration: 0,
+      breakTime: 0,
+      notes: 'Schultag'
+    };
+    globalLoggedSessionsDatabaseMock.unshift(record);
+    persistUserData();
+    runGlobalApplicationMetricsEngine();
+    renderHistoricalRecordsSheet();
+    showToast(activeLanguageGlobal === 'de' ? '✓ Schultag gebucht' : '✓ School day logged');
+  }
+
+function handleVacationDayLogSubmission(event) {
     event.preventDefault();
     const fromRaw = document.getElementById('vacation-from-date-input').value;
     const toRaw   = document.getElementById('vacation-to-date-input').value;
@@ -2312,24 +2375,25 @@
       return;
     }
     globalLoggedSessionsDatabaseMock.forEach(s => {
-      const net = s.duration - (s.breakTime / 60);
+      const isSchule = s.type === 'schule';
+      const net = isSchule ? 0 : (s.duration - (s.breakTime / 60));
       const card = document.createElement('div');
       card.className = 'history-item';
-      card.style.borderLeftColor = 'var(--primary-blue)';
+      card.style.borderLeftColor = isSchule ? 'var(--primary-blue)' : 'var(--primary-blue)';
       card.id = `item-card-${s.id}`;
       card.innerHTML = `
         <div class="item-main-row">
           <div class="hist-left">
-            <h5>${s.project}</h5>
+            <h5>${isSchule ? '🎓 BERUFSSCHULE' : s.project}</h5>
             <p><i class="fa-solid fa-calendar-day" style="font-size:11px;margin-right:4px;"></i>${s.date}${s.notes ? ` | ${s.notes}` : ''}</p>
           </div>
           <div style="display:flex;align-items:center;">
             <div class="hist-right">
-              <div>${net.toFixed(2)} hrs</div>
-              <div style="font-size:10px;color:#64748b;font-weight:500;">${t.lblBreak}: ${s.breakTime}m</div>
+              <div>${isSchule ? 'Schultag' : net.toFixed(2) + ' hrs'}</div>
+              <div style="font-size:10px;color:#64748b;font-weight:500;">${isSchule ? 'Kein Abzug' : t.lblBreak + ': ' + s.breakTime + 'm'}</div>
             </div>
-            <button class="action-icon-btn" onclick="initializeInlineEditRow('${s.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
-            <button class="action-icon-btn delete-hover" onclick="sendItemToTrashBin('${s.id}','work')"><i class="fa-solid fa-trash-can"></i></button>
+            <button class="action-icon-btn" onclick="initializeInlineEditRow('${s.id}')" style="${isSchule ? 'display:none' : ''}"><i class="fa-solid fa-pen-to-square"></i></button>
+            <button class="action-icon-btn delete-hover" onclick="sendItemToTrashBin('${s.id}','${s.type}')"><i class="fa-solid fa-trash-can"></i></button>
           </div>
         </div>
         <div id="inline-edit-container-${s.id}" style="display:none;"></div>`;
@@ -2591,7 +2655,7 @@
     let y = margin;
 
     const user = authenticatedUserGlobal || 'Mitarbeiter';
-    const sessions = (globalLoggedSessionsDatabaseMock || []).filter(s => s.type === 'work');
+    const sessions = (globalLoggedSessionsDatabaseMock || []).filter(s => s.type === 'work' || s.type === 'schule');
     const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
     // Group sessions by date
@@ -2650,12 +2714,11 @@
 
     // ═══ SUMMARY CARDS ═══
     y += 8;
-    const cardWidth = (pageWidth - margin * 2 - 6) / 4;
+    const cardWidth = (pageWidth - margin * 2 - 4) / 3;
     const cardHeight = 18;
     const cards = [
       { label: 'MITARBEITER', value: user, accent: false },
       { label: 'EINTRÄGE', value: sessions.length.toString(), accent: false },
-      { label: 'PAUSE GESAMT', value: totalBreak.toFixed(2) + ' h', accent: false },
       { label: 'GESAMTARBEITSZEIT', value: totalNet.toFixed(2) + ' h', accent: true }
     ];
 
@@ -2732,11 +2795,14 @@
 
         // Prepare table data
         const tableData = items.map((s, idx) => {
-          const net = (s.duration || 0) - ((s.breakTime || 0) / 60);
+          const isSchule = s.type === 'schule';
+          const net = isSchule ? 0 : ((s.duration || 0) - ((s.breakTime || 0) / 60));
           dailyNet += net;
-          dailyBreak += (s.breakTime || 0) / 60;
-          const time = (s.startTime && s.endTime) ? s.startTime + ' – ' + s.endTime : '—';
-          return [time, s.project || '—', net.toFixed(2) + ' h'];
+          dailyBreak += isSchule ? 0 : ((s.breakTime || 0) / 60);
+          const time = isSchule ? '—' : ((s.startTime && s.endTime) ? s.startTime + ' – ' + s.endTime : '—');
+          const project = isSchule ? 'BERUFSSCHULE (Schultag)' : (s.project || '—');
+          const dauer = isSchule ? '—' : (net.toFixed(2) + ' h');
+          return [time, project, dauer];
         });
 
         // Draw table using autoTable
