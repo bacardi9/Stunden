@@ -27,9 +27,9 @@
 <main class="p-4 md:p-8 max-w-6xl mx-auto">
 <h2 class="text-2xl font-bold text-white mb-6">Dashboard</h2>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-<div class="card p-6 rounded-2xl"><p class="text-sm text-gray-400">Stunden diese Woche</p><p id="week-hours" class="text-3xl font-bold text-white">0.0</p></div>
-<div class="card p-6 rounded-2xl"><p class="text-sm text-gray-400">Überstunden</p><p id="ot-hours" class="text-3xl font-bold text-amber-500">+0.0</p></div>
-<div class="card p-6 rounded-2xl"><p class="text-sm text-gray-400">Status</p><p class="text-3xl font-bold text-green-500">Aktiv</p></div>
+<div class="card p-6 rounded-2xl"><p class="text-sm text-gray-400">Arbeit diese Woche</p><p id="arbeit-hours" class="text-3xl font-bold text-white">0.0</p></div>
+<div class="card p-6 rounded-2xl"><p class="text-sm text-gray-400">Schule diese Woche</p><p id="schule-hours" class="text-3xl font-bold text-blue-500">0.0</p></div>
+<div class="card p-6 rounded-2xl"><p class="text-sm text-gray-400">Gesamt</p><p id="total-hours" class="text-3xl font-bold text-amber-500">0.0</p></div>
 </div>
 <h3 class="text-lg font-bold text-white mb-4">Schnellzugriff</h3>
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -45,15 +45,13 @@
 </div>
 
 <script>
-// Your schurmann-stunden config
 const firebaseConfig = {
-  apiKey: "AIzaSyAr7FU8_yQ8FP9O2wk-v0RzSljoY5rNdQY",
-  authDomain: "schurmann-stunden.firebaseapp.com",
-  projectId: "schurmann-stunden",
-  storageBucket: "schurmann-stunden.firebasestorage.app",
-  messagingSenderId: "233085534554",
-  appId: "1:233085534554:web:73e0c4fcf7fb0b2bd63363",
-  measurementId: "G-K399E3GJ35"
+  apiKey: "AIzaSyBbBMWCPlE-TNauiJgn3SeOgM9usMXUEJA",
+  authDomain: "logins-fa136.firebaseapp.com",
+  projectId: "logins-fa136",
+  storageBucket: "logins-fa136.firebasestorage.app",
+  messagingSenderId: "624142930319",
+  appId: "1:624142930319:web:f4e0c97ee517b848cf3bfa"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -108,12 +106,22 @@ auth.onAuthStateChanged(user=>{
   }
 });
 
+function parseDate(d){
+  // Handle "21/04/2026" format
+  if(typeof d === 'string' && d.includes('/')){
+    const [day,month,year] = d.split('/');
+    return new Date(year, month-1, day);
+  }
+  return new Date(d);
+}
+
 async function loadDashboard(uid){
   try {
     const userDoc = await db.collection('userProfiles').doc(uid).get();
     if(!userDoc.exists){
-      document.getElementById('week-hours').innerText = '0.0';
-      document.getElementById('ot-hours').innerText = '+0.0';
+      document.getElementById('arbeit-hours').innerText = '0.0';
+      document.getElementById('schule-hours').innerText = '0.0';
+      document.getElementById('total-hours').innerText = '0.0';
       document.getElementById('week-bars').innerHTML = '<p class="text-gray-500 text-center w-full">Noch keine Stunden erfasst</p>';
       return;
     }
@@ -126,31 +134,33 @@ async function loadDashboard(uid){
     monday.setDate(now.getDate() - now.getDay() + 1);
     monday.setHours(0,0,0,0);
     
-    let weekTotal = 0;
-    const days = [0,0,0,0,0];
+    let arbeitTotal = 0, schuleTotal = 0;
+    const days = [0,0,0,0,0,0,0]; // Mo-So
     
     sessions.forEach(s=>{
-      if(s.type === 'arbeit' && s.startTime && s.endTime){
-        const start = new Date(s.startTime);
-        const end = new Date(s.endTime);
-        const hours = (end - start)/3600000 - (s.breakTime||0)/60;
-        if(start >= monday){
-          weekTotal += hours;
-          const dayIndex = start.getDay() === 0? 6 : start.getDay() - 1;
-          if(dayIndex >= 0) days[dayIndex] += hours;
+      const sessionDate = parseDate(s.date);
+      if(sessionDate >= monday && sessionDate <= now){
+        // Use duration field directly - your data has it
+        const hours = parseFloat(s.duration) || 0;
+        const dayIndex = sessionDate.getDay() === 0? 6 : sessionDate.getDay() - 1;
+        if(dayIndex >= 0 && dayIndex < 7){
+          days[dayIndex] += hours;
+          if(s.type === 'arbeit') arbeitTotal += hours;
+          if(s.type === 'schule') schuleTotal += hours;
         }
       }
     });
     
-    document.getElementById('week-hours').innerText = weekTotal.toFixed(1);
-    const ot = weekTotal - 40;
-    document.getElementById('ot-hours').innerText = (ot >= 0? '+' : '') + ot.toFixed(1);
+    document.getElementById('arbeit-hours').innerText = arbeitTotal.toFixed(1);
+    document.getElementById('schule-hours').innerText = schuleTotal.toFixed(1);
+    document.getElementById('total-hours').innerText = (arbeitTotal + schuleTotal).toFixed(1);
     
     const maxH = Math.max(...days, 8);
     const barHtml = ['Mo','Di','Mi','Do','Fr','Sa','So'].map((d,i)=>{
       const h = days[i] > 0? (days[i]/maxH*100) : 0;
+      const color = h > 0? 'bg-amber-500' : 'bg-gray-700';
       return `<div class="flex-1 flex flex-col items-center justify-end">
-        <div class="bg-amber-500 w-full rounded-t" style="height:${h}%"></div>
+        <div class="${color} w-full rounded-t" style="height:${h}%"></div>
         <p class="text-xs mt-1">${d}</p>
       </div>`;
     }).join('');
@@ -158,7 +168,7 @@ async function loadDashboard(uid){
     
   } catch(e){
     console.error(e);
-    document.getElementById('week-bars').innerHTML = '<p class="text-red-500 text-center w-full">Fehler beim Laden</p>';
+    document.getElementById('week-bars').innerHTML = '<p class="text-red-500 text-center w-full">Fehler: ' + e.message + '</p>';
   }
 }
 </script></body></html>
