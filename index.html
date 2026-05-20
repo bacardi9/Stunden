@@ -33,26 +33,27 @@
 </div>
 <h3 class="text-lg font-bold text-white mb-4">Schnellzugriff</h3>
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-<div onclick="alert('Kommt als Nächstes')" class="bg-gray-700 p-4 rounded-xl text-center cursor-pointer hover:bg-gray-600"><p class="font-bold text-white">Erfassen</p></div>
-<div onclick="alert('Kommt als Nächstes')" class="bg-gray-700 p-4 rounded-xl text-center cursor-pointer hover:bg-gray-600"><p class="font-bold text-white">Übersicht</p></div>
-<div onclick="alert('Kommt als Nächstes')" class="bg-gray-700 p-4 rounded-xl text-center cursor-pointer hover:bg-gray-600"><p class="font-bold text-white">Urlaub</p></div>
-<div onclick="alert('Kommt als Nächstes')" class="bg-gray-700 p-4 rounded-xl text-center cursor-pointer hover:bg-gray-600"><p class="font-bold text-white">PDF</p></div>
+<div onclick="alert('Kommt bald')" class="bg-gray-700 p-4 rounded-xl text-center cursor-pointer hover:bg-gray-600"><p class="font-bold text-white">Erfassen</p></div>
+<div onclick="alert('Kommt bald')" class="bg-gray-700 p-4 rounded-xl text-center cursor-pointer hover:bg-gray-600"><p class="font-bold text-white">Übersicht</p></div>
+<div onclick="alert('Kommt bald')" class="bg-gray-700 p-4 rounded-xl text-center cursor-pointer hover:bg-gray-600"><p class="font-bold text-white">Urlaub</p></div>
+<div onclick="alert('Kommt bald')" class="bg-gray-700 p-4 rounded-xl text-center cursor-pointer hover:bg-gray-600"><p class="font-bold text-white">PDF</p></div>
 </div>
 <h3 class="text-lg font-bold text-white mb-4">Wochenübersicht</h3>
-<div class="card p-6 rounded-2xl"><div class="flex items-end gap-2 h-40" id="week-bars"></div></div>
+<div class="card p-6 rounded-2xl"><div class="flex items-end gap-2 h-40" id="week-bars"><p class="text-gray-500 text-center w-full">Lade Daten...</p></div></div>
 </main>
 <footer class="text-center p-6 text-xs text-gray-600">Developed by Amran Hiluf</footer>
 </div>
 
 <script>
-// Your config from screenshot
+// Your schurmann-stunden config
 const firebaseConfig = {
-  apiKey: "AIzaSyBbBMWCPlE-TNauiJgn3SeOgM9usMXUEJA",
-  authDomain: "logins-fa136.firebaseapp.com",
-  projectId: "logins-fa136",
-  storageBucket: "logins-fa136.firebasestorage.app",
-  messagingSenderId: "624142930319",
-  appId: "1:624142930319:web:f4e0c97ee517b848cf3bfa"
+  apiKey: "AIzaSyAr7FU8_yQ8FP9O2wk-v0RzSljoY5rNdQY",
+  authDomain: "schurmann-stunden.firebaseapp.com",
+  projectId: "schurmann-stunden",
+  storageBucket: "schurmann-stunden.firebasestorage.app",
+  messagingSenderId: "233085534554",
+  appId: "1:233085534554:web:73e0c4fcf7fb0b2bd63363",
+  measurementId: "G-K399E3GJ35"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -93,9 +94,7 @@ async function login(){
   }
 }
 
-function logout(){
-  auth.signOut();
-}
+function logout(){ auth.signOut(); }
 
 auth.onAuthStateChanged(user=>{
   if(user){
@@ -110,9 +109,56 @@ auth.onAuthStateChanged(user=>{
 });
 
 async function loadDashboard(uid){
-  // This will load real data once you add hours
-  document.getElementById('week-hours').innerText = '0.0';
-  document.getElementById('ot-hours').innerText = '+0.0';
-  document.getElementById('week-bars').innerHTML = '<p class="text-gray-500 text-center w-full">Noch keine Stunden erfasst</p>';
+  try {
+    const userDoc = await db.collection('userProfiles').doc(uid).get();
+    if(!userDoc.exists){
+      document.getElementById('week-hours').innerText = '0.0';
+      document.getElementById('ot-hours').innerText = '+0.0';
+      document.getElementById('week-bars').innerHTML = '<p class="text-gray-500 text-center w-full">Noch keine Stunden erfasst</p>';
+      return;
+    }
+    
+    const data = userDoc.data();
+    const sessions = data.workSessions || [];
+    
+    const now = new Date();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - now.getDay() + 1);
+    monday.setHours(0,0,0,0);
+    
+    let weekTotal = 0;
+    const days = [0,0,0,0,0];
+    
+    sessions.forEach(s=>{
+      if(s.type === 'arbeit' && s.startTime && s.endTime){
+        const start = new Date(s.startTime);
+        const end = new Date(s.endTime);
+        const hours = (end - start)/3600000 - (s.breakTime||0)/60;
+        if(start >= monday){
+          weekTotal += hours;
+          const dayIndex = start.getDay() === 0? 6 : start.getDay() - 1;
+          if(dayIndex >= 0) days[dayIndex] += hours;
+        }
+      }
+    });
+    
+    document.getElementById('week-hours').innerText = weekTotal.toFixed(1);
+    const ot = weekTotal - 40;
+    document.getElementById('ot-hours').innerText = (ot >= 0? '+' : '') + ot.toFixed(1);
+    
+    const maxH = Math.max(...days, 8);
+    const barHtml = ['Mo','Di','Mi','Do','Fr','Sa','So'].map((d,i)=>{
+      const h = days[i] > 0? (days[i]/maxH*100) : 0;
+      return `<div class="flex-1 flex flex-col items-center justify-end">
+        <div class="bg-amber-500 w-full rounded-t" style="height:${h}%"></div>
+        <p class="text-xs mt-1">${d}</p>
+      </div>`;
+    }).join('');
+    document.getElementById('week-bars').innerHTML = barHtml;
+    
+  } catch(e){
+    console.error(e);
+    document.getElementById('week-bars').innerHTML = '<p class="text-red-500 text-center w-full">Fehler beim Laden</p>';
+  }
 }
 </script></body></html>
