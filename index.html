@@ -1,12 +1,46 @@
-<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Schürmann Portal</title><script src="https://cdn.tailwindcss.com"></script><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><style>body{font-family:Inter,sans-serif;background:#111827;color:#d1d5db}.card{background:#1f2937;border:1px solid #374151}.btn-primary{background:#f59e0b;color:#111827}.btn-primary:hover{background:#d97706}.input-dark{background:#374151;border:1px solid #4b5563;color:#fff}</style>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Schürmann Stundenportal</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+body{font-family:Inter,sans-serif;background:#111827;color:#d1d5db}
+.sidebar{background:#1f2937;border-right:1px solid #374151}
+.card{background:#1f2937;border:1px solid #374151}
+.btn-primary{background:#f59e0b;color:#111827}.btn-primary:hover{background:#d97706}
+.btn-secondary{background:#374151;color:#d1d5db}.btn-secondary:hover{background:#4b5563}
+.input-dark{background:#374151;border:1px solid #4b5563;color:#fff}
+.input-dark:focus{border-color:#f59e0b;outline:none}
+.nav-active{background:#374151;color:#f59e0b}
+.hidden{display:none}
+table{width:100%;border-collapse:collapse}
+th,td{padding:12px;text-align:left;border-bottom:1px solid #374151}
+th{background:#374151;color:#f59e0b}
+.day-bar{--fill:0%;background:#374151;position:relative;height:100%}
+.day-bar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:var(--fill);background:#f59e0b;transition:height.3s}
+.day-bar.active::after{background:#10b981}
+.day-bar.partial::after{background:#3b82f6}
+.day-bar.today{outline:2px solid #f59e0b}
+</style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body class="min-h-screen">
+
+<!-- LOGIN -->
 <div id="login-view" class="flex items-center justify-center min-h-screen p-4">
 <div class="w-full max-w-md">
-<div class="text-center mb-8"><h1 class="text-4xl font-bold text-white">SCHÜRMANN</h1><p class="text-gray-400">Stundenportal</p></div>
+<div class="text-center mb-8">
+<h1 class="text-4xl font-bold text-white">SCHÜRMANN</h1>
+<p class="text-gray-400" style="color:#ef4444;font-size:14px;letter-spacing:2px">GEBÄUDE + ENERGIE</p>
+</div>
 <div class="card p-8 rounded-2xl">
 <h2 class="text-2xl font-bold text-white mb-6 text-center">Anmelden</h2>
 <input id="username" placeholder="Name" class="input-dark w-full p-3 rounded-lg mb-4">
@@ -17,31 +51,113 @@
 <p class="text-xs text-gray-500 text-center mt-6">Developed by Amran Hiluf</p>
 </div></div>
 
-<div id="app" style="display:none" class="min-h-screen">
-<header class="bg-gray-800 p-4 flex justify-between items-center">
-<h1 class="text-xl font-bold text-white">SCHÜRMANN PORTAL</h1>
-<div class="flex items-center gap-4">
-<span id="user-display" class="text-sm"></span>
-<button onclick="logout()" class="text-sm text-gray-400 hover:text-white">Abmelden</button>
-</div></header>
-<main class="p-4 md:p-8 max-w-6xl mx-auto">
-<h2 class="text-2xl font-bold text-white mb-6">Dashboard</h2>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-<div class="card p-6 rounded-2xl"><p class="text-sm text-gray-400">Arbeit diese Woche</p><p id="arbeit-hours" class="text-3xl font-bold text-white">0.0</p></div>
-<div class="card p-6 rounded-2xl"><p class="text-sm text-gray-400">Schule diese Woche</p><p id="schule-hours" class="text-3xl font-bold text-blue-500">0.0</p></div>
-<div class="card p-6 rounded-2xl"><p class="text-sm text-gray-400">Gesamt</p><p id="total-hours" class="text-3xl font-bold text-amber-500">0.0</p></div>
+<!-- APP -->
+<div id="app" class="hidden min-h-screen flex">
+<aside class="sidebar w-64 p-4 flex flex-col">
+<h1 class="text-2xl font-bold text-white mb-1">SCHÜRMANN</h1>
+<p style="color:#ef4444;font-size:11px;letter-spacing:1px;margin-bottom:32px">GEBÄUDE + ENERGIE</p>
+<nav class="flex-1">
+<a href="#" onclick="showTab('dashboard')" class="nav-link nav-active flex items-center gap-3 p-3 rounded-lg mb-2"><i class="fa-solid fa-chart-pie w-5"></i> Dashboard</a>
+<a href="#" onclick="showTab('erfassen')" class="nav-link flex items-center gap-3 p-3 rounded-lg mb-2"><i class="fa-solid fa-clock w-5"></i> Erfassen</a>
+<a href="#" onclick="showTab('uebersicht')" class="nav-link flex items-center gap-3 p-3 rounded-lg mb-2"><i class="fa-solid fa-list w-5"></i> Übersicht</a>
+<a href="#" onclick="showTab('urlaub')" class="nav-link flex items-center gap-3 p-3 rounded-lg mb-2"><i class="fa-solid fa-umbrella-beach w-5"></i> Urlaub</a>
+<a href="#" onclick="showTab('einstellungen')" class="nav-link flex items-center gap-3 p-3 rounded-lg mb-2"><i class="fa-solid fa-cog w-5"></i> Einstellungen</a>
+</nav>
+<div class="mt-auto">
+<div class="text-sm text-gray-400 mb-2" id="user-display"></div>
+<button onclick="logout()" class="text-sm text-gray-400 hover:text-white"><i class="fa-solid fa-right-from-bracket"></i> Abmelden</button>
+<p class="text-xs text-gray-600 mt-4">Developed by Amran Hiluf</p>
 </div>
-<h3 class="text-lg font-bold text-white mb-4">Schnellzugriff</h3>
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-<div onclick="alert('Kommt bald')" class="bg-gray-700 p-4 rounded-xl text-center cursor-pointer hover:bg-gray-600"><p class="font-bold text-white">Erfassen</p></div>
-<div onclick="alert('Kommt bald')" class="bg-gray-700 p-4 rounded-xl text-center cursor-pointer hover:bg-gray-600"><p class="font-bold text-white">Übersicht</p></div>
-<div onclick="alert('Kommt bald')" class="bg-gray-700 p-4 rounded-xl text-center cursor-pointer hover:bg-gray-600"><p class="font-bold text-white">Urlaub</p></div>
-<div onclick="alert('Kommt bald')" class="bg-gray-700 p-4 rounded-xl text-center cursor-pointer hover:bg-gray-600"><p class="font-bold text-white">PDF</p></div>
+</aside>
+
+<main class="flex-1 p-4 md:p-8 overflow-y-auto">
+<!-- DASHBOARD -->
+<div id="dashboard" class="tab-content">
+<h2 class="text-3xl font-bold text-white mb-6">Dashboard</h2>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+<div class="card p-6 rounded-2xl"><p class="text-sm text-gray-400">Diese Woche</p><p id="stat-week" class="text-3xl font-bold text-white">0.0h</p><p class="text-xs text-gray-500 mt-1">Arbeit + Schule</p></div>
+<div class="card p-6 rounded-2xl"><p class="text-sm text-gray-400">Dieser Monat</p><p id="stat-month" class="text-3xl font-bold text-white">0.0h</p><p class="text-xs text-gray-500 mt-1">Arbeit + Schule</p></div>
+<div class="card p-6 rounded-2xl"><p class="text-sm text-gray-400">Dieses Jahr</p><p id="stat-year" class="text-3xl font-bold text-white">0.0h</p><p class="text-xs text-gray-500 mt-1">Gesamt</p></div>
+<div class="card p-6 rounded-2xl"><p class="text-sm text-gray-400">Urlaub übrig</p><p id="stat-urlaub" class="text-3xl font-bold text-amber-500">30</p><p class="text-xs text-gray-500 mt-1">Tage</p></div>
 </div>
 <h3 class="text-lg font-bold text-white mb-4">Wochenübersicht</h3>
-<div class="card p-6 rounded-2xl"><div class="flex items-end gap-2 h-40" id="week-bars"><p class="text-gray-500 text-center w-full">Lade Daten...</p></div></div>
+<div class="card p-6 rounded-2xl mb-8">
+<div id="weekly-bars" class="flex items-end gap-2 h-40">
+<div class="flex-1 flex flex-col items-center"><div class="day-bar w-full rounded-t" data-day="Mo"></div><p class="text-xs mt-2">Mo</p></div>
+<div class="flex-1 flex flex-col items-center"><div class="day-bar w-full rounded-t" data-day="Di"></div><p class="text-xs mt-2">Di</p></div>
+<div class="flex-1 flex flex-col items-center"><div class="day-bar w-full rounded-t" data-day="Mi"></div><p class="text-xs mt-2">Mi</p></div>
+<div class="flex-1 flex flex-col items-center"><div class="day-bar w-full rounded-t" data-day="Do"></div><p class="text-xs mt-2">Do</p></div>
+<div class="flex-1 flex flex-col items-center"><div class="day-bar w-full rounded-t" data-day="Fr"></div><p class="text-xs mt-2">Fr</p></div>
+</div>
+<p class="text-center mt-4 text-gray-400">Gesamt: <span id="weekly-total-hours" class="text-white font-bold">0.0h</span></p>
+</div>
+<div class="flex gap-4"><button onclick="exportCurrentMonthPDF()" class="btn-primary px-6 py-3 rounded-lg font-bold"><i class="fa-solid fa-file-pdf"></i> PDF Export</button></div>
+</div>
+
+<!-- Rest of tabs same as your old file but with Firebase -->
+<div id="erfassen" class="tab-content hidden">
+<h2 class="text-3xl font-bold text-white mb-6">Stunden erfassen</h2>
+<div class="card p-6 rounded-2xl max-w-2xl">
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div><label class="text-sm text-gray-400">Datum</label><input id="e-date" type="date" class="input-dark w-full p-3 rounded-lg mt-1"></div>
+<div><label class="text-sm text-gray-400">Typ</label><select id="e-type" class="input-dark w-full p-3 rounded-lg mt-1" onchange="toggleTimeFields()"><option value="arbeit">Arbeit</option><option value="schule">Schule</option><option value="urlaub">Urlaub</option><option value="krank">Krank</option></select></div>
+</div>
+<div id="time-fields" class="grid grid-cols-2 gap-4 mb-4">
+<div><label class="text-sm text-gray-400">Startzeit</label><input id="e-start" type="time" class="input-dark w-full p-3 rounded-lg mt-1"></div>
+<div><label class="text-sm text-gray-400">Endzeit</label><input id="e-end" type="time" class="input-dark w-full p-3 rounded-lg mt-1"></div>
+</div>
+<div id="duration-field" class="hidden mb-4">
+<label class="text-sm text-gray-400">Stunden</label><input id="e-duration" type="number" step="0.1" value="8" class="input-dark w-full p-3 rounded-lg mt-1">
+</div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div><label class="text-sm text-gray-400">Pause (Min)</label><input id="e-break" type="number" value="30" class="input-dark w-full p-3 rounded-lg mt-1"></div>
+<div><label class="text-sm text-gray-400">Projekt</label><input id="e-project" placeholder="Baustelle A" class="input-dark w-full p-3 rounded-lg mt-1"></div>
+</div>
+<div class="mb-4"><label class="text-sm text-gray-400">Notizen</label><textarea id="e-notes" rows="3" class="input-dark w-full p-3 rounded-lg mt-1"></textarea></div>
+<button onclick="saveEntry()" class="btn-primary w-full p-3 rounded-lg font-bold">Speichern</button>
+<div id="e-msg" class="text-sm mt-4 text-center"></div>
+</div>
+</div>
+
+<div id="uebersicht" class="tab-content hidden">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-3xl font-bold text-white">Übersicht</h2>
+<input id="filter-month" type="month" class="input-dark p-2 rounded-lg">
+</div>
+<div class="card p-6 rounded-2xl overflow-x-auto">
+<table id="uebersicht-table">
+<thead><tr><th>Datum</th><th>Typ</th><th>Projekt</th><th>Start</th><th>Ende</th><th>Pause</th><th>Stunden</th><th>Aktion</th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+</div>
+
+<div id="urlaub" class="tab-content hidden">
+<h2 class="text-3xl font-bold text-white mb-6">Urlaub</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="card p-6 rounded-2xl">
+<h3 class="text-lg font-bold text-white mb-4">Urlaub beantragen</h3>
+<div class="mb-4"><label class="text-sm text-gray-400">Von</label><input id="u-start" type="date" class="input-dark w-full p-3 rounded-lg mt-1"></div>
+<div class="mb-4"><label class="text-sm text-gray-400">Bis</label><input id="u-end" type="date" class="input-dark w-full p-3 rounded-lg mt-1"></div>
+<button onclick="requestUrlaub()" class="btn-primary w-full p-3 rounded-lg font-bold">Beantragen</button>
+</div>
+<div class="card p-6 rounded-2xl">
+<h3 class="text-lg font-bold text-white mb-4">Meine Urlaubstage</h3>
+<div id="urlaub-list" class="space-y-2"></div>
+</div>
+</div>
+</div>
+
+<div id="einstellungen" class="tab-content hidden">
+<h2 class="text-3xl font-bold text-white mb-6">Einstellungen</h2>
+<div class="card p-6 rounded-2xl max-w-2xl">
+<h3 class="text-lg font-bold text-white mb-4">Profil</h3>
+<div class="mb-4"><label class="text-sm text-gray-400">Soll-Stunden/Woche</label><input id="s-soll" type="number" value="40" class="input-dark w-full p-3 rounded-lg mt-1"></div>
+<div class="mb-4"><label class="text-sm text-gray-400">Urlaubstage/Jahr</label><input id="s-urlaub" type="number" value="30" class="input-dark w-full p-3 rounded-lg mt-1"></div>
+<button onclick="saveSettings()" class="btn-primary w-full p-3 rounded-lg font-bold">Speichern</button>
+</div>
+</div>
 </main>
-<footer class="text-center p-6 text-xs text-gray-600">Developed by Amran Hiluf</footer>
 </div>
 
 <script>
@@ -57,10 +173,10 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+let currentUser = null;
+let userData = {workSessions:[],leaveDays:[],settings:{soll:40,urlaub:30}};
 
-function nameToEmail(name){
-  return name.toLowerCase().replace(/[^a-z0-9]/g,'') + '@sch.local';
-}
+function nameToEmail(name){return name.toLowerCase().replace(/[^a-z0-9]/g,'') + '@sch.local';}
 
 async function login(){
   const u = document.getElementById('username').value.trim();
@@ -68,46 +184,55 @@ async function login(){
   const msg = document.getElementById('msg');
   msg.innerText = '';
   if(!u||!p){msg.innerText='Name und Passwort eingeben';return;}
-  
   const email = nameToEmail(u);
-  msg.innerText = 'Anmelden...';
-  msg.style.color = '#d1d5db';
-  
+  msg.innerText = 'Anmelden...'; msg.style.color = '#d1d5db';
   try {
     await auth.signInWithEmailAndPassword(email,p);
   } catch(err) {
     if(err.code === 'auth/user-not-found'){
-      try {
-        await auth.createUserWithEmailAndPassword(email,p);
-      } catch(e) {
-        msg.innerText = 'Fehler: ' + e.message;
-        msg.style.color = '#ef4444';
-        return;
-      }
-    } else {
-      msg.innerText = 'Fehler: ' + err.message;
-      msg.style.color = '#ef4444';
-      return;
-    }
+      try {await auth.createUserWithEmailAndPassword(email,p);} 
+      catch(e) {msg.innerText = 'Fehler: ' + e.message; msg.style.color = '#ef4444'; return;}
+    } else {msg.innerText = 'Fehler: ' + err.message; msg.style.color = '#ef4444'; return;}
   }
 }
 
-function logout(){ auth.signOut(); }
+function logout(){auth.signOut();}
 
-auth.onAuthStateChanged(user=>{
+auth.onAuthStateChanged(async user=>{
   if(user){
+    currentUser = user;
     document.getElementById('login-view').style.display='none';
-    document.getElementById('app').style.display='block';
+    document.getElementById('app').style.display='flex';
     document.getElementById('user-display').innerText=user.email.split('@')[0];
-    loadDashboard(user.uid);
+    await loadUserData();
+    showTab('dashboard');
   } else {
+    currentUser = null;
     document.getElementById('login-view').style.display='flex';
     document.getElementById('app').style.display='none';
   }
 });
 
+async function loadUserData(){
+  const doc = await db.collection('userProfiles').doc(currentUser.uid).get();
+  if(doc.exists){
+    userData = doc.data();
+    if(!userData.settings) userData.settings = {soll:40,urlaub:30};
+    if(!userData.workSessions) userData.workSessions = [];
+    if(!userData.leaveDays) userData.leaveDays = [];
+  }
+  updateDashboard();
+  updateUebersicht();
+  updateUrlaub();
+  document.getElementById('s-soll').value = userData.settings.soll;
+  document.getElementById('s-urlaub').value = userData.settings.urlaub;
+}
+
+async function saveUserData(){
+  if(currentUser) await db.collection('userProfiles').doc(currentUser.uid).set(userData);
+}
+
 function parseDate(d){
-  // Handle "21/04/2026" format
   if(typeof d === 'string' && d.includes('/')){
     const [day,month,year] = d.split('/');
     return new Date(year, month-1, day);
@@ -115,60 +240,208 @@ function parseDate(d){
   return new Date(d);
 }
 
-async function loadDashboard(uid){
-  try {
-    const userDoc = await db.collection('userProfiles').doc(uid).get();
-    if(!userDoc.exists){
-      document.getElementById('arbeit-hours').innerText = '0.0';
-      document.getElementById('schule-hours').innerText = '0.0';
-      document.getElementById('total-hours').innerText = '0.0';
-      document.getElementById('week-bars').innerHTML = '<p class="text-gray-500 text-center w-full">Noch keine Stunden erfasst</p>';
-      return;
-    }
-    
-    const data = userDoc.data();
-    const sessions = data.workSessions || [];
-    
-    const now = new Date();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - now.getDay() + 1);
-    monday.setHours(0,0,0,0);
-    
-    let arbeitTotal = 0, schuleTotal = 0;
-    const days = [0,0,0,0,0,0,0]; // Mo-So
-    
-    sessions.forEach(s=>{
-      const sessionDate = parseDate(s.date);
-      if(sessionDate >= monday && sessionDate <= now){
-        // Use duration field directly - your data has it
-        const hours = parseFloat(s.duration) || 0;
-        const dayIndex = sessionDate.getDay() === 0? 6 : sessionDate.getDay() - 1;
-        if(dayIndex >= 0 && dayIndex < 7){
-          days[dayIndex] += hours;
-          if(s.type === 'arbeit') arbeitTotal += hours;
-          if(s.type === 'schule') schuleTotal += hours;
-        }
-      }
-    });
-    
-    document.getElementById('arbeit-hours').innerText = arbeitTotal.toFixed(1);
-    document.getElementById('schule-hours').innerText = schuleTotal.toFixed(1);
-    document.getElementById('total-hours').innerText = (arbeitTotal + schuleTotal).toFixed(1);
-    
-    const maxH = Math.max(...days, 8);
-    const barHtml = ['Mo','Di','Mi','Do','Fr','Sa','So'].map((d,i)=>{
-      const h = days[i] > 0? (days[i]/maxH*100) : 0;
-      const color = h > 0? 'bg-amber-500' : 'bg-gray-700';
-      return `<div class="flex-1 flex flex-col items-center justify-end">
-        <div class="${color} w-full rounded-t" style="height:${h}%"></div>
-        <p class="text-xs mt-1">${d}</p>
-      </div>`;
-    }).join('');
-    document.getElementById('week-bars').innerHTML = barHtml;
-    
-  } catch(e){
-    console.error(e);
-    document.getElementById('week-bars').innerHTML = '<p class="text-red-500 text-center w-full">Fehler: ' + e.message + '</p>';
+function getDuration(s){
+  if(s.duration!== undefined && s.duration!== null) return parseFloat(s.duration) || 0;
+  if(s.startTime && s.endTime){
+    const start = new Date(s.startTime);
+    const end = new Date(s.endTime);
+    const diff = (end - start)/3600000;
+    return diff - (parseFloat(s.breakTime)||0)/60;
+  }
+  return 0;
+}
+
+function updateDashboard(){
+  const now = new Date();
+  const monday = new Date(now); monday.setDate(now.getDate() - now.getDay() + 1); monday.setHours(0,0,0,0);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const yearStart = new Date(now.getFullYear(), 0, 1);
+  
+  let weekTotal = 0, monthTotal = 0, yearTotal = 0;
+  const days = [0,0,0,0,0];
+  let usedUrlaub = 0;
+  
+  userData.workSessions.forEach(s=>{
+    const d = parseDate(s.date);
+    const hours = getDuration(s);
+    if(d >= monday && d <= now) {weekTotal += hours; const idx = d.getDay() === 0? 6 : d.getDay()-1; if(idx<5) days[idx] += hours;}
+    if(d >= monthStart && d <= now) monthTotal += hours;
+    if(d >= yearStart && d <= now) yearTotal += hours;
+    if(s.type === 'urlaub') usedUrlaub++;
+  });
+  
+  document.getElementById('stat-week').innerText = weekTotal.toFixed(1) + 'h';
+  document.getElementById('stat-month').innerText = monthTotal.toFixed(1) + 'h';
+  document.getElementById('stat-year').innerText = yearTotal.toFixed(1) + 'h';
+  document.getElementById('stat-urlaub').innerText = userData.settings.urlaub - usedUrlaub;
+  
+  const maxH = Math.max(...days, 8);
+  document.querySelectorAll('#weekly-bars.day-bar').forEach((bar,i)=>{
+    const h = days[i] > 0? (days[i]/maxH*100) : 0;
+    bar.style.setProperty('--fill', h + '%');
+    bar.classList.remove('active','partial','today');
+    if(days[i] >= 7.5) bar.classList.add('active');
+    else if(days[i] > 0) bar.classList.add('partial');
+    if(i === ((new Date().getDay()+6)%7)) bar.classList.add('today');
+  });
+  document.getElementById('weekly-total-hours').innerText = weekTotal.toFixed(1) + 'h';
+}
+
+function showTab(tab){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.add('hidden'));
+  document.querySelectorAll('.nav-link').forEach(el=>el.classList.remove('nav-active'));
+  document.getElementById(tab).classList.remove('hidden');
+  event.target.closest('.nav-link').classList.add('nav-active');
+}
+
+function toggleTimeFields(){
+  const type = document.getElementById('e-type').value;
+  if(type === 'schule' || type === 'urlaub' || type === 'krank'){
+    document.getElementById('time-fields').classList.add('hidden');
+    document.getElementById('duration-field').classList.remove('hidden');
+  } else {
+    document.getElementById('time-fields').classList.remove('hidden');
+    document.getElementById('duration-field').classList.add('hidden');
   }
 }
-</script></body></html>
+
+async function saveEntry(){
+  const date = document.getElementById('e-date').value;
+  const type = document.getElementById('e-type').value;
+  const project = document.getElementById('e-project').value;
+  const notes = document.getElementById('e-notes').value;
+  const breakTime = parseFloat(document.getElementById('e-break').value) || 0;
+  let entry = {id:Date.now().toString(),date,type,project,notes,breakTime};
+  
+  if(type === 'arbeit'){
+    const start = document.getElementById('e-start').value;
+    const end = document.getElementById('e-end').value;
+    if(!date||!start||!end){document.getElementById('e-msg').innerText='Bitte alle Felder ausfüllen';return;}
+    entry.startTime = `${date}T${start}:00`;
+    entry.endTime = `${date}T${end}:00`;
+  } else {
+    const duration = parseFloat(document.getElementById('e-duration').value) || 0;
+    if(!date||!duration){document.getElementById('e-msg').innerText='Bitte Datum und Stunden eingeben';return;}
+    entry.duration = duration;
+  }
+  
+  userData.workSessions.push(entry);
+  await saveUserData();
+  document.getElementById('e-msg').innerText='Gespeichert!'; document.getElementById('e-msg').style.color='#10b981';
+  updateDashboard(); updateUebersicht();
+  setTimeout(()=>document.getElementById('e-msg').innerText='',2000);
+}
+
+function updateUebersicht(){
+  const filter = document.getElementById('filter-month').value;
+  let sessions = [...userData.workSessions];
+  if(filter){
+    sessions = sessions.filter(s=>s.date.startsWith(filter));
+  }
+  sessions.sort((a,b)=>parseDate(b.date)-parseDate(a.date));
+  document.querySelector('#uebersicht-table tbody').innerHTML = sessions.map(s=>`
+    <tr>
+      <td>${parseDate(s.date).toLocaleDateString('de-DE')}</td>
+      <td>${s.type}</td>
+      <td>${s.project||'-'}</td>
+      <td>${s.startTime?new Date(s.startTime).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'-'}</td>
+      <td>${s.endTime?new Date(s.endTime).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'-'}</td>
+      <td>${s.breakTime||0}min</td>
+      <td>${getDuration(s).toFixed(1)}h</td>
+      <td><button onclick="deleteEntry('${s.id}')" class="text-red-500 hover:text-red-400"><i class="fa-solid fa-trash"></i></button></td>
+    </tr>
+  `).join('');
+}
+
+async function deleteEntry(id){
+  if(!confirm('Eintrag löschen?')) return;
+  userData.workSessions = userData.workSessions.filter(s=>s.id!== id);
+  await saveUserData();
+  updateDashboard(); updateUebersicht();
+}
+
+async function requestUrlaub(){
+  const start = document.getElementById('u-start').value;
+  const end = document.getElementById('u-end').value;
+  if(!start||!end){alert('Bitte Datum auswählen');return;}
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  for(let d = new Date(startDate); d <= endDate; d.setDate(d.getDate()+1)){
+    userData.leaveDays.push({date:d.toISOString().split('T')[0],status:'beantragt'});
+    userData.workSessions.push({id:Date.now()+Math.random(),date:d.toISOString().split('T')[0],type:'urlaub',duration:8,project:'Urlaub'});
+  }
+  await saveUserData();
+  updateUrlaub(); updateDashboard();
+  document.getElementById('u-start').value=''; document.getElementById('u-end').value='';
+}
+
+function updateUrlaub(){
+  document.getElementById('urlaub-list').innerHTML = userData.leaveDays.map(u=>`
+    <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg">
+      <div><p class="font-bold">${parseDate(u.date).toLocaleDateString('de-DE')}</p></div>
+      <span class="text-xs px-2 py-1 rounded ${u.status==='genehmigt'?'bg-green-600':'bg-yellow-600'}">${u.status}</span>
+    </div>
+  `).join('');
+}
+
+async function saveSettings(){
+  userData.settings.soll = parseFloat(document.getElementById('s-soll').value) || 40;
+  userData.settings.urlaub = parseFloat(document.getElementById('s-urlaub').value) || 30;
+  await saveUserData();
+  updateDashboard();
+  alert('Gespeichert!');
+}
+
+function exportCurrentMonthPDF(){
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF();
+  const now = new Date();
+  const month = now.toLocaleDateString('de-DE', {month:'long', year:'numeric'});
+  doc.setFillColor(30,41,59);
+  doc.rect(0,0,210,35,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(18);
+  doc.setFont('helvetica','bold');
+  doc.text('SCHÜRMANN', 15, 15);
+  doc.setFontSize(10);
+  doc.setFont('helvetica','normal');
+  doc.text('GEBÄUDE + ENERGIE', 15, 22);
+  doc.setFontSize(12);
+  doc.text('Arbeitszeitnachweis', 150, 18, {align:'right'});
+  
+  doc.setTextColor(0,0,0);
+  doc.setFontSize(11);
+  doc.text(`Mitarbeiter: ${currentUser.email.split('@')[0]}`, 15, 50);
+  doc.text(`Zeitraum: ${month}`, 15, 58);
+  
+  const sessions = userData.workSessions.filter(s=>{
+    const d = parseDate(s.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  
+  const rows = sessions.map(s=>[parseDate(s.date).toLocaleDateString('de-DE'),s.type,s.project||'-',s.startTime?new Date(s.startTime).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'-',s.endTime?new Date(s.endTime).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'-',getDuration(s).toFixed(1)+'h']);
+  
+  doc.autoTable({
+    startY: 75,
+    head: [['Datum','Typ','Projekt','Beginn','Ende','Stunden']],
+    body: rows.length? rows : [['Keine Einträge','','','','','']],
+    theme: 'grid',
+    headStyles: {fillColor:[245,158,11], textColor:17},
+    styles: {fontSize:9}
+  });
+  
+  const total = sessions.reduce((a,s)=>a+getDuration(s),0);
+  doc.setFontSize(12);
+  doc.setFont('helvetica','bold');
+  doc.text(`Gesamtstunden: ${total.toFixed(1)} h`, 15, doc.lastAutoTable.finalY + 15);
+  doc.setFontSize(8);
+  doc.text('Developed by Amran Hiluf', 15, 285);
+  doc.save(`Arbeitszeitnachweis_${month.replace(' ','_')}.pdf`);
+}
+
+document.getElementById('e-date').valueAsDate = new Date();
+document.getElementById('filter-month').value = new Date().toISOString().slice(0,7);
+document.getElementById('filter-month').addEventListener('change',updateUebersicht);
+</script>
+</body>
+</html>
