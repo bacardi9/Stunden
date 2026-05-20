@@ -214,7 +214,7 @@
   <meta name="color-scheme" content="dark light">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Schürmann Gebäude + Energie - Enterprise Work Portal</title>
+<title>Schürmann Gebäude + Energie - Firmen Work Portal</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
@@ -223,24 +223,27 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <style>
   :root {
-    --primary-red: #e11d48;
-    --primary-blue: #0ea5e9;
-    --dark-slate: #1e293b;
-    --light-bg: #fdf6e9;
-    --card-bg: #fffcf5;
-    --card-border: #e7dcc8;
-    --text-main: #3a3228;
-    --text-muted: #8a7d6a;
-    --admin-dark: #020617;
-    --admin-card: #0b1120;
-    --admin-gold: #e11d48;
-    --admin-border: #1e293b;
-    --admin-text-main: #f1f5f9;
-    --admin-text-muted: #94a3b8;
-    --warm-glow: rgba(251,191,36,0.08);
+    --schur-red: #e30613;
+    --schur-red-dark: #9d040e;
+    --schur-red-glow: rgba(227,6,19,0.6);
+    --black-abyss: #000000;
+    --black-charcoal: #0b0b0d;
+    --black-steel: #141419;
+    --graphite: #1c1e24;
+    --silver-mist: #c7c9d1;
+    --white-pure: #ffffff;
+    --text-primary: #f5f6f7;
+    --text-secondary: #a1a4ad;
+    --glass-bg: rgba(12,12,15,0.85);
+    --glass-border: rgba(227,6,19,0.25);
+    --shadow-enterprise: 0 20px 60px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.03) inset;
+    --glow-red: 0 0 30px rgba(227,6,19,0.4), 0 0 60px rgba(227,6,19,0.2);
+    --gradient-red-metal: linear-gradient(135deg, #ff1a2c 0%, #e30613 25%, #b0040f 50%, #7a030a 100%);
+    --gradient-black-gloss: linear-gradient(180deg, #1a1c22 0%, #0a0b0e 50%, #000000 100%);
+    --gradient-radial: radial-gradient(ellipse at top, rgba(227,6,19,0.15) 0%, transparent 60%);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  body { background: linear-gradient(180deg, #fdf6e9 0%, #fbf0da 100%); color: var(--text-main); padding-bottom: 20px; -webkit-font-smoothing: antialiased; }
+  body { margin:0; font-family:"Inter","SF Pro Display",-apple-system,BlinkMacSystemFont,sans-serif; background:#000; color:var(--text-primary); min-height:100vh; overflow-x:hidden; } body::before { content:""; position:fixed; inset:0; background: var(--gradient-radial), radial-gradient(ellipse at bottom right, rgba(227,6,19,0.08) 0%, transparent 50%), #000; pointer-events:none; z-index:0; }
 body::before { content:""; position:fixed; inset:0; background: radial-gradient(circle at 20% 20%, rgba(251,191,36,0.06), transparent 50%), radial-gradient(circle at 80% 80%, rgba(225,29,72,0.04), transparent 50%); pointer-events:none; z-index:0; }
 
   /* ── Login Shell ── */
@@ -284,9 +287,9 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   .drawer-user-section h3 { font-size: 18px; font-weight: 700; color: var(--dark-slate); margin-bottom: 2px; }
   .drawer-user-section p { font-size: 10px; font-weight: 800; color: var(--primary-red); text-transform: uppercase; letter-spacing: 0.6px; }
   .drawer-nav-list { list-style: none; padding: 12px 0; flex: 1; overflow-y: auto; }
-  .nav-item { display: flex; align-items: center; gap: 14px; padding: 12px 24px; color: #475569; font-size: 14px; font-weight: 600;  transition: all 0.15s; }
+  .nav-item { display:flex; align-items:center; gap:14px; padding:14px 20px; margin:4px 12px; border-radius:14px; cursor:pointer; transition: all 0.3s; color: var(--text-secondary); font-weight:500; position:relative; overflow:hidden; } .nav-item:hover { background: rgba(227,6,19,0.08); color: var(--text-primary); }
   .nav-item i { width: 20px; font-size: 16px; color: #94a3b8; text-align: center; }
-  .nav-item:hover, .nav-item.active { background: #f1f5f9; color: var(--primary-blue); }
+  .nav-item:hover, .nav-item.active { background: var(--gradient-red-metal); color:#fff; box-shadow: 0 4px 20px rgba(227,6,19,0.4), inset 0 1px 0 rgba(255,255,255,0.15); } .nav-item.active::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:#fff; box-shadow:0 0 10px #fff; }
   .nav-item:hover i, .nav-item.active i { color: var(--primary-blue); }
   .nav-item.disabled { color: #94a3b8; cursor: not-allowed; }
   .nav-item.disabled:hover { background: none; color: #94a3b8; }
@@ -298,7 +301,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   .content-panel { display: none; flex: 1; }
   .content-panel.active { display: flex; flex-direction: column; }
   .panel-scroll-content { flex: 1; }
-  .view-title { font-size: 20px; font-weight: 700; color: var(--dark-slate); margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; letter-spacing: -0.3px; }
+  .view-title { font-size:28px; font-weight:800; letter-spacing:-0.5px; margin-bottom:24px; background: linear-gradient(180deg, #fff 0%, #a1a4ad 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
 
   /* ── Dashboard ── */
   .dash-centered-logo-wrapper { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 12px auto 28px; text-align: center;  }
@@ -312,13 +315,10 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   .metric-card .value { font-size: 22px; font-weight: 700; color: var(--dark-slate); letter-spacing: -0.5px; pointer-events: none; }
 
   /* ── Cards & Forms ── */
-  .app-card { background: white; padding: 22px; border-radius: 12px; border: 1px solid var(--card-border); box-shadow: 0 1px 3px rgba(0,0,0,0.02); margin-bottom: 16px; }
+  .app-card { background: var(--glass-bg); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid var(--glass-border); border-radius: 24px; padding: 28px; box-shadow: var(--shadow-enterprise), var(--glow-red); position: relative; overflow: hidden; transition: all 0.4s cubic-bezier(0.4,0,0.2,1); } .app-card::before { content:""; position:absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent, rgba(227,6,19,0.8), transparent); } .app-card::after { content:""; position:absolute; top:-50%; left:-50%; width:200%; height:200%; background: conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(227,6,19,0.05) 60deg, transparent 120deg); animation: rotate 20s linear infinite; pointer-events:none; opacity:0; transition:opacity 0.4s; } .app-card:hover::after { opacity:1; } .app-card:hover { transform: translateY(-2px); border-color: rgba(227,6,19,0.5); box-shadow: var(--shadow-enterprise), 0 0 50px rgba(227,6,19,0.3); } @keyframes rotate { to { transform: rotate(360deg); } }
   .form-group { margin-bottom: 18px; }
   .form-group label { display: block; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.4px; }
-  input[type="text"], input[type="date"], input[type="password"], input[type="number"], select, textarea {
-    width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px;
-    font-size: 14px; color: var(--dark-slate); background: #fff; transition: border-color 0.15s, box-shadow 0.15s;
-  }
+  
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 3px rgba(2,89,182,0.15); }
 
   .toggle-switch-row { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 20px; }
@@ -329,7 +329,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   .break-pill { background: #e2e8f0; border: none; padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; color: #475569;  white-space: nowrap; transition: all 0.15s; }
   .break-pill.active { background: #fee2e2; color: var(--primary-red); border: 1px solid #fca5a5; }
 
-  .primary-btn { display: block; width: 100%; background: var(--primary-blue); color: white; border: none; padding: 13px; border-radius: 8px; font-size: 14px; font-weight: 700;  transition: opacity 0.15s; text-align: center; text-decoration: none; }
+  .primary-btn { background: var(--gradient-red-metal); color:#fff; border:none; border-radius:16px; padding:14px 32px; font-weight:800; font-size:13px; letter-spacing:0.8px; text-transform:uppercase; cursor:pointer; position:relative; overflow:hidden; box-shadow: 0 8px 24px rgba(227,6,19,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -2px 8px rgba(0,0,0,0.5); transition: all 0.3s; } .primary-btn::before { content:""; position:absolute; top:0; left:-100%; width:100%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); transition:left 0.6s; } .primary-btn:hover::before { left:100%; } .primary-btn:hover { transform: translateY(-1px) scale(1.01); box-shadow: 0 12px 36px rgba(227,6,19,0.55), inset 0 1px 0 rgba(255,255,255,0.3); }
   .primary-btn:hover { opacity: 0.9; }
   .primary-btn.red-btn { background: var(--primary-red); }
   .primary-btn:disabled { background: #94a3b8; cursor: not-allowed; }
@@ -435,7 +435,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   .admin-mobile-toggle { display: none; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 10px 12px; border-radius: 8px;  }
   .admin-sidebar-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 99; backdrop-filter: blur(2px); }
   .admin-sidebar-backdrop.show { display: block; }
-  /* Enterprise polish: fade-in for admin sections */
+  /* Firmen polish: fade-in for admin sections */
   .admin-section { animation: adminFadeIn 0.25s ease; }
   @keyframes adminFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   /* Gold shimmer on metric tiles */
@@ -449,7 +449,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   .custom-modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
   .custom-modal-backdrop.show { display: flex; }
   .custom-report-modal { background: #fff; width: 100%; max-width: 440px; border-radius: 14px; overflow: hidden; border: 1px solid var(--card-border); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); animation: modalEntrance 0.25s cubic-bezier(0.16,1,0.3,1); }
-  .modal-report-header { background: var(--dark-slate); padding: 18px 22px; color: #fff; display: flex; align-items: center; justify-content: space-between; }
+  .modal-report-header { background: rgba(5,5,7,0.95); backdrop-filter: blur(20px); border-right:1px solid rgba(227,6,19,0.15); padding: 18px 22px; color: #fff; display: flex; align-items: center; justify-content: space-between; }
   .modal-report-header h4 { font-size: 14px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; }
   .modal-report-body { padding: 22px; max-height: 340px; overflow-y: auto; }
   .modal-report-row { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px dashed var(--card-border); font-size: 13px; }
@@ -486,7 +486,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   }
 
   
-  /* ── Enterprise Smooth Upgrade (v3) ── */
+  /* ── Firmen Smooth Upgrade (v3) ── */
   body.admin-mode { background: radial-gradient(1200px 800px at 20% -10%, #1e293b 0%, #0f172a 40%, #020617 100%) !important; }
   #admin-full-view { background: transparent !important; }
   .admin-sidebar {
@@ -776,7 +776,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   }
 
 
-  .primary-btn { background: linear-gradient(135deg, #E30613 0%, #b8000f 100%) !important; box-shadow: 0 8px 24px rgba(227,6,19,0.35) !important; }
+  .primary-btn { background: var(--gradient-red-metal); color:#fff; border:none; border-radius:16px; padding:14px 32px; font-weight:800; font-size:13px; letter-spacing:0.8px; text-transform:uppercase; cursor:pointer; position:relative; overflow:hidden; box-shadow: 0 8px 24px rgba(227,6,19,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -2px 8px rgba(0,0,0,0.5); transition: all 0.3s; } .primary-btn::before { content:""; position:absolute; top:0; left:-100%; width:100%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); transition:left 0.6s; } .primary-btn:hover::before { left:100%; } .primary-btn:hover { transform: translateY(-1px) scale(1.01); box-shadow: 0 12px 36px rgba(227,6,19,0.55), inset 0 1px 0 rgba(255,255,255,0.3); }
   .login-card { background: rgba(15,23,42,0.85) !important; backdrop-filter: blur(20px); border: 1px solid rgba(227,6,19,0.15) !important; }
 
 
@@ -821,7 +821,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   input:focus, select:focus, textarea:focus { border-color: var(--primary-blue) !important; box-shadow: 0 0 0 3px rgba(14,165,233,0.1) !important; }
   
   /* Buttons */
-  .primary-btn { box-shadow: 0 2px 8px rgba(225,29,72,0.2) !important; }
+  .primary-btn { background: var(--gradient-red-metal); color:#fff; border:none; border-radius:16px; padding:14px 32px; font-weight:800; font-size:13px; letter-spacing:0.8px; text-transform:uppercase; cursor:pointer; position:relative; overflow:hidden; box-shadow: 0 8px 24px rgba(227,6,19,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -2px 8px rgba(0,0,0,0.5); transition: all 0.3s; } .primary-btn::before { content:""; position:absolute; top:0; left:-100%; width:100%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); transition:left 0.6s; } .primary-btn:hover::before { left:100%; } .primary-btn:hover { transform: translateY(-1px) scale(1.01); box-shadow: 0 12px 36px rgba(227,6,19,0.55), inset 0 1px 0 rgba(255,255,255,0.3); }
 
 </style>
 
@@ -886,7 +886,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   input:focus, select:focus, textarea:focus { border-color: var(--primary-blue) !important; box-shadow: 0 0 0 3px rgba(14,165,233,0.1) !important; }
   
   /* Buttons */
-  .primary-btn { box-shadow: 0 2px 8px rgba(225,29,72,0.2) !important; }
+  .primary-btn { background: var(--gradient-red-metal); color:#fff; border:none; border-radius:16px; padding:14px 32px; font-weight:800; font-size:13px; letter-spacing:0.8px; text-transform:uppercase; cursor:pointer; position:relative; overflow:hidden; box-shadow: 0 8px 24px rgba(227,6,19,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -2px 8px rgba(0,0,0,0.5); transition: all 0.3s; } .primary-btn::before { content:""; position:absolute; top:0; left:-100%; width:100%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); transition:left 0.6s; } .primary-btn:hover::before { left:100%; } .primary-btn:hover { transform: translateY(-1px) scale(1.01); box-shadow: 0 12px 36px rgba(227,6,19,0.55), inset 0 1px 0 rgba(255,255,255,0.3); }
 
 </style>
 
@@ -959,7 +959,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   input:focus, select:focus, textarea:focus { border-color: var(--primary-blue) !important; box-shadow: 0 0 0 3px rgba(14,165,233,0.1) !important; }
   
   /* Buttons */
-  .primary-btn { box-shadow: 0 2px 8px rgba(225,29,72,0.2) !important; }
+  .primary-btn { background: var(--gradient-red-metal); color:#fff; border:none; border-radius:16px; padding:14px 32px; font-weight:800; font-size:13px; letter-spacing:0.8px; text-transform:uppercase; cursor:pointer; position:relative; overflow:hidden; box-shadow: 0 8px 24px rgba(227,6,19,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -2px 8px rgba(0,0,0,0.5); transition: all 0.3s; } .primary-btn::before { content:""; position:absolute; top:0; left:-100%; width:100%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); transition:left 0.6s; } .primary-btn:hover::before { left:100%; } .primary-btn:hover { transform: translateY(-1px) scale(1.01); box-shadow: 0 12px 36px rgba(227,6,19,0.55), inset 0 1px 0 rgba(255,255,255,0.3); }
 
 </style>
 
@@ -1023,7 +1023,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   input:focus, select:focus, textarea:focus { border-color: var(--primary-blue) !important; box-shadow: 0 0 0 3px rgba(14,165,233,0.1) !important; }
   
   /* Buttons */
-  .primary-btn { box-shadow: 0 2px 8px rgba(225,29,72,0.2) !important; }
+  .primary-btn { background: var(--gradient-red-metal); color:#fff; border:none; border-radius:16px; padding:14px 32px; font-weight:800; font-size:13px; letter-spacing:0.8px; text-transform:uppercase; cursor:pointer; position:relative; overflow:hidden; box-shadow: 0 8px 24px rgba(227,6,19,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -2px 8px rgba(0,0,0,0.5); transition: all 0.3s; } .primary-btn::before { content:""; position:absolute; top:0; left:-100%; width:100%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); transition:left 0.6s; } .primary-btn:hover::before { left:100%; } .primary-btn:hover { transform: translateY(-1px) scale(1.01); box-shadow: 0 12px 36px rgba(227,6,19,0.55), inset 0 1px 0 rgba(255,255,255,0.3); }
 
 </style>
 
@@ -1036,7 +1036,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
     <div class="brand-logo-container" style="padding:40px 0 28px; text-align:center; width:100%;">
       <div style="display:block; width:100%; max-width:100%; padding:0 20px; box-sizing:border-box;">
         <!-- SCHÜRMANN - fits perfectly -->
-        <div style="font-size:38px; font-weight:200; color:#ffffff; letter-spacing:7px; line-height:1; font-family:'Inter', system-ui, sans-serif; text-transform:uppercase; position:relative; display:inline-block; margin-right:-7px; white-space:nowrap;">
+        <div style="font-size:26px; font-weight:200; color:#ffffff; letter-spacing:7px; line-height:1; font-family:'Inter', system-ui, sans-serif; text-transform:uppercase; position:relative; display:inline-block; margin-right:-7px; white-space:nowrap;">
           SCHÜRMANN
           <div style="position:absolute; bottom:-8px; left:0; right:7px; height:1px; background: linear-gradient(90deg, transparent 5%, rgba(227,6,19,0.9) 50%, transparent 95%);"></div>
         </div>
@@ -1391,7 +1391,26 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
 </div>
 
 <!-- ═══════════════════════════════════════ APP VIEW ═══════════════════════════════════════ -->
-<div id="app-view" style="display:none;">
+<div id="app-view" style="display:none; position:relative; z-index:1;">
+<div style="position:relative; background: linear-gradient(180deg, #000 0%, #0a0a0a 100%); border-bottom:1px solid rgba(227,6,19,0.3); overflow:hidden;">
+  <div style="position:absolute; inset:0; background: radial-gradient(800px circle at 50% -200px, rgba(227,6,19,0.2), transparent 70%);"></div>
+  <div style="position:absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent, #e30613, transparent); opacity:0.8;"></div>
+  <div style="max-width:1200px; margin:0 auto; padding:28px 20px 22px; position:relative; text-align:center;">
+    <div style="display:inline-block; position:relative;">
+      <h1 style="font-family:'Inter',sans-serif; font-weight:900; font-size:26px; letter-spacing:-1px; margin:0; line-height:1;">
+        <span style="color:#fff;">SCHÜR</span><span style="color:#e30613;">MANN</span>
+      </h1>
+      <div style="height:2px; width:100%; background:linear-gradient(90deg, transparent, #e30613, transparent); margin:6px 0;"></div>
+      <p style="margin:0; font-size:9px; letter-spacing:2.5px; color:#a1a4ad; font-weight:600;">LEMFÖRDER HAUSTECHNIK</p>
+    </div>
+    <div style="display:inline-flex; align-items:center; gap:10px; margin-top:6px; padding:6px 16px; background: rgba(227,6,19,0.08); border:1px solid rgba(227,6,19,0.2); border-radius:20px; backdrop-filter: blur(10px);">
+      <div style="width:6px; height:6px; border-radius:50%; background:#e30613; box-shadow:0 0 10px #e30613; animation:pulse 2s infinite;"></div>
+      <span style="font-size:10px; letter-spacing:2px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Firmenportal • Live</span>
+    </div>
+  </div>
+</div>
+<style>@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}</style>
+
 
   <header class="app-header">
     <button class="menu-trigger-btn" onclick="toggleSidebarDrawer(true)"><i class="fa-solid fa-bars"></i></button>
@@ -1615,7 +1634,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
       <div class="panel-scroll-content">
         <div class="premium-admin-wrapper">
           <div class="admin-gold-badge">
-            <i class="fa-solid fa-crown"></i> Enterprise Management Node
+            <i class="fa-solid fa-crown"></i> Firmen Management Node
           </div>
           <h2 style="font-size:22px; font-weight:800; color:#fff; margin-bottom:4px; letter-spacing:-0.5px;">Corporate Administration Control</h2>
           <p style="font-size:13px; color:var(--admin-text-muted); margin-bottom:24px;">Zentrale Überwachung aller Mitarbeiterstunden &amp; Systemtransaktionen.</p>
@@ -3660,7 +3679,7 @@ function triggerPDFExportEngine(useCustom = false) {
   }
 
 
-  // ── Custom confirm modal (Premium Enterprise)
+  // ── Custom confirm modal (Premium Firmen)
   function showConfirmModal(message, onConfirm) {
     const existing = document.getElementById('custom-confirm-backdrop');
     if (existing) existing.remove();
@@ -3816,3 +3835,4 @@ function triggerPDFExportEngine(useCustom = false) {
 </script><div style="text-align:center; padding:20px 0 40px; font-size:11px; color:var(--text-muted); opacity:0.7;">Developed by Amran</div>
 </body>
 </html>
+<style>input, select, textarea { background: rgba(0,0,0,0.6) !important; border:1px solid rgba(227,6,19,0.2) !important; color:#fff !important; border-radius:12px !important; padding:12px 16px !important; transition: all 0.3s !important; } input:focus { outline:none !important; border-color:#e30613 !important; box-shadow:0 0 0 3px rgba(227,6,19,0.15), 0 0 20px rgba(227,6,19,0.2) !important; background: rgba(0,0,0,0.8) !important; }</style>
