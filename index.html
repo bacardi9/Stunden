@@ -1,18 +1,27 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Test</title></head>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Schurmann</title></head>
 <body style="font-family:sans-serif;padding:40px;background:#111;color:#fff">
-<h1>SCHÜRMANN TEST</h1>
-<form id="f">
+<h1>SCHÜRMANN PORTAL</h1>
+<div id="login">
 <input id="u" placeholder="Name" style="padding:12px;margin:8px;display:block;width:200px">
 <input id="p" placeholder="Pass" type="password" style="padding:12px;margin:8px;display:block;width:200px">
-<button style="padding:12px 24px;margin:8px">Anmelden</button>
-</form>
-<div id="app" style="display:none"><h2>Dashboard Works!</h2><p>Developed by Amran Hiluf</p></div>
+<button onclick="login()" style="padding:12px 24px;margin:8px">Anmelden</button>
+</div>
+<div id="app" style="display:none">
+<h2>Dashboard Works!</h2>
+<p>Developed by Amran Hiluf</p>
+<p id="user"></p>
+</div>
 <script>
-document.getElementById('f').onsubmit=e=>{
-  e.preventDefault();
-  if(document.getElementById('u').value && document.getElementById('p').value){
-    document.getElementById('f').style.display='none';
+function login(){
+  var u=document.getElementById('u').value;
+  var p=document.getElementById('p').value;
+  if(u&&p){
+    document.getElementById('login').style.display='none';
     document.getElementById('app').style.display='block';
+    document.getElementById('user').innerText='Angemeldet: '+u;
+  } else {
+    alert('Name und Passwort eingeben');
   }
 }
-</script></body></html>
+</script>
+</body></html>
