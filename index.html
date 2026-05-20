@@ -1061,7 +1061,9 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
       <button type="submit" id="btn-login-submit" class="primary-btn">Anmelden</button>
     </form>
     <div id="message-box" class="message"></div>
-    </div>
+    
+    <div style="text-align:center; padding:20px 0 10px; font-size:11px; color:var(--text-muted); opacity:0.7;">Developed by Amran</div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════ ADMIN FULL-SCREEN VIEW ═══════════════════════════════════════ -->
@@ -2143,60 +2145,36 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
     msgBox.className = 'message success';
 
     try {
-      await auth.signInAnonymously();
-
-      // ── Admin login check ──
+      // Build internal email from name
+      let email;
       if (nameInput.toLowerCase() === 'admin') {
-        const adminDoc = await db.collection('Admin').doc('Admin').get();
-        if (adminDoc.exists) {
-          const adminCode = String(adminDoc.data().Code || '').trim();
-          if (adminCode === codeInput && codeInput !== '') {
-            authenticatedUserGlobal     = 'Admin';
-            authenticatedUserRoleGlobal = 'admin';
-            localStorage.setItem('schuermann_auth_user', 'Admin');
-            localStorage.setItem('schuermann_auth_role', 'admin');
-            setTimeout(() => launchSessionUI(), 400);
-            return;
-          }
-        }
-        msgBox.innerHTML = activeLanguageGlobal === 'de'
-          ? 'Falscher Admin-Code.'
-          : 'Invalid admin code.';
-        msgBox.className = 'message error';
-        return;
-      }
-
-      // ── Regular user check ──
-      const snap = await db.collection('Users').get();
-      let matched = false;
-      snap.forEach(doc => {
-        if (doc.id.trim() === nameInput) {
-          const dbCode = String(doc.data().Code || '').trim();
-          if (dbCode === codeInput && codeInput !== '') {
-            matched = true;
-            authenticatedUserGlobal     = nameInput;
-            authenticatedUserRoleGlobal = String(doc.data().role || 'user').trim().toLowerCase();
-          }
-        }
-      });
-
-      if (matched) {
-        localStorage.setItem('schuermann_auth_user', authenticatedUserGlobal);
-        localStorage.setItem('schuermann_auth_role', authenticatedUserRoleGlobal);
-        msgBox.textContent = activeLanguageGlobal === 'de'
-          ? `Willkommen zurück, ${authenticatedUserGlobal}!`
-          : `Welcome back, ${authenticatedUserGlobal}!`;
-        msgBox.className = 'message success';
-        setTimeout(() => launchSessionUI(), 500);
+        email = 'admin@sch.local';
       } else {
-        msgBox.innerHTML = activeLanguageGlobal === 'de'
-          ? `Mitarbeiter nicht gefunden oder falsches Kennwort.<br><span style="font-size:11px;color:#aaa;font-weight:normal;">Groß-/Kleinschreibung beachten!</span>`
-          : `Invalid name or password.<br><span style="font-size:11px;color:#aaa;font-weight:normal;">Check case sensitivity!</span>`;
-        msgBox.className = 'message error';
+        const uid = nameInput.toLowerCase()
+          .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
+          .replace(/[^a-z0-9]/gi,'');
+        email = uid + '@sch.local';
       }
+
+      const cred = await auth.signInWithEmailAndPassword(email, codeInput);
+      
+      authenticatedUserGlobal = cred.user.uid;
+      authenticatedUserRoleGlobal = (nameInput.toLowerCase() === 'admin') ? 'admin' : 'user';
+      
+      localStorage.setItem('schuermann_auth_user', authenticatedUserGlobal);
+      localStorage.setItem('schuermann_auth_role', authenticatedUserRoleGlobal);
+      localStorage.setItem('schuermann_current_user', nameInput);
+
+      msgBox.textContent = activeLanguageGlobal === 'de'
+        ? `Willkommen zurück, ${nameInput}!`
+        : `Welcome back, ${nameInput}!`;
+      msgBox.className = 'message success';
+      setTimeout(() => launchSessionUI(), 500);
     } catch (err) {
       console.error(err);
-      msgBox.textContent = 'Verbindungsfehler. Bitte erneut versuchen.';
+      msgBox.innerHTML = activeLanguageGlobal === 'de'
+        ? `Mitarbeiter nicht gefunden oder falsches Kennwort.<br><span style="font-size:11px;color:#aaa;font-weight:normal;">Groß-/Kleinschreibung beachten!</span>`
+        : `Invalid name or password.<br><span style="font-size:11px;color:#aaa;font-weight:normal;">Check case sensitivity!</span>`;
       msgBox.className = 'message error';
     }
   }
@@ -2208,7 +2186,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
     if (authenticatedUserRoleGlobal === 'admin') {
       document.getElementById('app-view').style.display = 'none';
       document.getElementById('admin-full-view').style.display = 'block';
-      document.getElementById('admin-user-display').textContent = authenticatedUserGlobal;
+      document.getElementById('admin-user-display').textContent = localStorage.getItem('schuermann_current_user') || 'Admin';
       document.body.classList.add('admin-mode');
       launchAdminDashboard();
       return;
@@ -2218,8 +2196,9 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
     document.getElementById('admin-full-view').style.display = 'none';
     document.body.classList.remove('admin-mode');
     document.getElementById('app-view').style.display   = 'block';
-    document.getElementById('user-profile-title').textContent  = authenticatedUserGlobal;
-    document.getElementById('dash-profile-username').textContent = authenticatedUserGlobal;
+    const displayName = localStorage.getItem('schuermann_current_user') || authenticatedUserGlobal;
+    document.getElementById('user-profile-title').textContent  = displayName;
+    document.getElementById('dash-profile-username').textContent = displayName;
 
     const adminLink = document.getElementById('nav-admin-link');
     adminLink.style.display = 'none';
@@ -3813,6 +3792,9 @@ function triggerPDFExportEngine(useCustom = false) {
   
   document.addEventListener('DOMContentLoaded',()=>{ const u=localStorage.getItem('schurmann_current_user'); if(u) initializeDeviceTrackingEngine(u); });
 
-</script><div style="text-align:center; padding:20px 0 40px; font-size:11px; color:var(--text-muted); opacity:0.7;">Developed by Amran</div>
+</script><div style="display:flex; justify-content:space-between; align-items:center; padding:20px 30px 40px; font-size:12px; color:#e6e6e6; width:100%; box-sizing:border-box;">
+  <div style="font-weight:500;">Dev. by Amran Hiluf</div>
+  <div style="font-weight:500; opacity:0.9;">Firmen Portal</div>
+</div>
 </body>
 </html>
