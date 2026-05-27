@@ -1876,13 +1876,28 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   async function persistUserDataNow() {
     if (!authenticatedUserGlobal || authenticatedUserRoleGlobal === 'admin') return;
     try {
-      await db.collection('userProfiles').doc(authenticatedUserGlobal).set({
+      const docRef = db.collection('userProfiles').doc(authenticatedUserGlobal);
+      const snap = await docRef.get();
+      const existing = snap.exists ? snap.data() : {};
+      
+      // Build data – never overwrite with empty arrays
+      const dataToSave = {
         name: localStorage.getItem('schuermann_current_user') || authenticatedUserGlobal,
-        workSessions: globalLoggedSessionsDatabaseMock || [],
-        leaveDays:    vacationLoggedDaysArrayCache     || [],
-        trash:        recentlyDeletedItemsBinCache     || [],
-        updatedAt:    Date.now()
-      }, { merge: true });
+        updatedAt: Date.now()
+      };
+      
+      // Only save workSessions if we have them, or if doc is new
+      if (globalLoggedSessionsDatabaseMock.length > 0 || !existing.workSessions) {
+        dataToSave.workSessions = globalLoggedSessionsDatabaseMock;
+      }
+      if (vacationLoggedDaysArrayCache.length > 0 || !existing.leaveDays) {
+        dataToSave.leaveDays = vacationLoggedDaysArrayCache;
+      }
+      if (recentlyDeletedItemsBinCache.length > 0 || !existing.trash) {
+        dataToSave.trash = recentlyDeletedItemsBinCache;
+      }
+      
+      await docRef.set(dataToSave, { merge: true });
     } catch (err) {
       console.error('Cloud save failed:', err);
     }
