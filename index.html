@@ -3167,12 +3167,9 @@ function triggerPDFExportEngine(useCustom = false) {
     try {
       // Seed the user list from the real Users collection so every employee
       // shows up in the dropdown — even those who haven't logged work yet.
-      const [usersSnap, allSnap] = await Promise.all([
-        db.collection('Users').get(),
-        db.collection('userProfiles').get()
+      const allSnap = await db.collection('userProfiles').get();
+const allUsers = new Set();
       ]);
-      const allUsers = new Set();
-      usersSnap.forEach(d => allUsers.add(d.id));
       let totalLogs = 0, totalHrs = 0;
       adminAllEntriesCache = [];
 
