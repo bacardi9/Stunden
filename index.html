@@ -214,6 +214,12 @@
   <meta name="color-scheme" content="dark light">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#e11d48">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SGE Portal">
+<link rel="manifest" id="pwa-manifest-link">
 <title>Schürmann Gebäude + Energie - Enterprise Work Portal</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -483,6 +489,93 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
     .admin-metrics-row { grid-template-columns: 1fr; }
     .admin-controls-bar { flex-direction: column; }
     .admin-controls-bar select { min-width: 100%; }
+  }
+
+  /* ── Dark Mode ── */
+  body.dark-mode { background: linear-gradient(180deg,#1a1f2e 0%,#111827 100%) !important; color:#e2e8f0; }
+  body.dark-mode::before { background: radial-gradient(circle at 20% 20%,rgba(225,29,72,0.08),transparent 50%),radial-gradient(circle at 80% 80%,rgba(14,165,233,0.06),transparent 50%); }
+  body.dark-mode .app-header { background:#1e293b; border-bottom-color:#334155; }
+  body.dark-mode .sidebar-drawer { background:#1e293b; }
+  body.dark-mode .drawer-user-section { border-bottom-color:#334155; }
+  body.dark-mode .drawer-user-section h3 { color:#f1f5f9; }
+  body.dark-mode .nav-item { color:#94a3b8; }
+  body.dark-mode .nav-item:hover, body.dark-mode .nav-item.active { background:#334155; color:#38bdf8; }
+  body.dark-mode .app-card { background:#1e293b; border-color:#334155; }
+  body.dark-mode .view-title { color:#f1f5f9; }
+  body.dark-mode input[type="text"], body.dark-mode input[type="date"], body.dark-mode input[type="number"],
+  body.dark-mode select, body.dark-mode textarea {
+    background:#0f172a; border-color:#334155; color:#f1f5f9;
+  }
+  body.dark-mode label { color:#94a3b8; }
+  body.dark-mode .metric-card { background:#1e293b; border-color:#334155; }
+  body.dark-mode .metric-card label { color:#94a3b8; }
+  body.dark-mode .metric-card .value { color:#f1f5f9; }
+  body.dark-mode .history-card { background:#1e293b; border-color:#334155; }
+  body.dark-mode .break-pill { background:#334155; color:#94a3b8; border-color:#475569; }
+  body.dark-mode .break-pill.active { background:var(--primary-blue); color:#fff; }
+  body.dark-mode .primary-btn { filter: brightness(1.05); }
+  body.dark-mode .menu-trigger-btn { color:#f1f5f9; }
+  body.dark-mode #toast-notification { background:#334155; }
+  .dark-toggle-btn { background:none; border:none; font-size:18px; cursor:pointer; padding:4px 8px; color:#475569; transition:color 0.2s; border-radius:6px; }
+  body.dark-mode .dark-toggle-btn { color:#fbbf24; }
+
+  /* ── Offline queue badge ── */
+  .offline-badge { display:none; background:#f59e0b; color:#fff; font-size:10px; font-weight:800; border-radius:99px; padding:2px 7px; margin-left:6px; }
+  .offline-badge.visible { display:inline-block; }
+
+  /* ── Print styles ── */
+  @media print {
+    body * { visibility: hidden; }
+    #print-admin-area, #print-admin-area * { visibility: visible; }
+    #print-admin-area { position: absolute; top: 0; left: 0; width: 100%; background: #fff; color: #000; }
+    .admin-enterprise-table th { background: #f1f5f9 !important; color: #000 !important; }
+    .admin-enterprise-table td { color: #000 !important; border-bottom: 1px solid #e2e8f0 !important; }
+    .badge-type-w { background: #dbeafe !important; color: #1e40af !important; }
+    .badge-type-v { background: #dcfce7 !important; color: #166534 !important; }
+    .badge-type-s { background: #fee2e2 !important; color: #991b1b !important; }
+    #print-admin-title { display: block !important; font-size: 18px; font-weight: 800; margin-bottom: 16px; color: #000; }
+  }
+  #print-admin-title { display: none; }
+
+  /* ── Project Autocomplete ── */
+  .autocomplete-wrapper { position: relative; }
+  .autocomplete-list {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 999;
+    background: #fff; border: 1px solid var(--card-border); border-top: none;
+    border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1); display: none;
+  }
+  body.dark-mode .autocomplete-list { background: #1e293b; border-color: #334155; }
+  .autocomplete-item {
+    padding: 10px 14px; font-size: 13px; cursor: pointer; color: var(--text-main);
+    display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--card-border);
+    transition: background 0.15s;
+  }
+  body.dark-mode .autocomplete-item { color: #e2e8f0; border-bottom-color: #334155; }
+  .autocomplete-item:last-child { border-bottom: none; }
+  .autocomplete-item:hover { background: #f8fafc; }
+  body.dark-mode .autocomplete-item:hover { background: #334155; }
+  .autocomplete-item i { color: var(--text-muted); font-size: 11px; }
+
+  /* ── Number count-up animation ── */
+  @keyframes countPulse { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} }
+  .count-animate { animation: countPulse 0.4s ease-out; }
+
+  /* ── Company logo in header ── */
+  .header-logo-img { height: 32px; max-width: 120px; object-fit: contain; display: none; }
+  .header-logo-text { display: block; }
+  body.has-logo .header-logo-img { display: block; }
+  body.has-logo .header-logo-text { display: none; }
+
+  /* ── Admin note box ── */
+  .admin-note-box {
+    background: rgba(212,175,55,0.06); border: 1px solid rgba(212,175,55,0.25);
+    border-radius: 10px; padding: 18px; margin-bottom: 20px;
+  }
+  .admin-note-box textarea {
+    width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--admin-border);
+    color: #f1f5f9; border-radius: 6px; padding: 10px 12px; font-size: 13px;
+    resize: vertical; min-height: 80px; font-family: inherit; box-sizing: border-box;
   }
 
   
@@ -1138,6 +1231,14 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
           </div>
         </div>
         <div class="admin-header-actions">
+          <button class="admin-header-btn" onclick="exportAdminCSV()">
+            <i class="fa-solid fa-file-csv"></i>
+            <span>CSV</span>
+          </button>
+          <button class="admin-header-btn" onclick="printAdminOverview()">
+            <i class="fa-solid fa-print"></i>
+            <span>Drucken</span>
+          </button>
           <button class="admin-header-btn" onclick="refreshAdminData()">
             <i class="fa-solid fa-rotate-right"></i>
             <span>Aktualisieren</span>
@@ -1183,23 +1284,26 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
                   </select>
                 </div>
               </div>
-              <div class="admin-table-scroll-shield">
-                <table class="admin-enterprise-table">
-                  <thead>
-                    <tr>
-                      <th>Mitarbeiter</th>
-                      <th>Datum</th>
-                      <th>Typ</th>
-                      <th>Baustelle/Kunde</th>
-                      <th style="text-align:right;">Dauer</th>
-                    </tr>
-                  </thead>
-                  <tbody id="admin-global-table-body">
-                    <tr><td colspan="5" style="text-align:center; padding:40px; color:var(--admin-text-muted);">
-                      <i class="fa-solid fa-circle-notch fa-spin" style="margin-right:8px;"></i>Lade Unternehmensdaten...
-                    </td></tr>
-                  </tbody>
-                </table>
+              <div id="print-admin-area">
+                <div id="print-admin-title">SCHÜRMANN GEBÄUDE + ENERGIE — Mitarbeiterübersicht</div>
+                <div class="admin-table-scroll-shield">
+                  <table class="admin-enterprise-table">
+                    <thead>
+                      <tr>
+                        <th>Mitarbeiter</th>
+                        <th>Datum</th>
+                        <th>Typ</th>
+                        <th>Baustelle/Kunde</th>
+                        <th style="text-align:right;">Dauer</th>
+                      </tr>
+                    </thead>
+                    <tbody id="admin-global-table-body">
+                      <tr><td colspan="5" style="text-align:center; padding:40px; color:var(--admin-text-muted);">
+                        <i class="fa-solid fa-circle-notch fa-spin" style="margin-right:8px;"></i>Lade Unternehmensdaten...
+                      </td></tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </section>
@@ -1219,6 +1323,18 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
                     <i class="fa-solid fa-file-pdf" style="margin-right:6px;"></i>PDF Export
                   </button>
                 </div>
+              </div>
+
+              <!-- Admin Note for Employee -->
+              <div id="admin-employee-note-box" class="admin-note-box" style="display:none;">
+                <div style="font-size:11px; color:var(--admin-gold); font-weight:700; letter-spacing:1px; margin-bottom:8px; text-transform:uppercase;">
+                  <i class="fa-solid fa-lock" style="margin-right:6px;"></i>Interne Admin-Notiz (nur für dich sichtbar)
+                </div>
+                <textarea id="admin-employee-note-input" placeholder="Private Notiz zu diesem Mitarbeiter..."></textarea>
+                <button type="button" onclick="saveAdminEmployeeNote()" style="margin-top:8px; background:var(--admin-gold); border:none; color:#0f172a; padding:8px 16px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;">
+                  <i class="fa-solid fa-floppy-disk" style="margin-right:6px;"></i>Notiz speichern
+                </button>
+                <span id="admin-note-saved-msg" style="font-size:11px; color:#34d399; margin-left:10px; display:none;">✓ Gespeichert</span>
               </div>
 
               <!-- Employee Stats Cards -->
@@ -1351,6 +1467,49 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
 
           <!-- Settings Section -->
           <section id="admin-section-settings" class="admin-section" style="display:none;">
+            <div style="background:var(--admin-card); border:1px solid var(--admin-border); border-radius:12px; padding:24px; margin-bottom:16px;">
+              <h3 style="font-size:16px; font-weight:700; color:#fff; margin:0 0 20px 0;">
+                <i class="fa-solid fa-key" style="color:var(--admin-gold); margin-right:10px;"></i>Eigenes Kennwort ändern
+              </h3>
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px;">
+                <div>
+                  <label style="display:block;font-size:11px;color:var(--admin-text-muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;">Aktuelles Kennwort</label>
+                  <input type="password" id="admin-pin-current" placeholder="••••••" style="width:100%;background:#334155;border:1px solid #475569;color:#fff;padding:10px 12px;border-radius:6px;font-size:13px;box-sizing:border-box;">
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;color:var(--admin-text-muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;">Neues Kennwort</label>
+                  <input type="password" id="admin-pin-new" placeholder="••••••" style="width:100%;background:#334155;border:1px solid #475569;color:#fff;padding:10px 12px;border-radius:6px;font-size:13px;box-sizing:border-box;">
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;color:var(--admin-text-muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;">Bestätigen</label>
+                  <input type="password" id="admin-pin-confirm" placeholder="••••••" style="width:100%;background:#334155;border:1px solid #475569;color:#fff;padding:10px 12px;border-radius:6px;font-size:13px;box-sizing:border-box;">
+                </div>
+              </div>
+              <button type="button" onclick="handleAdminPasswordChange()" style="background:var(--admin-gold);border:none;color:#0f172a;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+                <i class="fa-solid fa-lock" style="margin-right:8px;"></i>Kennwort aktualisieren
+              </button>
+              <div id="admin-pin-msg" style="font-size:12px;margin-top:10px;font-weight:600;"></div>
+            </div>
+
+            <div style="background:var(--admin-card); border:1px solid var(--admin-border); border-radius:12px; padding:24px; margin-bottom:16px;">
+              <h3 style="font-size:16px; font-weight:700; color:#fff; margin:0 0 20px 0;">
+                <i class="fa-solid fa-image" style="color:var(--admin-gold); margin-right:10px;"></i>Firmenlogo hochladen
+              </h3>
+              <p style="font-size:12px; color:var(--admin-text-muted); margin-bottom:14px;">Logo ersetzt den Schriftzug im Mitarbeiter-Header und in PDFs. PNG/JPG, empfohlen 200×60 px.</p>
+              <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                <label for="logo-upload-input" style="background:var(--admin-gold);color:#0f172a;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+                  <i class="fa-solid fa-upload" style="margin-right:8px;"></i>Logo auswählen
+                </label>
+                <input type="file" id="logo-upload-input" accept="image/*" style="display:none;" onchange="handleLogoUpload(this)">
+                <div id="logo-preview-thumb" style="display:none; border:1px solid var(--admin-border); border-radius:8px; padding:8px; background:rgba(255,255,255,0.05);">
+                  <img id="logo-preview-img" src="" alt="Logo" style="height:36px; max-width:140px; object-fit:contain;">
+                </div>
+                <button type="button" id="logo-remove-btn" onclick="removeLogo()" style="display:none; background:transparent; border:1px solid #ef4444; color:#ef4444; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;">
+                  <i class="fa-solid fa-trash" style="margin-right:6px;"></i>Entfernen
+                </button>
+              </div>
+            </div>
+
             <div style="background:var(--admin-card); border:1px solid var(--admin-border); border-radius:12px; padding:24px;">
               <h3 style="font-size:16px; font-weight:700; color:#fff; margin:0 0 20px 0;">
                 <i class="fa-solid fa-gear" style="color:var(--admin-gold); margin-right:10px;"></i>Admin-Einstellungen
@@ -1397,14 +1556,19 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
 
   <header class="app-header">
     <button class="menu-trigger-btn" onclick="toggleSidebarDrawer(true)"><i class="fa-solid fa-bars"></i></button>
-    <div style="display:flex; align-items:center;">
+    <div style="display:flex; align-items:center; gap:4px;">
+      <span class="offline-badge" id="offline-queue-badge">● Offline</span>
+      <button class="dark-toggle-btn" id="dark-mode-btn" onclick="toggleDarkMode()" title="Dark/Light Mode">🌙</button>
       <div class="lang-selector-wrapper">
         <button type="button" id="lang-btn-en" class="lang-btn" onclick="setApplicationLanguage('en')">EN</button>
         <button type="button" id="lang-btn-de" class="lang-btn active" onclick="setApplicationLanguage('de')">DE</button>
       </div>
-      <div style="text-align:right; cursor:pointer;" >
-        <div style="font-weight:800; font-size:15px; letter-spacing:-0.3px; color:#1e293b;">SCHÜRMANN</div>
-        <div style="font-size:8px; font-weight:700; color:var(--primary-red); letter-spacing:0.6px; margin-top:-2px;">GEBÄUDE + ENERGIE</div>
+      <div style="text-align:right; cursor:pointer;">
+        <img id="header-logo-img" class="header-logo-img" src="" alt="Logo">
+        <div class="header-logo-text">
+          <div style="font-weight:800; font-size:15px; letter-spacing:-0.3px; color:#1e293b;">SCHÜRMANN</div>
+          <div style="font-size:8px; font-weight:700; color:var(--primary-red); letter-spacing:0.6px; margin-top:-2px;">GEBÄUDE + ENERGIE</div>
+        </div>
       </div>
     </div>
   </header>
@@ -1472,7 +1636,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
             <div id="dash-gross-hours" class="value">0.00 hrs</div>
           </div>
           <div class="metric-card" onclick="displayOvertimeBreakdownSummary()">
-            <label id="lbl-card-overtime">Mehrarbeitskonto</label>
+            <label id="lbl-card-overtime">Überstunden</label>
             <div id="dash-overtime-hours" class="value" style="color:#10b981;">+0.00 hrs</div>
           </div>
         </div>
@@ -1491,7 +1655,10 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
             </div>
             <div class="form-group">
               <label id="lbl-form-project">Baustelle/Kunde</label>
-              <input type="text" id="log-project-name" placeholder="Baustelle oder Kundenname eintragen" required>
+              <div class="autocomplete-wrapper">
+                <input type="text" id="log-project-name" placeholder="Baustelle oder Kundenname eintragen" autocomplete="off" required oninput="showProjectSuggestions(this.value)" onblur="setTimeout(()=>hideProjectSuggestions(),180)">
+                <div class="autocomplete-list" id="project-autocomplete-list"></div>
+              </div>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
               <div class="form-group">
@@ -1585,8 +1752,8 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
         <div class="view-title">
           <span id="lbl-hist-title">Stundenzettel-Archiv</span>
           <div style="display:flex;gap:8px;">
-            <button class="primary-btn" id="btn-hist-export-default" style="width:auto;padding:8px 14px;font-size:12px;background:var(--dark-slate);" onclick="triggerPDFExportEngine(false)" title="20. bis 20.">
-              <i class="fa-solid fa-calendar" style="margin-right:5px;"></i>20.–20.
+            <button class="primary-btn" id="btn-hist-export-default" style="width:auto;padding:8px 14px;font-size:12px;background:var(--dark-slate);" onclick="triggerPDFExportEngine(false)" title="20. bis 19.">
+              <i class="fa-solid fa-calendar" style="margin-right:5px;"></i>20.–19.
             </button>
             <button class="primary-btn red-btn" id="btn-hist-export" style="width:auto; padding:8px 16px; font-size:13px;" onclick="triggerPDFExportEngine(true)">
               <i class="fa-solid fa-file-pdf" style="margin-right:6px;"></i>PDF
@@ -1769,6 +1936,29 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
           <hr style="border:0; border-top:1px solid var(--card-border); margin:20px 0;">
           <div>
             <h3 style="font-size:14px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-key" style="color:var(--primary-red);"></i>
+              <span>Kennwort / PIN ändern</span>
+            </h3>
+            <div class="form-group">
+              <label>Aktuelles Kennwort</label>
+              <input type="password" id="pin-current" placeholder="••••••">
+            </div>
+            <div class="form-group">
+              <label>Neues Kennwort</label>
+              <input type="password" id="pin-new" placeholder="••••••">
+            </div>
+            <div class="form-group">
+              <label>Neues Kennwort bestätigen</label>
+              <input type="password" id="pin-confirm" placeholder="••••••">
+            </div>
+            <button type="button" class="primary-btn" style="width:auto; padding:10px 18px; font-size:13px;" onclick="handlePasswordChange()">
+              <i class="fa-solid fa-lock" style="margin-right:6px;"></i>Kennwort aktualisieren
+            </button>
+            <div id="pin-change-msg" style="font-size:12px; margin-top:8px; font-weight:600;"></div>
+          </div>
+          <hr style="border:0; border-top:1px solid var(--card-border); margin:20px 0;">
+          <div>
+            <h3 style="font-size:14px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
               <i class="fa-solid fa-shield-halved" style="color:var(--primary-blue);"></i>
               <span id="lbl-security-title">Sicherheit – Aktive Geräte</span>
             </h3>
@@ -1857,6 +2047,13 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   const auth = firebase.auth();
   const db   = firebase.firestore();
 
+  // ── HTML sanitizer (prevents XSS when inserting Firestore data via innerHTML) ──
+  function sanitizeHTML(str) {
+    const el = document.createElement('div');
+    el.textContent = str != null ? String(str) : '';
+    return el.innerHTML;
+  }
+
   // ── Global State ───────────────────────────────────────────────────────────
   let authenticatedUserGlobal     = '';
   let authenticatedUserRoleGlobal = 'user';
@@ -1869,7 +2066,8 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   let dailyWorkTimeBreakdownLogs       = {};
   let dailyOvertimeBreakdownLogs       = {};
   // Admin cache
-  let adminAllEntriesCache = [];
+  let adminAllEntriesCache    = [];
+  let adminVacAllowanceCache  = {}; // keyed by employee display name → allowance (days)
 
   // ── Cloud persistence (Firestore: userProfiles/<username>) ─────────────────
   let _persistTimer = null;
@@ -1881,9 +2079,11 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
       const existing = snap.exists ? snap.data() : {};
       
       // Build data – never overwrite with empty arrays
+      const vacAllowedVal = parseFloat(document.getElementById('vacation-allowed-bank')?.value);
       const dataToSave = {
         name: localStorage.getItem('schuermann_current_user') || authenticatedUserGlobal,
-        updatedAt: Date.now()
+        updatedAt: Date.now(),
+        vacationAllowed: isNaN(vacAllowedVal) ? 30 : vacAllowedVal
       };
       
       // Only save workSessions if we have them, or if doc is new
@@ -1915,6 +2115,11 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
       globalLoggedSessionsDatabaseMock = Array.isArray(data.workSessions) ? data.workSessions : [];
       vacationLoggedDaysArrayCache     = Array.isArray(data.leaveDays)    ? data.leaveDays    : [];
       recentlyDeletedItemsBinCache     = Array.isArray(data.trash)        ? data.trash        : [];
+      const storedAllowance = parseFloat(data.vacationAllowed);
+      if (!isNaN(storedAllowance)) {
+        const inp = document.getElementById('vacation-allowed-bank');
+        if (inp) inp.value = storedAllowance;
+      }
     } catch (err) {
       console.error('Cloud load failed:', err);
     }
@@ -1974,7 +2179,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
       navDash:'Übersicht', navLog:'Arbeitszeit buchen', navVac:'Urlaubs- & Fehlzeitenmanagement',
       navHist:'Stundenzettel-Archiv', navSet:'Konfigurationen', navLogout:'Abmelden',
       dashWelcome:'Willkommen zurück,', dashTitle:'Betriebliche Kennzahlen',
-      cardGross:'Netto-Arbeitszeit', cardOvertime:'Mehrarbeitskonto',
+      cardGross:'Netto-Arbeitszeit', cardOvertime:'Überstunden',
       logTitle:'Arbeitszeitbuchung vornehmen', formDate:'Buchungstag auswählen',
       formProject:'Baustelle/Kunde', formProjectPlh:'Baustelle oder Kundenname eintragen',
       formStart:'Arbeitsbeginn (Uhrzeit)', formEnd:'Arbeitsende (Uhrzeit)',
@@ -2049,13 +2254,21 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
     window.addEventListener('offline', updateCloudBackupStatusIndicator);
     updateCloudBackupStatusIndicator();
 
-    // Persist session
+    // Persist session — role is always re-verified from Firestore, never trusted from localStorage
     const cached = localStorage.getItem('schuermann_auth_user');
-    const cachedRole = localStorage.getItem('schuermann_auth_role') || 'user';
     if (cached) {
-      authenticatedUserGlobal     = cached;
-      authenticatedUserRoleGlobal = cachedRole;
-      launchSessionUI();
+      authenticatedUserGlobal = cached;
+      (async () => {
+        try {
+          const snap = await db.collection('userProfiles').doc(cached).get();
+          const profileData = snap.exists ? snap.data() : {};
+          authenticatedUserRoleGlobal = profileData.isAdmin === true ? 'admin' : 'user';
+          localStorage.setItem('schuermann_auth_role', authenticatedUserRoleGlobal);
+        } catch(e) {
+          authenticatedUserRoleGlobal = 'user';
+        }
+        launchSessionUI();
+      })();
     }
   });
 
@@ -2111,7 +2324,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
     safeSet('btn-hist-export',      t.histExport);
     safeSet('pdf-lbl-sub',          t.pdfSub);
     const pdfMeta = document.getElementById('pdf-user-metadata');
-    if (pdfMeta) pdfMeta.textContent = `${t.pdfMeta} ${authenticatedUserGlobal}`;
+    if (pdfMeta) pdfMeta.textContent = `${t.pdfMeta} ${localStorage.getItem('schuermann_current_user') || authenticatedUserGlobal}`;
 
     safeSet('lbl-set-title',        t.setTitle);
     safeSet('lbl-set-allowed',      t.setAllowed);
@@ -2188,6 +2401,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
       await db.collection('userProfiles').doc(cred.user.uid).set({
         name: displayName,
         uid: cred.user.uid,
+        isAdmin: (loginKey === 'admin'),
         lastLogin: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
 
@@ -2238,6 +2452,9 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
     if (typeof renderRecentlyDeletedBinSheet === 'function') renderRecentlyDeletedBinSheet();
     runGlobalApplicationMetricsEngine();
     updateCloudBackupStatusIndicator();
+    updateOfflineBadge();
+    setTimeout(restoreDraftWorkEntry, 400);
+    if (navigator.onLine) flushOfflineQueue();
   }
 
   // ── Admin Dashboard Launch ─────────────────────────────────────────────────
@@ -2394,6 +2611,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
     } else {
       main.classList.remove('admin-layout-widescreen');
     }
+    if (targetId === 'log-work') setTimeout(restoreDraftWorkEntry, 100);
     toggleSidebarDrawer(false);
   }
 
@@ -2511,8 +2729,20 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
       breakTime: activeSelectedFormBreakDuration,
       notes: document.getElementById('log-notes').value.trim()
     };
+    if (!navigator.onLine) {
+      const q = getOfflineQueue();
+      q.push(record);
+      saveOfflineQueue(q);
+      document.getElementById('log-project-name').value = '';
+      document.getElementById('log-notes').value = '';
+      clearDraftWorkEntry();
+      selectBreakOption(0, document.querySelectorAll('.break-pill')[0]);
+      showToast(activeLanguageGlobal === 'de' ? '📶 Offline gespeichert – wird synchronisiert sobald online' : '📶 Saved offline – will sync when online');
+      return;
+    }
     globalLoggedSessionsDatabaseMock.unshift(record);
     persistUserData();
+    clearDraftWorkEntry();
     document.getElementById('log-project-name').value = '';
     document.getElementById('log-notes').value = '';
     selectBreakOption(0, document.querySelectorAll('.break-pill')[0]);
@@ -2885,10 +3115,10 @@ function handleVacationDayLogSubmission(event) {
     let start, end;
     if (day >= 20) {
       start = new Date(now.getFullYear(), now.getMonth(), 20);
-      end = new Date(now.getFullYear(), now.getMonth() + 1, 20);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 19);
     } else {
       start = new Date(now.getFullYear(), now.getMonth() - 1, 20);
-      end = new Date(now.getFullYear(), now.getMonth(), 20);
+      end = new Date(now.getFullYear(), now.getMonth(), 19);
     }
     // set to start of day
     start.setHours(0,0,0,0);
@@ -2909,7 +3139,7 @@ function triggerPDFExportEngine(useCustom = false) {
     const margin = 15;
     let y = margin;
 
-    const user = authenticatedUserGlobal || 'Mitarbeiter';
+    const user = localStorage.getItem('schuermann_current_user') || authenticatedUserGlobal || 'Mitarbeiter';
     const sessions = (globalLoggedSessionsDatabaseMock || []).filter(s => s.type === 'work' || s.type === 'schule');
     // ── Date range filtering (20th to 20th or custom) ──
     let periodStart, periodEnd;
@@ -3018,6 +3248,39 @@ function triggerPDFExportEngine(useCustom = false) {
       doc.text(card.label, x + 6, y + 6);
 
       // Value
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...(card.accent ? [255, 255, 255] : textDark));
+      doc.text(card.value, x + 6, y + 13);
+    });
+
+    y += cardHeight + 4;
+
+    // ═══ VACATION BALANCE ROW ═══
+    const vacAllowed  = parseFloat(document.getElementById('vacation-allowed-bank')?.value) || 30;
+    const vacTakenPDF = vacationLoggedDaysArrayCache.filter(i => i.type === 'vacation').length;
+    const vacRemain   = vacAllowed - vacTakenPDF;
+    const vacCards = [
+      { label: 'JAHRESURLAUBSANSPRUCH', value: vacAllowed + ' Tage', accent: false },
+      { label: 'GENOMMENE URLAUBSTAGE', value: vacTakenPDF + ' Tage', accent: false },
+      { label: 'RESTURLAUB', value: vacRemain + ' Tage', accent: true, accentColor: vacRemain >= 0 ? [16, 185, 129] : [220, 38, 38] }
+    ];
+
+    vacCards.forEach((card, i) => {
+      const x = margin + i * (cardWidth + 2);
+      const bg = card.accentColor || (card.accent ? darkSlate : lightGray);
+      if (card.accent) {
+        doc.setFillColor(...(card.accentColor || darkSlate));
+      } else {
+        doc.setFillColor(...lightGray);
+      }
+      doc.roundedRect(x, y, cardWidth, cardHeight, 2, 2, 'F');
+      doc.setFillColor(...(card.accentColor || darkSlate));
+      doc.rect(x, y, 2, cardHeight, 'F');
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...(card.accent ? [255, 255, 255] : textMuted));
+      doc.text(card.label, x + 6, y + 6);
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...(card.accent ? [255, 255, 255] : textDark));
@@ -3198,12 +3461,15 @@ function triggerPDFExportEngine(useCustom = false) {
       let totalLogs = 0, totalHrs = 0;
       adminAllEntriesCache = [];
 
+      adminVacAllowanceCache = {};
       allSnap.forEach(doc => {
         const uid  = doc.id;
         const data = doc.data();
         const displayName = data.name || uid;
         const sessions = data.workSessions || [];
         const leaves   = data.leaveDays   || [];
+        const allowance = parseFloat(data.vacationAllowed);
+        adminVacAllowanceCache[displayName] = isNaN(allowance) ? 30 : allowance;
 
         sessions.forEach(s => {
           if (s.id && s.date) {
@@ -3291,11 +3557,11 @@ function triggerPDFExportEngine(useCustom = false) {
       const dur = row.category === 'WORK' ? `${row.hrs.toFixed(2)} hrs` : '1 Tag';
       tr.innerHTML = `
         <td style="font-weight:700;color:#fff;">
-          <i class="fa-solid fa-user-tie" style="color:var(--admin-gold);margin-right:8px;font-size:12px;"></i>${row.user}
+          <i class="fa-solid fa-user-tie" style="color:var(--admin-gold);margin-right:8px;font-size:12px;"></i>${sanitizeHTML(row.user)}
         </td>
-        <td>${row.date}</td>
+        <td>${sanitizeHTML(row.date)}</td>
         <td>${badge}</td>
-        <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${row.desc}">${row.desc}</td>
+        <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${sanitizeHTML(row.desc)}">${sanitizeHTML(row.desc)}</td>
         <td style="text-align:right;font-weight:700;color:var(--admin-gold);">${dur}</td>`;
     });
   }
@@ -3362,6 +3628,9 @@ function triggerPDFExportEngine(useCustom = false) {
     // Enable PDF button
     pdfBtn.style.opacity = '1';
     pdfBtn.disabled = false;
+
+    // Load admin note for this employee
+    if (typeof loadAdminEmployeeNote === 'function') loadAdminEmployeeNote(selectedUser);
 
     // Filter data for this employee
     const empData = adminAllEntriesCache.filter(r => r.user === selectedUser);
@@ -3529,6 +3798,44 @@ function triggerPDFExportEngine(useCustom = false) {
       + (sickDays ? '   |   Krank: '  + sickDays + ' Tag(e)' : '');
     doc.text(sumLine, margin, y);
     y += 9;
+
+    // ── Vacation balance cards ──
+    const curYear = new Date().getFullYear();
+    const vacTakenYear = empData.filter(r => {
+      if (r.category !== 'VACATION') return false;
+      try {
+        const d = r.rawDate.includes('/') ? parseDMY(r.rawDate) : new Date(r.rawDate);
+        return d.getFullYear() === curYear;
+      } catch(e) { return false; }
+    }).length;
+    const vacAllowedAdmin = adminVacAllowanceCache[employeeName] || 30;
+    const vacRemainAdmin  = vacAllowedAdmin - vacTakenYear;
+
+    const adminVacCardW = (pageWidth - margin * 2 - 4) / 3;
+    const adminVacCardH = 17;
+    const adminVacCards = [
+      { label: 'JAHRESURLAUBSANSPRUCH', value: vacAllowedAdmin + ' Tage', green: false },
+      { label: 'GENOMMENE URLAUBSTAGE (' + curYear + ')', value: vacTakenYear + ' Tage', green: false },
+      { label: 'RESTURLAUB', value: vacRemainAdmin + ' Tage', green: true }
+    ];
+    const vacGreen = [16, 185, 129];
+    const vacRed   = [220, 38, 38];
+    adminVacCards.forEach((card, i) => {
+      const x = margin + i * (adminVacCardW + 2);
+      const accentCol = card.green ? (vacRemainAdmin >= 0 ? vacGreen : vacRed) : slate;
+      doc.setFillColor(...(card.green ? accentCol : [248, 250, 252]));
+      doc.roundedRect(x, y, adminVacCardW, adminVacCardH, 2, 2, 'F');
+      doc.setFillColor(...accentCol);
+      doc.rect(x, y, 2, adminVacCardH, 'F');
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...(card.green ? [255, 255, 255] : txtMuted));
+      doc.text(card.label, x + 6, y + 5.5);
+      doc.setFontSize(11);
+      doc.setTextColor(...(card.green ? [255, 255, 255] : txtDark));
+      doc.text(card.value, x + 6, y + 12.5);
+    });
+    y += adminVacCardH + 8;
 
     // ── Build flat table body with date-header and daily-sum rows ──
     const tableBody      = [];
@@ -3759,8 +4066,8 @@ function triggerPDFExportEngine(useCustom = false) {
           const forceTime = data.forceLogout.toMillis ? data.forceLogout.toMillis() : 0;
           const myLogin = parseInt(localStorage.getItem('sch_login_'+user) || '0');
           if(forceTime > myLogin){
-            localStorage.removeItem('schurmann_current_user');
-            localStorage.removeItem('schurmann_auth_user');
+            localStorage.removeItem('schuermann_current_user');
+            localStorage.removeItem('schuermann_auth_user');
             showToast(activeLanguageGlobal==='de' ? 'Auf anderem Gerät abgemeldet' : 'Logged out from another device');
             setTimeout(()=>location.reload(), 1500);
           }
@@ -3788,13 +4095,13 @@ function triggerPDFExportEngine(useCustom = false) {
       el.innerHTML = devices.map(d=>{
         const isCurrent = d.deviceId === currentDeviceIdGlobal;
         const t = d.lastSeen && d.lastSeen.toDate ? d.lastSeen.toDate().toLocaleString(lang,{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
-        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px"><div><div style="font-weight:600;font-size:13px">${d.name||'Gerät'} ${isCurrent?'<span style="color:var(--primary-blue);font-size:10px;margin-left:6px">(Dieses Gerät)</span>':''}</div><div style="font-size:11px;color:var(--text-muted)">${t}</div></div><i class="fa-solid fa-mobile-screen" style="color:${isCurrent?'var(--primary-blue)':'var(--text-muted)'}"></i></div>`;
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px"><div><div style="font-weight:600;font-size:13px">${sanitizeHTML(d.name||'Gerät')} ${isCurrent?'<span style="color:var(--primary-blue);font-size:10px;margin-left:6px">(Dieses Gerät)</span>':''}</div><div style="font-size:11px;color:var(--text-muted)">${sanitizeHTML(t)}</div></div><i class="fa-solid fa-mobile-screen" style="color:${isCurrent?'var(--primary-blue)':'var(--text-muted)'}"></i></div>`;
       }).join('') || '<div style="font-size:12px;color:var(--text-muted)">Keine Geräte</div>';
     }catch(e){ el.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">Laden...</div>'; }
   }
   
   async function logoutOtherDevicesEngine(){
-    const user = localStorage.getItem('schurmann_current_user') || (typeof activeUserGlobal!=='undefined'?activeUserGlobal:null);
+    const user = localStorage.getItem('schuermann_current_user') || (typeof activeUserGlobal!=='undefined'?activeUserGlobal:null);
     if(!user || typeof db==='undefined') return;
     try{
       await db.collection('userProfiles').doc(user).set({
@@ -3813,7 +4120,428 @@ function triggerPDFExportEngine(useCustom = false) {
     }catch(e){ showToast('Fehler'); }
   }
   
-  document.addEventListener('DOMContentLoaded',()=>{ const u=localStorage.getItem('schurmann_current_user'); if(u) initializeDeviceTrackingEngine(u); });
+  document.addEventListener('DOMContentLoaded',()=>{ const u=localStorage.getItem('schuermann_current_user'); if(u) initializeDeviceTrackingEngine(u); });
+
+  // ══════════════════════════════════════════════════════════════════
+  // ① DARK MODE
+  // ══════════════════════════════════════════════════════════════════
+  function toggleDarkMode() {
+    const isDark = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('sch_dark_mode', isDark ? '1' : '0');
+    document.getElementById('dark-mode-btn').textContent = isDark ? '☀️' : '🌙';
+  }
+  (function initDarkMode() {
+    if (localStorage.getItem('sch_dark_mode') === '1') {
+      document.body.classList.add('dark-mode');
+      const btn = document.getElementById('dark-mode-btn');
+      if (btn) btn.textContent = '☀️';
+    }
+  })();
+
+  // ══════════════════════════════════════════════════════════════════
+  // ② AUTO-SAVE DRAFT WORK ENTRY
+  // ══════════════════════════════════════════════════════════════════
+  const DRAFT_KEY = 'sch_work_draft';
+
+  function saveDraftWorkEntry() {
+    const draft = {
+      date:    document.getElementById('log-date-picker')?.value    || '',
+      project: document.getElementById('log-project-name')?.value  || '',
+      start:   document.getElementById('log-start-time')?.value    || '',
+      end:     document.getElementById('log-end-time')?.value      || '',
+      notes:   document.getElementById('log-notes')?.value         || '',
+      brk:     activeSelectedFormBreakDuration
+    };
+    if (draft.project || draft.notes) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    }
+  }
+
+  function restoreDraftWorkEntry() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.date)    { const el = document.getElementById('log-date-picker');    if (el) el.value = d.date; }
+      if (d.project) { const el = document.getElementById('log-project-name');  if (el) el.value = d.project; }
+      if (d.start)   { const el = document.getElementById('log-start-time');    if (el) el.value = d.start; }
+      if (d.end)     { const el = document.getElementById('log-end-time');      if (el) el.value = d.end; }
+      if (d.notes)   { const el = document.getElementById('log-notes');         if (el) el.value = d.notes; }
+      if (d.brk != null) {
+        activeSelectedFormBreakDuration = d.brk;
+        document.querySelectorAll('.break-pill').forEach(p => {
+          p.classList.toggle('active', parseInt(p.getAttribute('onclick')?.match(/\d+/)?.[0] || '0') === d.brk);
+        });
+      }
+      if (d.project || d.notes) showToast(activeLanguageGlobal === 'de' ? '📝 Entwurf wiederhergestellt' : '📝 Draft restored');
+    } catch(e) {}
+  }
+
+  function clearDraftWorkEntry() {
+    localStorage.removeItem(DRAFT_KEY);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    ['log-date-picker','log-project-name','log-start-time','log-end-time','log-notes'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', saveDraftWorkEntry);
+      document.getElementById(id)?.addEventListener('change', saveDraftWorkEntry);
+    });
+  });
+
+  // ══════════════════════════════════════════════════════════════════
+  // ③ PWA — inline manifest + service worker
+  // ══════════════════════════════════════════════════════════════════
+  (function setupPWA() {
+    const manifest = {
+      name: 'Schürmann Gebäude + Energie',
+      short_name: 'SGE Portal',
+      start_url: './',
+      display: 'standalone',
+      background_color: '#fdf6e9',
+      theme_color: '#e11d48',
+      icons: [{
+        src: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="32" fill="#e11d48"/><text x="96" y="130" font-size="110" text-anchor="middle" fill="white" font-family="sans-serif" font-weight="bold">S</text></svg>'),
+        sizes: '192x192', type: 'image/svg+xml'
+      }]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const link = document.getElementById('pwa-manifest-link');
+    if (link) link.href = url;
+
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        const CACHE = 'sge-portal-v1';
+        const OFFLINE_URLS = [];
+        self.addEventListener('install', e => self.skipWaiting());
+        self.addEventListener('activate', e => self.clients.claim());
+        self.addEventListener('fetch', e => {
+          if (e.request.method !== 'GET') return;
+          e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+        });
+      `;
+      const swBlob = new Blob([swCode], { type: 'application/javascript' });
+      const swURL  = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swURL, { scope: './' }).catch(() => {});
+    }
+  })();
+
+  // ══════════════════════════════════════════════════════════════════
+  // ④ PRINT ADMIN OVERVIEW
+  // ══════════════════════════════════════════════════════════════════
+  function printAdminOverview() {
+    window.print();
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ⑤ CSV EXPORT
+  // ══════════════════════════════════════════════════════════════════
+  function exportAdminCSV() {
+    if (!adminAllEntriesCache.length) {
+      showToast(activeLanguageGlobal === 'de' ? 'Keine Daten zum Exportieren.' : 'No data to export.');
+      return;
+    }
+    const filterUser = document.getElementById('admin-user-filter-dropdown')?.value || 'ALL';
+    const filterType = document.getElementById('admin-type-filter')?.value || 'ALL';
+    const rows = adminAllEntriesCache.filter(r => {
+      if (filterUser !== 'ALL' && r.user !== filterUser) return false;
+      if (filterType !== 'ALL' && r.category !== filterType) return false;
+      return true;
+    });
+    const escape = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+    const header = ['Mitarbeiter','Datum','Typ','Baustelle/Kunde','Stunden','Start','Ende','Pause (h)'];
+    const lines  = [header.map(escape).join(',')];
+    rows.forEach(r => {
+      lines.push([
+        r.user, r.date, r.category,
+        r.desc, r.category === 'WORK' ? r.hrs.toFixed(2) : '',
+        r.startTime || '', r.endTime || '',
+        r.category === 'WORK' ? (r.breakHrs || 0).toFixed(2) : ''
+      ].map(escape).join(','));
+    });
+    const bom  = '\uFEFF';
+    const blob = new Blob([bom + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'Schuermann_Export_' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(activeLanguageGlobal === 'de' ? '✓ CSV exportiert' : '✓ CSV exported');
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ⑥ PIN / PASSWORD CHANGE
+  // ══════════════════════════════════════════════════════════════════
+  async function handlePasswordChange() {
+    const cur  = document.getElementById('pin-current')?.value.trim();
+    const nw   = document.getElementById('pin-new')?.value.trim();
+    const conf = document.getElementById('pin-confirm')?.value.trim();
+    const msg  = document.getElementById('pin-change-msg');
+    if (!cur || !nw || !conf) { msg.style.color='#dc2626'; msg.textContent = activeLanguageGlobal==='de' ? 'Alle Felder ausfüllen.' : 'Fill in all fields.'; return; }
+    if (nw !== conf)          { msg.style.color='#dc2626'; msg.textContent = activeLanguageGlobal==='de' ? 'Neues Kennwort stimmt nicht überein.' : 'New passwords do not match.'; return; }
+    if (nw.length < 6)        { msg.style.color='#dc2626'; msg.textContent = activeLanguageGlobal==='de' ? 'Kennwort muss mind. 6 Zeichen haben.' : 'Password must be at least 6 characters.'; return; }
+    try {
+      const user       = auth.currentUser;
+      const credential = firebase.auth.EmailAuthProvider.credential(user.email, cur);
+      await user.reauthenticateWithCredential(credential);
+      await user.updatePassword(nw);
+      msg.style.color = '#16a34a';
+      msg.textContent = activeLanguageGlobal==='de' ? '✓ Kennwort erfolgreich geändert.' : '✓ Password changed successfully.';
+      document.getElementById('pin-current').value = '';
+      document.getElementById('pin-new').value     = '';
+      document.getElementById('pin-confirm').value = '';
+    } catch(err) {
+      msg.style.color = '#dc2626';
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        msg.textContent = activeLanguageGlobal==='de' ? 'Aktuelles Kennwort ist falsch.' : 'Current password is incorrect.';
+      } else {
+        msg.textContent = activeLanguageGlobal==='de' ? 'Fehler: ' + err.message : 'Error: ' + err.message;
+      }
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ⑦ OFFLINE ENTRY QUEUE
+  // ══════════════════════════════════════════════════════════════════
+  const OFFLINE_QUEUE_KEY = 'sch_offline_queue';
+
+  function getOfflineQueue() {
+    try { return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]'); } catch(e) { return []; }
+  }
+  function saveOfflineQueue(q) {
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(q));
+    const badge = document.getElementById('offline-queue-badge');
+    if (badge) { badge.classList.toggle('visible', q.length > 0); if (q.length) badge.textContent = '● ' + q.length + ' offline'; }
+  }
+  function updateOfflineBadge() {
+    const q = getOfflineQueue();
+    const badge = document.getElementById('offline-queue-badge');
+    if (badge) { badge.classList.toggle('visible', q.length > 0); if (q.length) badge.textContent = '● ' + q.length + ' offline'; }
+  }
+
+  async function flushOfflineQueue() {
+    if (!authenticatedUserGlobal || authenticatedUserRoleGlobal === 'admin') return;
+    const q = getOfflineQueue();
+    if (!q.length) return;
+    showToast(activeLanguageGlobal === 'de' ? '↑ ' + q.length + ' Offline-Einträge werden synchronisiert...' : '↑ Syncing ' + q.length + ' offline entries...');
+    const failed = [];
+    for (const entry of q) {
+      try {
+        globalLoggedSessionsDatabaseMock.push(entry);
+        await persistUserDataNow();
+      } catch(e) {
+        failed.push(entry);
+      }
+    }
+    saveOfflineQueue(failed);
+    if (!failed.length) {
+      showToast(activeLanguageGlobal === 'de' ? '✓ Alle Einträge synchronisiert' : '✓ All entries synced');
+      runGlobalApplicationMetricsEngine();
+      renderHistoryLogEntriesView();
+    }
+  }
+
+  window.addEventListener('online',  flushOfflineQueue);
+  window.addEventListener('online',  updateOfflineBadge);
+  window.addEventListener('offline', updateOfflineBadge);
+  document.addEventListener('DOMContentLoaded', updateOfflineBadge);
+
+  // ══════════════════════════════════════════════════════════════════
+  // ⑧ PROJECT NAME AUTOCOMPLETE
+  // ══════════════════════════════════════════════════════════════════
+  function showProjectSuggestions(query) {
+    const list = document.getElementById('project-autocomplete-list');
+    if (!list) return;
+    const q = query.trim().toLowerCase();
+    if (!q) { list.style.display = 'none'; return; }
+    const names = [...new Set(
+      globalLoggedSessionsDatabaseMock
+        .filter(r => r.type === 'work' && r.project && r.project.toLowerCase().includes(q))
+        .map(r => r.project)
+    )].slice(0, 8);
+    if (!names.length) { list.style.display = 'none'; return; }
+    list.innerHTML = names.map(n =>
+      `<div class="autocomplete-item" onmousedown="pickProjectSuggestion('${n.replace(/'/g,"&#39;")}')" >
+        <i class="fa-solid fa-building"></i>${n}
+      </div>`
+    ).join('');
+    list.style.display = 'block';
+  }
+
+  function pickProjectSuggestion(name) {
+    const inp = document.getElementById('log-project-name');
+    if (inp) inp.value = name;
+    hideProjectSuggestions();
+    saveDraftWorkEntry();
+  }
+
+  function hideProjectSuggestions() {
+    const list = document.getElementById('project-autocomplete-list');
+    if (list) list.style.display = 'none';
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ⑨ ADMIN NOTES PER EMPLOYEE
+  // ══════════════════════════════════════════════════════════════════
+  async function loadAdminEmployeeNote(user) {
+    const box = document.getElementById('admin-employee-note-box');
+    const inp = document.getElementById('admin-employee-note-input');
+    const msg = document.getElementById('admin-note-saved-msg');
+    if (!box || !inp) return;
+    if (!user) { box.style.display = 'none'; return; }
+    box.style.display = 'block';
+    msg.style.display = 'none';
+    try {
+      const doc = await db.collection('adminNotes').doc(user).get();
+      inp.value = doc.exists ? (doc.data().note || '') : '';
+    } catch(e) { inp.value = ''; }
+  }
+
+  async function saveAdminEmployeeNote() {
+    const user = document.getElementById('admin-employee-select')?.value;
+    const inp  = document.getElementById('admin-employee-note-input');
+    const msg  = document.getElementById('admin-note-saved-msg');
+    if (!user || !inp) return;
+    try {
+      await db.collection('adminNotes').doc(user).set({ note: inp.value, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      msg.style.display = 'inline';
+      setTimeout(() => { msg.style.display = 'none'; }, 2500);
+    } catch(e) { showToast('Fehler beim Speichern'); }
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ⑩ ANIMATED DASHBOARD NUMBER COUNT-UP
+  // ══════════════════════════════════════════════════════════════════
+  function animateCountUp(el, targetStr) {
+    if (!el) return;
+    const match = targetStr.match(/([\+\-]?)([\d\.]+)(.*)/);
+    if (!match) { el.textContent = targetStr; return; }
+    const prefix = match[1];
+    const target = parseFloat(match[2]);
+    const suffix = match[3];
+    const start  = 0;
+    const duration = 700;
+    const startTime = performance.now();
+    const decimals = (match[2].split('.')[1] || '').length;
+    el.classList.remove('count-animate');
+    void el.offsetWidth;
+    el.classList.add('count-animate');
+    function step(now) {
+      const pct = Math.min((now - startTime) / duration, 1);
+      const ease = 1 - Math.pow(1 - pct, 3);
+      const cur  = start + (target - start) * ease;
+      el.textContent = prefix + cur.toFixed(decimals) + suffix;
+      if (pct < 1) requestAnimationFrame(step);
+      else el.textContent = targetStr;
+    }
+    requestAnimationFrame(step);
+  }
+
+  // Patch the dashboard update to use animation
+  const _origMetrics = window.runGlobalApplicationMetricsEngine;
+  // Will be applied after page load via late-binding below
+
+  // ══════════════════════════════════════════════════════════════════
+  // ⑪ COMPANY LOGO UPLOAD
+  // ══════════════════════════════════════════════════════════════════
+  const LOGO_KEY = 'sch_company_logo';
+
+  function handleLogoUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 500 * 1024) { showToast('Logo zu groß – max. 500 KB'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const dataUrl = e.target.result;
+      localStorage.setItem(LOGO_KEY, dataUrl);
+      applyLogo(dataUrl);
+      showToast('✓ Logo gespeichert');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function applyLogo(dataUrl) {
+    const img     = document.getElementById('header-logo-img');
+    const preview = document.getElementById('logo-preview-img');
+    const thumb   = document.getElementById('logo-preview-thumb');
+    const rmBtn   = document.getElementById('logo-remove-btn');
+    if (img)     { img.src = dataUrl; }
+    if (preview) { preview.src = dataUrl; }
+    if (thumb)   { thumb.style.display = 'block'; }
+    if (rmBtn)   { rmBtn.style.display = 'inline-block'; }
+    document.body.classList.add('has-logo');
+  }
+
+  function removeLogo() {
+    localStorage.removeItem(LOGO_KEY);
+    const img     = document.getElementById('header-logo-img');
+    const preview = document.getElementById('logo-preview-img');
+    const thumb   = document.getElementById('logo-preview-thumb');
+    const rmBtn   = document.getElementById('logo-remove-btn');
+    if (img)     { img.src = ''; }
+    if (preview) { preview.src = ''; }
+    if (thumb)   { thumb.style.display = 'none'; }
+    if (rmBtn)   { rmBtn.style.display = 'none'; }
+    document.body.classList.remove('has-logo');
+    const input = document.getElementById('logo-upload-input');
+    if (input) input.value = '';
+    showToast('Logo entfernt');
+  }
+
+  (function initLogo() {
+    const saved = localStorage.getItem(LOGO_KEY);
+    if (saved) applyLogo(saved);
+  })();
+
+  // ══════════════════════════════════════════════════════════════════
+  // ⑫ ADMIN PASSWORD CHANGE
+  // ══════════════════════════════════════════════════════════════════
+  async function handleAdminPasswordChange() {
+    const cur  = document.getElementById('admin-pin-current')?.value.trim();
+    const nw   = document.getElementById('admin-pin-new')?.value.trim();
+    const conf = document.getElementById('admin-pin-confirm')?.value.trim();
+    const msg  = document.getElementById('admin-pin-msg');
+    if (!cur || !nw || !conf) { msg.style.color='#ef4444'; msg.textContent='Alle Felder ausfüllen.'; return; }
+    if (nw !== conf)           { msg.style.color='#ef4444'; msg.textContent='Neues Kennwort stimmt nicht überein.'; return; }
+    if (nw.length < 6)         { msg.style.color='#ef4444'; msg.textContent='Kennwort muss mind. 6 Zeichen haben.'; return; }
+    try {
+      const user       = auth.currentUser;
+      const credential = firebase.auth.EmailAuthProvider.credential(user.email, cur);
+      await user.reauthenticateWithCredential(credential);
+      await user.updatePassword(nw);
+      msg.style.color = '#34d399';
+      msg.textContent = '✓ Kennwort erfolgreich geändert.';
+      document.getElementById('admin-pin-current').value = '';
+      document.getElementById('admin-pin-new').value     = '';
+      document.getElementById('admin-pin-confirm').value = '';
+    } catch(err) {
+      msg.style.color = '#ef4444';
+      msg.textContent = (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential')
+        ? 'Aktuelles Kennwort ist falsch.'
+        : 'Fehler: ' + err.message;
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // Hook animated numbers into dashboard metric updates
+  // ══════════════════════════════════════════════════════════════════
+  document.addEventListener('DOMContentLoaded', () => {
+    // Patch grossEl and otEl setters to animate
+    const origUpdateDash = window.runGlobalApplicationMetricsEngine;
+    if (typeof origUpdateDash === 'function') {
+      const _patchedMetrics = function() {
+        const grossElBefore = document.getElementById('dash-gross-hours')?.textContent;
+        const otElBefore    = document.getElementById('dash-overtime-hours')?.textContent;
+        origUpdateDash.apply(this, arguments);
+        const grossEl = document.getElementById('dash-gross-hours');
+        const otEl    = document.getElementById('dash-overtime-hours');
+        if (grossEl && grossEl.textContent !== grossElBefore) animateCountUp(grossEl, grossEl.textContent);
+        if (otEl    && otEl.textContent    !== otElBefore)    animateCountUp(otEl,    otEl.textContent);
+      };
+      window.runGlobalApplicationMetricsEngine = _patchedMetrics;
+    }
+  });
 
 </script><div style="display:flex; justify-content:space-between; align-items:center; padding:20px 30px 40px; font-size:12px; color:#e6e6e6; width:100%; box-sizing:border-box;">
   <div style="font-weight:500;">Dev. by Amran Hiluf</div>
