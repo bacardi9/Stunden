@@ -1718,16 +1718,44 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
         </div>
         <div class="app-card">
           <form id="vacation-entry-form" onsubmit="handleVacationDayLogSubmission(event)">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-              <div class="form-group">
-                <label id="lbl-vac-from-date">Von</label>
-                <input type="date" id="vacation-from-date-input" required>
-              </div>
-              <div class="form-group">
-                <label id="lbl-vac-to-date">Bis</label>
-                <input type="date" id="vacation-to-date-input" required>
+            <!-- Mode toggle: Tage / Stunden -->
+            <div style="display:flex; gap:8px; margin-bottom:14px;">
+              <button type="button" id="vac-mode-days-btn" class="break-pill active" style="flex:1; padding:9px;" onclick="setVacationBookingMode('days')">
+                <i class="fa-solid fa-calendar-days" style="margin-right:6px;"></i>Ganztägig (Tage)
+              </button>
+              <button type="button" id="vac-mode-hours-btn" class="break-pill" style="flex:1; padding:9px;" onclick="setVacationBookingMode('hours')">
+                <i class="fa-solid fa-clock" style="margin-right:6px;"></i>Stundenweise
+              </button>
+            </div>
+
+            <!-- Days mode: from/to -->
+            <div id="vac-days-mode-fields">
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-group">
+                  <label id="lbl-vac-from-date">Von</label>
+                  <input type="date" id="vacation-from-date-input">
+                </div>
+                <div class="form-group">
+                  <label id="lbl-vac-to-date">Bis</label>
+                  <input type="date" id="vacation-to-date-input">
+                </div>
               </div>
             </div>
+
+            <!-- Hours mode: single date + duration -->
+            <div id="vac-hours-mode-fields" style="display:none;">
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-group">
+                  <label>Datum</label>
+                  <input type="date" id="vacation-hours-date-input">
+                </div>
+                <div class="form-group">
+                  <label>Stundenanzahl</label>
+                  <input type="number" id="vacation-hours-amount" min="0.5" max="12" step="0.5" placeholder="z.B. 4.0" style="width:100%;">
+                </div>
+              </div>
+            </div>
+
             <div class="form-group">
               <label id="leave-context-label">Art der Freistellung / Urlaubsgrund</label>
               <input type="text" id="vacation-notes-input" placeholder="Erholungsurlaub gesetzlich/vertraglich" required>
@@ -1773,6 +1801,16 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
             <h2 style="font-weight:800; text-transform:uppercase;">SCHÜRMANN GEBÄUDE + ENERGIE</h2>
             <div id="pdf-user-metadata" class="pdf-meta-line">Elektronischer Stundenzettel-Nachweis</div>
             <div class="pdf-meta-line" id="pdf-lbl-sub" style="font-size:10px; color:#666;">Erstellt über die automatisierte Kernmetrik-Engine</div>
+          </div>
+          <!-- Sort bar -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+            <span style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">Sortierung:</span>
+            <button type="button" id="hist-sort-date-btn" class="break-pill active" style="padding:6px 12px;font-size:12px;" onclick="setHistorySort('date')">
+              <i class="fa-solid fa-calendar-days" style="margin-right:5px;"></i>Datum (Neueste zuerst)
+            </button>
+            <button type="button" id="hist-sort-recent-btn" class="break-pill" style="padding:6px 12px;font-size:12px;" onclick="setHistorySort('recent')">
+              <i class="fa-solid fa-clock-rotate-left" style="margin-right:5px;"></i>Zuletzt bearbeitet
+            </button>
           </div>
           <div id="history-items-container"></div>
         </div>
@@ -2260,9 +2298,19 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
       authenticatedUserGlobal = cached;
       (async () => {
         try {
-          const snap = await db.collection('userProfiles').doc(cached).get();
-          const profileData = snap.exists ? snap.data() : {};
-          authenticatedUserRoleGlobal = profileData.isAdmin === true ? 'admin' : 'user';
+          // Determine admin by stored display name first (safe fallback when Firestore rules
+          // prevent client from writing isAdmin:true).
+          const storedName = localStorage.getItem('schuermann_current_user') || '';
+          const storedKey  = storedName.toLowerCase()
+            .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
+            .replace(/[^a-z0-9]/gi,'');
+          if (storedKey === 'admin') {
+            authenticatedUserRoleGlobal = 'admin';
+          } else {
+            const snap = await db.collection('userProfiles').doc(cached).get();
+            const profileData = snap.exists ? snap.data() : {};
+            authenticatedUserRoleGlobal = profileData.isAdmin === true ? 'admin' : 'user';
+          }
           localStorage.setItem('schuermann_auth_role', authenticatedUserRoleGlobal);
         } catch(e) {
           authenticatedUserRoleGlobal = 'user';
@@ -2398,12 +2446,15 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
       localStorage.setItem('schuermann_current_user', displayName);
 
       // Auto-create UID → name mapping in Firebase
-      await db.collection('userProfiles').doc(cred.user.uid).set({
+      // NOTE: do NOT write isAdmin:true for admin — Firestore rules block client privilege escalation.
+      // Admin role is determined by loginKey on fresh login, and by stored username on session restore.
+      const profileUpdate = {
         name: displayName,
         uid: cred.user.uid,
-        isAdmin: (loginKey === 'admin'),
         lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+      };
+      if (loginKey !== 'admin') profileUpdate.isAdmin = false;
+      await db.collection('userProfiles').doc(cred.user.uid).set(profileUpdate, { merge: true });
 
       msgBox.textContent = activeLanguageGlobal === 'de'
         ? `Willkommen zurück, ${displayName}!`
@@ -2792,18 +2843,58 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
     showToast(activeLanguageGlobal === 'de' ? '✓ Schultag gebucht' : '✓ School day logged');
   }
 
-function handleVacationDayLogSubmission(event) {
+let activeVacationBookingMode = 'days';
+
+  function setVacationBookingMode(mode) {
+    activeVacationBookingMode = mode;
+    document.getElementById('vac-days-mode-fields').style.display  = mode === 'days'  ? 'block' : 'none';
+    document.getElementById('vac-hours-mode-fields').style.display = mode === 'hours' ? 'block' : 'none';
+    document.getElementById('vac-mode-days-btn').classList.toggle('active',  mode === 'days');
+    document.getElementById('vac-mode-hours-btn').classList.toggle('active', mode === 'hours');
+  }
+
+  function handleVacationDayLogSubmission(event) {
     event.preventDefault();
+    const isSick  = (activeLeaveSubManagementType === 'sick');
+    const notes   = document.getElementById('vacation-notes-input').value.trim();
+
+    if (activeVacationBookingMode === 'hours') {
+      // ── Hours mode ──
+      const dateRaw = document.getElementById('vacation-hours-date-input').value;
+      const hrs     = parseFloat(document.getElementById('vacation-hours-amount').value);
+      if (!dateRaw) { showToast('⚠ Bitte Datum wählen'); return; }
+      if (!hrs || hrs <= 0) { showToast('⚠ Bitte Stunden eingeben'); return; }
+      const [y,mo,d] = dateRaw.split('-');
+      const dateFmt  = `${d}/${mo}/${y}`;
+      vacationLoggedDaysArrayCache.unshift({
+        id: 'vacation-' + Date.now(),
+        type: isSick ? 'sick' : 'vacation',
+        date: dateFmt,
+        project: isSick ? 'Krankheit / Sick' : 'Urlaub / Leave',
+        notes: notes + (notes ? ' ' : '') + `(${hrs} Std.)`,
+        duration: hrs, breakTime: 0,
+        isHourEntry: true
+      });
+      persistUserData();
+      document.getElementById('vacation-hours-date-input').value = '';
+      document.getElementById('vacation-hours-amount').value     = '';
+      document.getElementById('vacation-notes-input').value      = '';
+      renderVacationRecordsSheet();
+      runGlobalApplicationMetricsEngine();
+      showToast(activeLanguageGlobal === 'de' ? `✓ ${hrs} Stunden eingebucht!` : `✓ ${hrs} hours logged!`);
+      return;
+    }
+
+    // ── Days mode ──
     const fromRaw = document.getElementById('vacation-from-date-input').value;
     const toRaw   = document.getElementById('vacation-to-date-input').value;
-    if (!fromRaw || !toRaw) return;
+    if (!fromRaw || !toRaw) { showToast('⚠ Bitte Von- und Bis-Datum wählen'); return; }
     const fromObj = new Date(fromRaw), toObj = new Date(toRaw);
     if (toObj < fromObj) {
-      alert(activeLanguageGlobal === 'de' ? 'Fehler: Enddatum vor Startdatum!' : 'Error: To-date before From-date!');
+      showToast(activeLanguageGlobal === 'de' ? '⚠ Enddatum vor Startdatum!' : '⚠ To-date before From-date!');
       return;
     }
     const totalDays = Math.round((toObj - fromObj) / 86400000) + 1;
-    const isSick = (activeLeaveSubManagementType === 'sick');
     for (let i = 0; i < totalDays; i++) {
       const cur = new Date(fromObj); cur.setDate(fromObj.getDate() + i);
       const dd = String(cur.getDate()).padStart(2,'0');
@@ -2813,7 +2904,7 @@ function handleVacationDayLogSubmission(event) {
         type: isSick ? 'sick' : 'vacation',
         date: `${dd}/${mm}/${cur.getFullYear()}`,
         project: isSick ? 'Krankheit / Sick' : 'Urlaub / Leave',
-        notes: document.getElementById('vacation-notes-input').value.trim(),
+        notes: notes,
         duration: 0, breakTime: 0
       });
     }
@@ -2827,6 +2918,21 @@ function handleVacationDayLogSubmission(event) {
   }
 
   // ── Renders ────────────────────────────────────────────────────────────────
+  let activeHistorySortMode = 'date';
+
+  function setHistorySort(mode) {
+    activeHistorySortMode = mode;
+    document.getElementById('hist-sort-date-btn')?.classList.toggle('active',   mode === 'date');
+    document.getElementById('hist-sort-recent-btn')?.classList.toggle('active', mode === 'recent');
+    renderHistoricalRecordsSheet();
+  }
+
+  function parseDMYDate(str) {
+    if (!str) return 0;
+    const [d, m, y] = str.split('/').map(Number);
+    return new Date(y, m - 1, d).getTime();
+  }
+
   function renderHistoricalRecordsSheet() {
     const mount = document.getElementById('history-items-container');
     const t = uiTranslations[activeLanguageGlobal];
@@ -2836,7 +2942,22 @@ function handleVacationDayLogSubmission(event) {
       mount.innerHTML = `<p style="color:#64748b;font-size:13px;text-align:center;padding:24px;">${t.emptyHist}</p>`;
       return;
     }
-    globalLoggedSessionsDatabaseMock.forEach(s => {
+
+    // Sort a copy — never mutate the source array
+    const sorted = [...globalLoggedSessionsDatabaseMock].sort((a, b) => {
+      if (activeHistorySortMode === 'recent') {
+        // Extract timestamp from ID (e.g. "work-1716000000000")
+        const tsA = parseInt((a.id || '').replace(/\D+(\d+).*/,'$1')) || 0;
+        const tsB = parseInt((b.id || '').replace(/\D+(\d+).*/,'$1')) || 0;
+        return tsB - tsA;
+      }
+      // Default: newest date first, then by start time descending within same day
+      const diff = parseDMYDate(b.date) - parseDMYDate(a.date);
+      if (diff !== 0) return diff;
+      return (b.startTime || '').localeCompare(a.startTime || '');
+    });
+
+    sorted.forEach(s => {
       const isSchule = s.type === 'schule';
       const net = isSchule ? 0 : (s.duration - (s.breakTime / 60));
       const card = document.createElement('div');
@@ -3248,39 +3369,6 @@ function triggerPDFExportEngine(useCustom = false) {
       doc.text(card.label, x + 6, y + 6);
 
       // Value
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...(card.accent ? [255, 255, 255] : textDark));
-      doc.text(card.value, x + 6, y + 13);
-    });
-
-    y += cardHeight + 4;
-
-    // ═══ VACATION BALANCE ROW ═══
-    const vacAllowed  = parseFloat(document.getElementById('vacation-allowed-bank')?.value) || 30;
-    const vacTakenPDF = vacationLoggedDaysArrayCache.filter(i => i.type === 'vacation').length;
-    const vacRemain   = vacAllowed - vacTakenPDF;
-    const vacCards = [
-      { label: 'JAHRESURLAUBSANSPRUCH', value: vacAllowed + ' Tage', accent: false },
-      { label: 'GENOMMENE URLAUBSTAGE', value: vacTakenPDF + ' Tage', accent: false },
-      { label: 'RESTURLAUB', value: vacRemain + ' Tage', accent: true, accentColor: vacRemain >= 0 ? [16, 185, 129] : [220, 38, 38] }
-    ];
-
-    vacCards.forEach((card, i) => {
-      const x = margin + i * (cardWidth + 2);
-      const bg = card.accentColor || (card.accent ? darkSlate : lightGray);
-      if (card.accent) {
-        doc.setFillColor(...(card.accentColor || darkSlate));
-      } else {
-        doc.setFillColor(...lightGray);
-      }
-      doc.roundedRect(x, y, cardWidth, cardHeight, 2, 2, 'F');
-      doc.setFillColor(...(card.accentColor || darkSlate));
-      doc.rect(x, y, 2, cardHeight, 'F');
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...(card.accent ? [255, 255, 255] : textMuted));
-      doc.text(card.label, x + 6, y + 6);
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...(card.accent ? [255, 255, 255] : textDark));
