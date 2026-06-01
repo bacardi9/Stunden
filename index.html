@@ -374,6 +374,8 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   .badge-type-w { background: rgba(2,89,182,0.25); color: #60a5fa; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
   .badge-type-v { background: rgba(16,185,129,0.25); color: #34d399; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
   .badge-type-s { background: rgba(225,29,72,0.25); color: #f87171; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
+  .badge-type-b { background: rgba(139,92,246,0.25); color: #c4b5fd; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
+  .badge-type-f { background: rgba(212,175,55,0.2); color: #fbbf24; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
 
   /* ── Full-Screen Admin Layout ── */
   body.admin-mode { background: #0f172a !important; overflow: hidden; }
@@ -533,6 +535,8 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
     .badge-type-w { background: #dbeafe !important; color: #1e40af !important; }
     .badge-type-v { background: #dcfce7 !important; color: #166534 !important; }
     .badge-type-s { background: #fee2e2 !important; color: #991b1b !important; }
+    .badge-type-b { background: #ede9fe !important; color: #5b21b6 !important; }
+    .badge-type-f { background: #fef9c3 !important; color: #92400e !important; }
     #print-admin-title { display: block !important; font-size: 18px; font-weight: 800; margin-bottom: 16px; color: #000; }
   }
   #print-admin-title { display: none; }
@@ -1374,10 +1378,13 @@ body:not(.admin-mode) hr { border-color: rgba(255,255,255,0.06) !important; }
 #view-settings {
   padding-top: 0 !important;
   margin-top: 0 !important;
+  justify-content: flex-start !important;
 }
 #view-settings .panel-scroll-content {
   padding-top: 0 !important;
   margin-top: 0 !important;
+  flex: none !important;
+  width: 100% !important;
 }
 #main-content-layout {
   overflow-y: auto;
@@ -1616,9 +1623,11 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
                   </select>
                   <select id="admin-type-filter" onchange="runAdminTableRender()" style="background:#334155; border:1px solid #475569; color:#fff; padding:8px 12px; border-radius:6px; font-size:12px;">
                     <option value="ALL">Alle Typen</option>
-                    <option value="WORK">Arbeitsstunden</option>
+                    <option value="WORK">Arbeitszeit</option>
                     <option value="VACATION">Urlaub</option>
-                    <option value="SICK">Krankmeldungen</option>
+                    <option value="SICK">Krankmeldung</option>
+                    <option value="BERUFSSCHULE">Berufsschule</option>
+                    <option value="FEIERTAG">Feiertag</option>
                   </select>
                 </div>
               </div>
@@ -2247,10 +2256,13 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
           <!-- View Toggle Tabs -->
           <div style="display:flex; gap:8px; margin-bottom:16px;">
             <button type="button" id="admin-tab-overview" onclick="switchAdminView('overview')" style="flex:1; background:var(--admin-gold); border:none; color:#0f172a; padding:12px 16px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;">
-              <i class="fa-solid fa-table-list" style="margin-right:6px;"></i>Übersicht (Neueste)
+              <i class="fa-solid fa-table-list" style="margin-right:6px;"></i>Übersicht
             </button>
             <button type="button" id="admin-tab-employees" onclick="switchAdminView('employees')" style="flex:1; background:rgba(255,255,255,0.08); border:1px solid var(--admin-border); color:var(--admin-text-main); padding:12px 16px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;">
-              <i class="fa-solid fa-users" style="margin-right:6px;"></i>Mitarbeiter Einzelansicht
+              <i class="fa-solid fa-users" style="margin-right:6px;"></i>Einzelansicht
+            </button>
+            <button type="button" id="admin-tab-summary" onclick="switchAdminView('summary')" style="flex:1; background:rgba(255,255,255,0.08); border:1px solid var(--admin-border); color:var(--admin-text-main); padding:12px 16px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;">
+              <i class="fa-solid fa-chart-bar" style="margin-right:6px;"></i>Zusammenfassung
             </button>
           </div>
 
@@ -2347,6 +2359,78 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
                 <tbody id="admin-employee-table-body">
                   <tr><td colspan="6" style="text-align:center; padding:40px; color:var(--admin-text-muted);">
                     <i class="fa-solid fa-user-clock" style="margin-right:8px; font-size:16px;"></i>Bitte wählen Sie einen Mitarbeiter aus.
+                  </td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Summary View -->
+          <div id="admin-view-summary" style="display:none;">
+            <div class="admin-controls-bar">
+              <div style="color:#fff; font-size:12px; font-weight:700; white-space:nowrap;">
+                <i class="fa-solid fa-chart-bar" style="color:var(--admin-gold); margin-right:6px;"></i>ZEITRAUM:
+              </div>
+              <select id="summary-month-filter" onchange="renderSummaryView()" style="background:#334155; border:1px solid #475569; color:#fff; padding:10px 12px; border-radius:8px; font-size:12px;">
+                <option value="ALL">Alle Monate</option>
+                <option value="1">Januar</option>
+                <option value="2">Februar</option>
+                <option value="3">März</option>
+                <option value="4">April</option>
+                <option value="5">Mai</option>
+                <option value="6">Juni</option>
+                <option value="7">Juli</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">Oktober</option>
+                <option value="11">November</option>
+                <option value="12">Dezember</option>
+              </select>
+              <select id="summary-year-filter" onchange="renderSummaryView()" style="background:#334155; border:1px solid #475569; color:#fff; padding:10px 12px; border-radius:8px; font-size:12px;">
+                <option value="ALL">Alle Jahre</option>
+              </select>
+            </div>
+
+            <!-- Summary KPI Cards -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-bottom:24px;">
+              <div style="background:rgba(96,165,250,0.08); border:1px solid rgba(96,165,250,0.25); border-radius:10px; padding:14px; text-align:center;">
+                <div style="font-size:9px; color:#60a5fa; font-weight:800; letter-spacing:1.2px; margin-bottom:6px;">ARBEITSZEIT</div>
+                <div id="sum-kpi-work" style="font-size:22px; font-weight:800; color:#60a5fa;">0.00 h</div>
+              </div>
+              <div style="background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.25); border-radius:10px; padding:14px; text-align:center;">
+                <div style="font-size:9px; color:#c4b5fd; font-weight:800; letter-spacing:1.2px; margin-bottom:6px;">BERUFSSCHULE</div>
+                <div id="sum-kpi-bschule" style="font-size:22px; font-weight:800; color:#c4b5fd;">0 T</div>
+              </div>
+              <div style="background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.25); border-radius:10px; padding:14px; text-align:center;">
+                <div style="font-size:9px; color:#fbbf24; font-weight:800; letter-spacing:1.2px; margin-bottom:6px;">FEIERTAGE</div>
+                <div id="sum-kpi-feiertag" style="font-size:22px; font-weight:800; color:#fbbf24;">0 T</div>
+              </div>
+              <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:10px; padding:14px; text-align:center;">
+                <div style="font-size:9px; color:#34d399; font-weight:800; letter-spacing:1.2px; margin-bottom:6px;">URLAUB</div>
+                <div id="sum-kpi-urlaub" style="font-size:22px; font-weight:800; color:#34d399;">0 T</div>
+              </div>
+              <div style="background:rgba(225,29,72,0.08); border:1px solid rgba(225,29,72,0.25); border-radius:10px; padding:14px; text-align:center;">
+                <div style="font-size:9px; color:#f87171; font-weight:800; letter-spacing:1.2px; margin-bottom:6px;">KRANKMELDUNG</div>
+                <div id="sum-kpi-krank" style="font-size:22px; font-weight:800; color:#f87171;">0 T</div>
+              </div>
+            </div>
+
+            <!-- Summary Table -->
+            <div class="admin-table-scroll-shield">
+              <table class="admin-enterprise-table">
+                <thead>
+                  <tr>
+                    <th>Mitarbeiter</th>
+                    <th style="text-align:right; color:#60a5fa;">Arbeitszeit (h)</th>
+                    <th style="text-align:right; color:#c4b5fd;">Berufsschule</th>
+                    <th style="text-align:right; color:#fbbf24;">Feiertage</th>
+                    <th style="text-align:right; color:#34d399;">Urlaub</th>
+                    <th style="text-align:right; color:#f87171;">Krankmeldung</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-summary-table-body">
+                  <tr><td colspan="6" style="text-align:center; padding:40px; color:var(--admin-text-muted);">
+                    <i class="fa-solid fa-circle-notch fa-spin" style="margin-right:8px;"></i>Lade...
                   </td></tr>
                 </tbody>
               </table>
@@ -2911,16 +2995,18 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
       localStorage.setItem('schuermann_auth_role', authenticatedUserRoleGlobal);
       localStorage.setItem('schuermann_current_user', displayName);
 
-      // Auto-create UID → name mapping in Firebase
-      // NOTE: do NOT write isAdmin:true for admin — Firestore rules block client privilege escalation.
-      // Admin role is determined by loginKey on fresh login, and by stored username on session restore.
-      const profileUpdate = {
-        name: displayName,
-        uid: cred.user.uid,
-        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-      };
-      if (loginKey !== 'admin') profileUpdate.isAdmin = false;
-      await db.collection('userProfiles').doc(cred.user.uid).set(profileUpdate, { merge: true });
+      // Auto-create UID → name mapping in Firebase for regular users only.
+      // Admin skips this write — Firestore rules block updating a doc that has isAdmin:true,
+      // and admin role is determined purely by loginKey, not by Firestore data.
+      if (loginKey !== 'admin') {
+        const profileUpdate = {
+          name: displayName,
+          uid: cred.user.uid,
+          lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
+          isAdmin: false
+        };
+        await db.collection('userProfiles').doc(cred.user.uid).set(profileUpdate, { merge: true });
+      }
 
       msgBox.textContent = activeLanguageGlobal === 'de'
         ? `Willkommen zurück, ${displayName}!`
@@ -4103,11 +4189,16 @@ function triggerPDFExportEngine(useCustom = false) {
         sessions.forEach(s => {
           if (s.id && s.date) {
             allUsers.add(displayName);
+            const proj = (s.project || '').toLowerCase();
+            let cat = 'WORK';
+            if (proj === 'berufsschule') cat = 'BERUFSSCHULE';
+            else if (proj.includes('feiertag')) cat = 'FEIERTAG';
+            else if (proj === 'urlaub') cat = 'VACATION';
             const net = (s.duration || 0) - ((s.breakTime || 0) / 60);
-            totalHrs += Math.max(0, net);
+            if (cat === 'WORK') totalHrs += Math.max(0, net);
             totalLogs++;
             adminAllEntriesCache.push({
-              user: displayName, date: s.date, category: 'WORK',
+              user: displayName, date: s.date, category: cat,
               desc: `${s.project || s.notes || '–'}`,
               hrs: Math.max(0, net), rawDate: s.date,
               startTime: s.startTime || null,
@@ -4180,9 +4271,11 @@ function triggerPDFExportEngine(useCustom = false) {
 
     filtered.forEach(row => {
       const tr = tbody.insertRow();
-      const badge = row.category === 'VACATION' ? `<span class="badge-type-v">URLAUB</span>` :
-                    row.category === 'SICK'      ? `<span class="badge-type-s">KRANKMELDUNG</span>` :
-                                                   `<span class="badge-type-w">ARBEITSZEIT</span>`;
+      const badge = row.category === 'VACATION'    ? `<span class="badge-type-v">URLAUB</span>` :
+                    row.category === 'SICK'         ? `<span class="badge-type-s">KRANKMELDUNG</span>` :
+                    row.category === 'BERUFSSCHULE' ? `<span class="badge-type-b">BERUFSSCHULE</span>` :
+                    row.category === 'FEIERTAG'     ? `<span class="badge-type-f">FEIERTAG</span>` :
+                                                      `<span class="badge-type-w">ARBEITSZEIT</span>`;
       const dur = row.category === 'WORK' ? `${row.hrs.toFixed(2)} hrs` : '1 Tag';
       tr.innerHTML = `
         <td style="font-weight:700;color:#fff;">
@@ -4197,31 +4290,112 @@ function triggerPDFExportEngine(useCustom = false) {
 
   // ── Admin View Switching ──────────────────────────────────────────────────
   function switchAdminView(view) {
-    const overviewTab = document.getElementById('admin-tab-overview');
-    const employeesTab = document.getElementById('admin-tab-employees');
-    const overviewView = document.getElementById('admin-view-overview');
-    const employeesView = document.getElementById('admin-view-employees');
-    
-    if (view === 'overview') {
-      overviewTab.style.background = 'var(--admin-gold)';
-      overviewTab.style.color = '#0f172a';
-      overviewTab.style.border = 'none';
-      employeesTab.style.background = 'rgba(255,255,255,0.08)';
-      employeesTab.style.color = 'var(--admin-text-main)';
-      employeesTab.style.border = '1px solid var(--admin-border)';
-      overviewView.style.display = 'block';
-      employeesView.style.display = 'none';
-    } else {
-      employeesTab.style.background = 'var(--admin-gold)';
-      employeesTab.style.color = '#0f172a';
-      employeesTab.style.border = 'none';
-      overviewTab.style.background = 'rgba(255,255,255,0.08)';
-      overviewTab.style.color = 'var(--admin-text-main)';
-      overviewTab.style.border = '1px solid var(--admin-border)';
-      overviewView.style.display = 'none';
-      employeesView.style.display = 'block';
-      populateEmployeeDropdown();
+    const tabs = {
+      overview:  document.getElementById('admin-tab-overview'),
+      employees: document.getElementById('admin-tab-employees'),
+      summary:   document.getElementById('admin-tab-summary')
+    };
+    const views = {
+      overview:  document.getElementById('admin-view-overview'),
+      employees: document.getElementById('admin-view-employees'),
+      summary:   document.getElementById('admin-view-summary')
+    };
+    const inactive = 'rgba(255,255,255,0.08)';
+    Object.keys(tabs).forEach(k => {
+      const active = k === view;
+      tabs[k].style.background = active ? 'var(--admin-gold)' : inactive;
+      tabs[k].style.color      = active ? '#0f172a' : 'var(--admin-text-main)';
+      tabs[k].style.border     = active ? 'none' : '1px solid var(--admin-border)';
+      views[k].style.display   = active ? 'block' : 'none';
+    });
+    if (view === 'employees') populateEmployeeDropdown();
+    if (view === 'summary')   renderSummaryView();
+  }
+
+  function renderSummaryView() {
+    const selMonth = document.getElementById('summary-month-filter').value;
+    const selYear  = document.getElementById('summary-year-filter').value;
+    const tbody    = document.getElementById('admin-summary-table-body');
+    if (!tbody) return;
+
+    // Populate year dropdown dynamically from data
+    const yearSel = document.getElementById('summary-year-filter');
+    const years = [...new Set(adminAllEntriesCache.map(r => {
+      const parts = (r.rawDate || '').split('/');
+      return parts.length === 3 ? parts[2] : null;
+    }).filter(Boolean))].sort((a, b) => b - a);
+    const curYear = yearSel.value;
+    yearSel.innerHTML = '<option value="ALL">Alle Jahre</option>';
+    years.forEach(y => {
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y;
+      yearSel.appendChild(o);
+    });
+    if (years.includes(curYear)) yearSel.value = curYear;
+    else if (selYear !== 'ALL' && years.includes(selYear)) yearSel.value = selYear;
+
+    const parseDate = d => {
+      const [dd, mm, yy] = (d || '').split('/');
+      return { day: parseInt(dd), month: parseInt(mm), year: parseInt(yy) };
+    };
+
+    const filtered = adminAllEntriesCache.filter(r => {
+      const { month, year } = parseDate(r.rawDate);
+      if (selMonth !== 'ALL' && month !== parseInt(selMonth)) return false;
+      if (selYear  !== 'ALL' && year  !== parseInt(yearSel.value)) return false;
+      return true;
+    });
+
+    // Aggregate per user
+    const map = {};
+    filtered.forEach(r => {
+      if (!map[r.user]) map[r.user] = { work: 0, bschule: 0, feiertag: 0, urlaub: 0, krank: 0 };
+      if      (r.category === 'WORK')         map[r.user].work    += r.hrs;
+      else if (r.category === 'BERUFSSCHULE') map[r.user].bschule += 1;
+      else if (r.category === 'FEIERTAG')     map[r.user].feiertag+= 1;
+      else if (r.category === 'VACATION')     map[r.user].urlaub  += 1;
+      else if (r.category === 'SICK')         map[r.user].krank   += 1;
+    });
+
+    const users = Object.keys(map).sort();
+
+    // Update KPI cards
+    let totWork=0, totB=0, totF=0, totU=0, totK=0;
+    users.forEach(u => { totWork+=map[u].work; totB+=map[u].bschule; totF+=map[u].feiertag; totU+=map[u].urlaub; totK+=map[u].krank; });
+    document.getElementById('sum-kpi-work').textContent    = totWork.toFixed(2) + ' h';
+    document.getElementById('sum-kpi-bschule').textContent = totB + ' T';
+    document.getElementById('sum-kpi-feiertag').textContent= totF + ' T';
+    document.getElementById('sum-kpi-urlaub').textContent  = totU + ' T';
+    document.getElementById('sum-kpi-krank').textContent   = totK + ' T';
+
+    if (!users.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--admin-text-muted);">Keine Einträge für diesen Zeitraum.</td></tr>`;
+      return;
     }
+
+    tbody.innerHTML = '';
+    users.forEach(u => {
+      const d = map[u];
+      const tr = tbody.insertRow();
+      tr.innerHTML = `
+        <td style="font-weight:700;color:#fff;"><i class="fa-solid fa-user-tie" style="color:var(--admin-gold);margin-right:8px;font-size:12px;"></i>${sanitizeHTML(u)}</td>
+        <td style="text-align:right;font-weight:700;color:#60a5fa;">${d.work.toFixed(2)} h</td>
+        <td style="text-align:right;font-weight:700;color:#c4b5fd;">${d.bschule > 0 ? d.bschule + ' T' : '<span style="color:#475569;">–</span>'}</td>
+        <td style="text-align:right;font-weight:700;color:#fbbf24;">${d.feiertag > 0 ? d.feiertag + ' T' : '<span style="color:#475569;">–</span>'}</td>
+        <td style="text-align:right;font-weight:700;color:#34d399;">${d.urlaub > 0 ? d.urlaub + ' T' : '<span style="color:#475569;">–</span>'}</td>
+        <td style="text-align:right;font-weight:700;color:#f87171;">${d.krank > 0 ? d.krank + ' T' : '<span style="color:#475569;">–</span>'}</td>`;
+    });
+
+    // Totals row
+    const tf = tbody.insertRow();
+    tf.style.cssText = 'border-top:2px solid var(--admin-gold); background:rgba(212,175,55,0.06);';
+    tf.innerHTML = `
+      <td style="font-weight:800;color:var(--admin-gold);font-size:11px;letter-spacing:0.5px;">GESAMT</td>
+      <td style="text-align:right;font-weight:800;color:#60a5fa;">${totWork.toFixed(2)} h</td>
+      <td style="text-align:right;font-weight:800;color:#c4b5fd;">${totB > 0 ? totB + ' T' : '–'}</td>
+      <td style="text-align:right;font-weight:800;color:#fbbf24;">${totF > 0 ? totF + ' T' : '–'}</td>
+      <td style="text-align:right;font-weight:800;color:#34d399;">${totU > 0 ? totU + ' T' : '–'}</td>
+      <td style="text-align:right;font-weight:800;color:#f87171;">${totK > 0 ? totK + ' T' : '–'}</td>`;
   }
 
   function populateEmployeeDropdown() {
@@ -4310,8 +4484,10 @@ function triggerPDFExportEngine(useCustom = false) {
 
     empData.forEach(row => {
       const tr = tbody.insertRow();
-      const badge = row.category === 'VACATION' ? '<span class="badge-type-v">URLAUB</span>' :
-                    row.category === 'SICK' ? '<span class="badge-type-s">KRANKMELDUNG</span>' :
+      const badge = row.category === 'VACATION'    ? '<span class="badge-type-v">URLAUB</span>' :
+                    row.category === 'SICK'         ? '<span class="badge-type-s">KRANKMELDUNG</span>' :
+                    row.category === 'BERUFSSCHULE' ? '<span class="badge-type-b">BERUFSSCHULE</span>' :
+                    row.category === 'FEIERTAG'     ? '<span class="badge-type-f">FEIERTAG</span>' :
                     '<span class="badge-type-w">ARBEITSZEIT</span>';
       const dur = row.category === 'WORK' ? row.hrs.toFixed(2) + ' hrs' : '1 Tag';
       const startTime = row.startTime || '-';
