@@ -1120,6 +1120,329 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
 
 </style>
 
+
+<style id="user-premium-dark-theme">
+/* ═══════════════════════════════════════════════════════════════════════
+   PREMIUM DARK ENTERPRISE THEME — User Portal
+   Design: Near-black charcoal · Crimson red · Champagne gold
+   Admin portal is fully isolated via body.admin-mode selectors above.
+═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. CSS Variables (user portal) ── */
+body:not(.admin-mode) {
+  --u-bg:           #0b0b0f;
+  --u-surface:      #131318;
+  --u-surface-2:    #1c1c24;
+  --u-border:       rgba(220, 38, 38, 0.18);
+  --u-border-soft:  rgba(255,255,255,0.06);
+  --u-red:          #dc2626;
+  --u-red-glow:     rgba(220,38,38,0.25);
+  --u-gold:         #d4af37;
+  --u-gold-dim:     rgba(212,175,55,0.15);
+  --u-text:         #f1f5f9;
+  --u-text-2:       #cbd5e1;
+  --u-text-muted:   #64748b;
+}
+
+/* ── 2. Page body ── */
+body:not(.admin-mode) {
+  background: var(--u-bg) !important;
+  color: var(--u-text) !important;
+}
+body:not(.admin-mode)::before {
+  background:
+    radial-gradient(circle at 15% 10%, rgba(220,38,38,0.10) 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(212,175,55,0.06) 0%, transparent 45%) !important;
+}
+
+/* ── 3. Header ── */
+body:not(.admin-mode) .app-header {
+  background: rgba(11,11,15,0.92) !important;
+  border-bottom: 1px solid var(--u-border) !important;
+  backdrop-filter: blur(16px) !important;
+  box-shadow: 0 1px 0 var(--u-border) !important;
+}
+body:not(.admin-mode) .menu-trigger-btn { color: var(--u-text) !important; }
+body:not(.admin-mode) .lang-selector-wrapper { background: rgba(255,255,255,0.06) !important; }
+body:not(.admin-mode) .lang-btn { color: var(--u-text-muted) !important; }
+body:not(.admin-mode) .lang-btn.active { background: var(--u-surface-2) !important; color: var(--u-gold) !important; box-shadow: none !important; }
+body:not(.admin-mode) .dark-toggle-btn { color: var(--u-text-muted) !important; }
+
+/* ── 4. Sidebar Drawer ── */
+body:not(.admin-mode) .sidebar-drawer {
+  background: #09090d !important;
+  border-right: 1px solid var(--u-border) !important;
+  box-shadow: 4px 0 32px rgba(0,0,0,0.6) !important;
+}
+body:not(.admin-mode) .drawer-backdrop { background: rgba(0,0,0,0.7) !important; }
+body:not(.admin-mode) .drawer-user-section {
+  background: linear-gradient(135deg, rgba(220,38,38,0.08) 0%, transparent 100%) !important;
+  border-bottom: 1px solid var(--u-border) !important;
+  padding-bottom: 20px !important;
+}
+body:not(.admin-mode) .drawer-user-section h3 { color: var(--u-text) !important; }
+body:not(.admin-mode) .drawer-user-section p  { color: var(--u-gold) !important; }
+body:not(.admin-mode) .nav-item { color: var(--u-text-muted) !important; }
+body:not(.admin-mode) .nav-item i { color: #475569 !important; }
+body:not(.admin-mode) .nav-item:hover,
+body:not(.admin-mode) .nav-item.active {
+  background: linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 100%) !important;
+  color: var(--u-gold) !important;
+  border-radius: 8px !important;
+}
+body:not(.admin-mode) .nav-item:hover i,
+body:not(.admin-mode) .nav-item.active i { color: var(--u-gold) !important; }
+
+/* ── 5. View titles ── */
+body:not(.admin-mode) .view-title { color: var(--u-text) !important; }
+
+/* ── 6. Metric cards ── */
+body:not(.admin-mode) .metric-card {
+  background: var(--u-surface) !important;
+  border: 1px solid var(--u-border) !important;
+  border-top: 3px solid var(--u-red) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03) !important;
+}
+body:not(.admin-mode) .metric-card:nth-child(2n) { border-top-color: var(--u-gold) !important; }
+body:not(.admin-mode) .metric-card:hover {
+  box-shadow: 0 8px 32px rgba(220,38,38,0.15), 0 2px 8px rgba(0,0,0,0.4) !important;
+  transform: translateY(-2px) !important;
+}
+body:not(.admin-mode) .metric-card label { color: var(--u-text-muted) !important; }
+body:not(.admin-mode) .metric-card .value { color: var(--u-text) !important; }
+
+/* ── 7. App cards (form containers) ── */
+body:not(.admin-mode) .app-card {
+  background: var(--u-surface) !important;
+  border: 1px solid var(--u-border) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03) !important;
+  position: relative !important;
+}
+body:not(.admin-mode) .app-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(220,38,38,0.4), rgba(212,175,55,0.3), transparent);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+}
+
+/* ── 8. Form labels & inputs ── */
+body:not(.admin-mode) .form-group label {
+  color: var(--u-gold) !important;
+  letter-spacing: 0.6px !important;
+  font-size: 10px !important;
+}
+body:not(.admin-mode) label { color: var(--u-text-2) !important; }
+body:not(.admin-mode) input[type="text"],
+body:not(.admin-mode) input[type="password"],
+body:not(.admin-mode) input[type="number"],
+body:not(.admin-mode) input[type="date"],
+body:not(.admin-mode) select,
+body:not(.admin-mode) textarea {
+  background: #0f0f16 !important;
+  border: 1px solid #2a2a38 !important;
+  color: var(--u-text) !important;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.4) !important;
+}
+body:not(.admin-mode) input:focus,
+body:not(.admin-mode) select:focus,
+body:not(.admin-mode) textarea:focus {
+  border-color: var(--u-red) !important;
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.18), inset 0 1px 3px rgba(0,0,0,0.4) !important;
+}
+body:not(.admin-mode) input[type="date"] {
+  color-scheme: dark !important;
+  background: #0f0f16 !important;
+  color: var(--u-text) !important;
+  border: 1px solid #2a2a38 !important;
+}
+body:not(.admin-mode) input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7) sepia(1) saturate(2) hue-rotate(300deg); opacity: 0.8; }
+
+/* ── 9. Toggle switches ── */
+body:not(.admin-mode) .toggle-switch-row { background: rgba(255,255,255,0.05) !important; border: 1px solid var(--u-border-soft) !important; }
+body:not(.admin-mode) .toggle-switch-btn { color: var(--u-text-muted) !important; }
+body:not(.admin-mode) .toggle-switch-btn.active {
+  background: linear-gradient(135deg, var(--u-red), #b91c1c) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 12px var(--u-red-glow) !important;
+}
+
+/* ── 10. Break pills / mode pills ── */
+body:not(.admin-mode) .break-pill {
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  color: var(--u-text-2) !important;
+}
+body:not(.admin-mode) .break-pill.active {
+  background: linear-gradient(135deg, rgba(220,38,38,0.25), rgba(185,28,28,0.2)) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(220,38,38,0.4) !important;
+}
+
+/* ── 11. Primary button ── */
+body:not(.admin-mode) .primary-btn {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  box-shadow: 0 4px 20px rgba(220,38,38,0.35) !important;
+  color: #fff !important;
+  letter-spacing: 0.3px !important;
+}
+body:not(.admin-mode) .primary-btn:hover { opacity: 1 !important; box-shadow: 0 6px 28px rgba(220,38,38,0.5) !important; filter: brightness(1.08) !important; }
+body:not(.admin-mode) .primary-btn:disabled { background: #1e1e2a !important; color: #475569 !important; box-shadow: none !important; }
+body:not(.admin-mode) .primary-btn[style*="background:#475569"],
+body:not(.admin-mode) .primary-btn[style*="background: #475569"] { background: rgba(255,255,255,0.08) !important; box-shadow: none !important; }
+body:not(.admin-mode) .primary-btn[style*="#3b82f6"],
+body:not(.admin-mode) .primary-btn[style*="background:#7c3aed"],
+body:not(.admin-mode) .primary-btn[style*="background: #7c3aed"] {
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%) !important;
+  box-shadow: 0 4px 20px rgba(124,58,237,0.4) !important;
+}
+
+/* ── 12. History / archive items ── */
+body:not(.admin-mode) .history-item {
+  background: var(--u-surface) !important;
+  border: 1px solid var(--u-border-soft) !important;
+  border-left: 4px solid var(--u-red) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3) !important;
+}
+body:not(.admin-mode) .history-item:hover {
+  background: var(--u-surface-2) !important;
+  box-shadow: 0 4px 20px rgba(220,38,38,0.12), 0 2px 8px rgba(0,0,0,0.4) !important;
+  border-left-color: var(--u-red) !important;
+}
+body:not(.admin-mode) .hist-left h5 { color: var(--u-text) !important; }
+body:not(.admin-mode) .hist-left p  { color: var(--u-text-muted) !important; }
+body:not(.admin-mode) .hist-right   { color: var(--u-text) !important; }
+body:not(.admin-mode) .action-icon-btn { color: #334155 !important; }
+body:not(.admin-mode) .action-icon-btn:hover { color: var(--u-gold) !important; }
+body:not(.admin-mode) .action-icon-btn.delete-hover:hover { color: var(--u-red) !important; }
+
+/* ── 13. Inline edit box ── */
+body:not(.admin-mode) .inline-edit-box {
+  background: #0f0f16 !important;
+  border: 1px dashed #2a2a38 !important;
+}
+body:not(.admin-mode) .inline-btn { background: var(--u-surface-2) !important; color: var(--u-text) !important; border: 1px solid var(--u-border-soft) !important; }
+
+/* ── 14. Autocomplete dropdown ── */
+body:not(.admin-mode) #autocomplete-dropdown {
+  background: #111118 !important;
+  border: 1px solid var(--u-border) !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6) !important;
+}
+body:not(.admin-mode) .autocomplete-item { color: var(--u-text-2) !important; border-bottom-color: rgba(255,255,255,0.05) !important; }
+body:not(.admin-mode) .autocomplete-item:hover { background: var(--u-surface-2) !important; }
+
+/* ── 15. Sort bar & filter bar ── */
+body:not(.admin-mode) div[style*="background:#f8fafc"],
+body:not(.admin-mode) div[style*="background: #f8fafc"] {
+  background: var(--u-surface) !important;
+  border: 1px solid var(--u-border-soft) !important;
+  border-radius: 10px !important;
+}
+body:not(.admin-mode) span[style*="color:#64748b"] { color: var(--u-text-muted) !important; }
+body:not(.admin-mode) span[style*="color:#475569"] { color: var(--u-text-muted) !important; }
+
+/* ── 16. Toast ── */
+body:not(.admin-mode) #toast-notification {
+  background: linear-gradient(135deg, #1a1a22, #13131a) !important;
+  border: 1px solid var(--u-border) !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(220,38,38,0.1) !important;
+}
+
+/* ── 17. Modals ── */
+body:not(.admin-mode) .custom-report-modal {
+  background: var(--u-surface) !important;
+  border: 1px solid var(--u-border) !important;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.7) !important;
+}
+body:not(.admin-mode) .modal-report-body { background: var(--u-surface) !important; color: var(--u-text) !important; }
+body:not(.admin-mode) .modal-report-row { border-bottom-color: rgba(255,255,255,0.06) !important; color: var(--u-text-2) !important; }
+body:not(.admin-mode) .modal-report-footer { background: #0f0f16 !important; border-top-color: rgba(255,255,255,0.06) !important; }
+body:not(.admin-mode) .statement-summary-box { background: #0f0f16 !important; color: var(--u-text-2) !important; border: 1px solid var(--u-border-soft) !important; }
+
+/* ── 18. Dashboard welcome + logo area ── */
+body:not(.admin-mode) .dash-centered-logo-wrapper h2,
+body:not(.admin-mode) #dash-profile-username { color: var(--u-text) !important; }
+
+/* ── 19. HR dividers ── */
+body:not(.admin-mode) hr { border-color: rgba(255,255,255,0.06) !important; }
+
+/* ── 20. Scrollbar ── */
+body:not(.admin-mode) ::-webkit-scrollbar { width: 5px; background: #0b0b0f; }
+body:not(.admin-mode) ::-webkit-scrollbar-thumb { background: #2a2a38; border-radius: 99px; }
+body:not(.admin-mode) ::-webkit-scrollbar-thumb:hover { background: var(--u-red); }
+
+/* ── 21. Section headings inside cards ── */
+body:not(.admin-mode) h4[style*="color:var(--dark-slate)"],
+body:not(.admin-mode) h4[style*="color:#"] { color: var(--u-text) !important; }
+body:not(.admin-mode) p[style*="color:var(--text-muted)"],
+body:not(.admin-mode) p[style*="color:#64748b"] { color: var(--u-text-muted) !important; }
+
+/* ── 22. Feiertag card overrides for dark mode ── */
+body:not(.admin-mode) .history-item[style*="background: linear-gradient(135deg,#fffbeb"] {
+  background: linear-gradient(135deg, rgba(212,175,55,0.10) 0%, rgba(212,175,55,0.05) 100%) !important;
+  border-left-color: #d4af37 !important;
+}
+
+/* ── 23. Restore / trash buttons ── */
+body:not(.admin-mode) .restore-btn {
+  background: rgba(255,255,255,0.07) !important;
+  color: var(--u-text-2) !important;
+  border: 1px solid rgba(255,255,255,0.09) !important;
+}
+body:not(.admin-mode) .restore-btn:hover { background: rgba(255,255,255,0.12) !important; }
+
+/* ── 24. PDF export filter bar ── */
+body:not(.admin-mode) #export-start-date,
+body:not(.admin-mode) #export-end-date { min-width: 140px; }
+
+/* ── 25. Developer signature ── */
+body:not(.admin-mode) .developer-signature { color: #2a2a38 !important; }
+
+/* ── 26. Overall subtle grid overlay for premium feel ── */
+body:not(.admin-mode) main::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, transparent 1px, transparent 60px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0px, transparent 1px, transparent 60px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ── 27. Red accent line at very top of page ── */
+body:not(.admin-mode)::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--u-red), var(--u-gold), var(--u-red));
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* ── 28. Gold shimmer on app cards (subtle enterprise feel) ── */
+body:not(.admin-mode) .app-card,
+body:not(.admin-mode) .metric-card { overflow: hidden; position: relative; }
+body:not(.admin-mode) .metric-card::after {
+  content: '';
+  position: absolute; top: 0; left: -80%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.05), transparent);
+  animation: cardShimmer 4s infinite;
+  pointer-events: none;
+}
+@keyframes cardShimmer { 0% { left: -80%; } 100% { left: 160%; } }
+
+/* ── 29. Section count badge (e.g. "Niedersachsen" tag on Feiertag) ── */
+body:not(.admin-mode) span[style*="background:#fde68a"] {
+  background: rgba(212,175,55,0.2) !important;
+  color: var(--u-gold) !important;
+}
+</style>
 </head>
 <body>
 
@@ -2163,6 +2486,70 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
     }
   }
 
+  // ── Niedersachsen Public Holidays (auto-inject) ─────────────────────────────
+  function getEasterSunday(year) {
+    const a = year % 19, b = Math.floor(year/100), c = year % 100;
+    const d = Math.floor(b/4), e = b % 4;
+    const f = Math.floor((b+8)/25), g = Math.floor((b-f+1)/3);
+    const h = (19*a + b - d - g + 15) % 30;
+    const i = Math.floor(c/4), k = c % 4;
+    const l = (32 + 2*e + 2*i - h - k) % 7;
+    const m = Math.floor((a + 11*h + 22*l) / 451);
+    const month = Math.floor((h + l - 7*m + 114) / 31);
+    const day   = ((h + l - 7*m + 114) % 31) + 1;
+    return new Date(year, month - 1, day);
+  }
+
+  function getNiedersachsenHolidays(year) {
+    const e  = getEasterSunday(year).getTime();
+    const add = (ms, days) => new Date(ms + days * 86400000);
+    const hols = [
+      { date: new Date(year, 0, 1),  name: 'Neujahrstag' },
+      { date: add(e, -2),            name: 'Karfreitag' },
+      { date: add(e,  1),            name: 'Ostermontag' },
+      { date: new Date(year, 4, 1),  name: 'Tag der Arbeit' },
+      { date: add(e, 39),            name: 'Christi Himmelfahrt' },
+      { date: add(e, 50),            name: 'Pfingstmontag' },
+      { date: new Date(year, 9, 3),  name: 'Tag der Deutschen Einheit' },
+    ];
+    if (year >= 2018) hols.push({ date: new Date(year, 9, 31), name: 'Reformationstag' });
+    hols.push(
+      { date: new Date(year, 11, 25), name: '1. Weihnachtstag' },
+      { date: new Date(year, 11, 26), name: '2. Weihnachtstag' }
+    );
+    return hols;
+  }
+
+  function autoInjectFeiertage() {
+    const now   = new Date(); now.setHours(23,59,59,999);
+    const years = [now.getFullYear() - 1, now.getFullYear()];
+    let added = 0;
+    years.forEach(year => {
+      getNiedersachsenHolidays(year).forEach(h => {
+        if (h.date > now) return;                    // only past / today
+        const dd  = String(h.date.getDate()).padStart(2,'0');
+        const mm  = String(h.date.getMonth()+1).padStart(2,'0');
+        const fmt = `${dd}/${mm}/${h.date.getFullYear()}`;
+        const exists = globalLoggedSessionsDatabaseMock.find(
+          s => s.date === fmt && s.type === 'feiertag'
+        );
+        if (!exists) {
+          globalLoggedSessionsDatabaseMock.push({
+            id: `feiertag-${h.date.getFullYear()}-${mm}-${dd}`,
+            type: 'feiertag',
+            date: fmt,
+            project: 'Gesetzlicher Feiertag (Niedersachsen)',
+            notes: h.name,
+            duration: 0, breakTime: 0,
+            startTime: '', endTime: ''
+          });
+          added++;
+        }
+      });
+    });
+    if (added > 0) persistUserData();
+  }
+
   // ── Translations ───────────────────────────────────────────────────────────
   const uiTranslations = {
     en: {
@@ -2497,6 +2884,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
     setApplicationLanguage(activeLanguageGlobal);
     // Restore this user's saved data from Firestore before rendering metrics
     await loadUserDataFromCloud();
+    autoInjectFeiertage();   // silently add any past Niedersachsen holidays not yet in log
     if (typeof renderHistoricalRecordsSheet === 'function') renderHistoricalRecordsSheet();
     if (typeof renderVacationRecordsSheet   === 'function') renderVacationRecordsSheet();
     if (typeof renderTrashRecordsSheet      === 'function') renderTrashRecordsSheet();
@@ -2958,25 +3346,50 @@ let activeVacationBookingMode = 'days';
     });
 
     sorted.forEach(s => {
-      const isSchule = s.type === 'schule';
-      const net = isSchule ? 0 : (s.duration - (s.breakTime / 60));
+      const isSchule    = s.type === 'schule';
+      const isFeiertag  = s.type === 'feiertag';
+      const net = (isSchule || isFeiertag) ? 0 : (s.duration - (s.breakTime / 60));
       const card = document.createElement('div');
       card.className = 'history-item';
-      card.style.borderLeftColor = isSchule ? 'var(--primary-blue)' : 'var(--primary-blue)';
+      if (isFeiertag) {
+        card.style.borderLeftColor = '#f59e0b';
+        card.style.background = 'linear-gradient(135deg,#fffbeb 0%,#fef9f0 100%)';
+      } else {
+        card.style.borderLeftColor = isSchule ? 'var(--primary-blue)' : 'var(--primary-blue)';
+      }
       card.id = `item-card-${s.id}`;
+
+      let titleHtml, subHtml, rightTop, rightBot;
+      if (isFeiertag) {
+        titleHtml = `🇩🇪 <span style="color:#b45309;font-weight:800;">FEIERTAG</span> &mdash; ${s.notes}`;
+        subHtml   = `<i class="fa-solid fa-calendar-day" style="font-size:11px;margin-right:4px;color:#b45309;"></i>${s.date} &nbsp;<span style="font-size:10px;background:#fde68a;color:#92400e;padding:2px 7px;border-radius:4px;font-weight:700;">Niedersachsen</span>`;
+        rightTop  = 'Feiertag';
+        rightBot  = 'Arbeitsfrei';
+      } else if (isSchule) {
+        titleHtml = `🎓 BERUFSSCHULE`;
+        subHtml   = `<i class="fa-solid fa-calendar-day" style="font-size:11px;margin-right:4px;"></i>${s.date}${s.notes ? ` | ${s.notes}` : ''}`;
+        rightTop  = 'Schultag';
+        rightBot  = 'Kein Abzug';
+      } else {
+        titleHtml = s.project;
+        subHtml   = `<i class="fa-solid fa-calendar-day" style="font-size:11px;margin-right:4px;"></i>${s.date}${s.notes ? ` | ${s.notes}` : ''}`;
+        rightTop  = net.toFixed(2) + ' hrs';
+        rightBot  = t.lblBreak + ': ' + s.breakTime + 'm';
+      }
+
       card.innerHTML = `
         <div class="item-main-row">
           <div class="hist-left">
-            <h5>${isSchule ? '🎓 BERUFSSCHULE' : s.project}</h5>
-            <p><i class="fa-solid fa-calendar-day" style="font-size:11px;margin-right:4px;"></i>${s.date}${s.notes ? ` | ${s.notes}` : ''}</p>
+            <h5>${titleHtml}</h5>
+            <p>${subHtml}</p>
           </div>
           <div style="display:flex;align-items:center;">
             <div class="hist-right">
-              <div>${isSchule ? 'Schultag' : net.toFixed(2) + ' hrs'}</div>
-              <div style="font-size:10px;color:#64748b;font-weight:500;">${isSchule ? 'Kein Abzug' : t.lblBreak + ': ' + s.breakTime + 'm'}</div>
+              <div>${rightTop}</div>
+              <div style="font-size:10px;color:#64748b;font-weight:500;">${rightBot}</div>
             </div>
-            <button class="action-icon-btn" onclick="initializeInlineEditRow('${s.id}')" style="${isSchule ? 'display:none' : ''}"><i class="fa-solid fa-pen-to-square"></i></button>
-            <button class="action-icon-btn delete-hover" onclick="sendItemToTrashBin('${s.id}','${s.type}')"><i class="fa-solid fa-trash-can"></i></button>
+            <button class="action-icon-btn" onclick="initializeInlineEditRow('${s.id}')" style="${(isSchule||isFeiertag) ? 'display:none' : ''}"><i class="fa-solid fa-pen-to-square"></i></button>
+            <button class="action-icon-btn delete-hover" onclick="sendItemToTrashBin('${s.id}','${s.type}')" style="${isFeiertag ? 'display:none' : ''}"><i class="fa-solid fa-trash-can"></i></button>
           </div>
         </div>
         <div id="inline-edit-container-${s.id}" style="display:none;"></div>`;
@@ -3261,7 +3674,7 @@ function triggerPDFExportEngine(useCustom = false) {
     let y = margin;
 
     const user = localStorage.getItem('schuermann_current_user') || authenticatedUserGlobal || 'Mitarbeiter';
-    const sessions = (globalLoggedSessionsDatabaseMock || []).filter(s => s.type === 'work' || s.type === 'schule');
+    const sessions = (globalLoggedSessionsDatabaseMock || []).filter(s => s.type === 'work' || s.type === 'schule' || s.type === 'feiertag');
     // ── Date range filtering (20th to 20th or custom) ──
     let periodStart, periodEnd;
     if (useCustom) {
@@ -3420,21 +3833,28 @@ function triggerPDFExportEngine(useCustom = false) {
 
         // Prepare table data
         const tableData = items.map((s, idx) => {
-          const isSchule = s.type === 'schule';
-          const net = isSchule ? 0 : ((s.duration || 0) - ((s.breakTime || 0) / 60));
-          dailyNet += net;
-          dailyBreak += isSchule ? 0 : ((s.breakTime || 0) / 60);
-          const time = isSchule ? '—' : ((s.startTime && s.endTime) ? s.startTime + ' – ' + s.endTime : '—');
-          const project = isSchule ? 'BERUFSSCHULE (Schultag)' : (s.project || '—');
-          const dauer = isSchule ? '—' : (net.toFixed(2) + ' h');
-          return [time, project, dauer];
+          const isSchule    = s.type === 'schule';
+          const isFeiertag  = s.type === 'feiertag';
+          const net = (isSchule || isFeiertag) ? 0 : ((s.duration || 0) - ((s.breakTime || 0) / 60));
+          dailyNet   += net;
+          dailyBreak += (isSchule || isFeiertag) ? 0 : ((s.breakTime || 0) / 60);
+          const time    = (isSchule || isFeiertag) ? '—' : ((s.startTime && s.endTime) ? s.startTime + ' – ' + s.endTime : '—');
+          const project = isFeiertag
+            ? `FEIERTAG (Niedersachsen) – ${s.notes || ''}`
+            : isSchule ? 'BERUFSSCHULE (Schultag)' : (s.project || '—');
+          const dauer   = (isSchule || isFeiertag) ? 'Arbeitsfrei' : (net.toFixed(2) + ' h');
+          return [time, project, dauer, isFeiertag];
         });
+
+        // Strip the isFeiertag flag — autoTable only gets 3 columns
+        const feiertagRows = tableData.map(r => r[3]);
+        const bodyData     = tableData.map(r => [r[0], r[1], r[2]]);
 
         // Draw table using autoTable
         doc.autoTable({
           startY: y,
-          head: [['ZEIT', 'BAUSTELLE', 'DAUER']],
-          body: tableData,
+          head: [['ZEIT', 'BAUSTELLE / FEIERTAG', 'DAUER']],
+          body: bodyData,
           margin: { top: 28, left: margin, right: margin, bottom: 15 },
           styles: {
             fontSize: 9,
@@ -3455,10 +3875,16 @@ function triggerPDFExportEngine(useCustom = false) {
           },
           columnStyles: {
             0: { cellWidth: 35 },
-            2: { cellWidth: 25, halign: 'right' }
+            2: { cellWidth: 28, halign: 'right' }
+          },
+          willDrawCell: (data) => {
+            if (data.section === 'body' && feiertagRows[data.row.index]) {
+              doc.setFillColor(255, 243, 205);   // amber tint
+              doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+              doc.setTextColor(146, 64, 14);      // amber-900 text
+            }
           },
           didDrawPage: (data) => {
-            // Add header accent on new pages
             if (data.pageNumber > 1) {
               doc.setFillColor(...primaryRed);
               doc.rect(0, 0, pageWidth, 3, 'F');
