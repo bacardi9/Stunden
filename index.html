@@ -492,7 +492,7 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
   }
 
   /* ── Dark Mode ── */
-  body.dark-mode { background: linear-gradient(180deg,#1a1f2e 0%,#111827 100%) !important; color:#e2e8f0; }
+  body.dark-mode { background: linear-gradient(180deg,#1b1b25 0%,#141420 100%) !important; color:#e2e8f0; }
   body.dark-mode::before { background: radial-gradient(circle at 20% 20%,rgba(225,29,72,0.08),transparent 50%),radial-gradient(circle at 80% 80%,rgba(14,165,233,0.06),transparent 50%); }
   body.dark-mode .app-header { background:#1e293b; border-bottom-color:#334155; }
   body.dark-mode .sidebar-drawer { background:#1e293b; }
@@ -1130,18 +1130,19 @@ body::before { content:""; position:fixed; inset:0; background: radial-gradient(
 
 /* ── 1. CSS Variables (user portal) ── */
 body:not(.admin-mode) {
-  --u-bg:           #0b0b0f;
-  --u-surface:      #131318;
-  --u-surface-2:    #1c1c24;
-  --u-border:       rgba(220, 38, 38, 0.18);
-  --u-border-soft:  rgba(255,255,255,0.06);
+  --u-bg:           #1b1b25;
+  --u-surface:      #24243280;
+  --u-surface:      #242434;
+  --u-surface-2:    #2d2d40;
+  --u-border:       rgba(220, 38, 38, 0.30);
+  --u-border-soft:  rgba(255,255,255,0.12);
   --u-red:          #dc2626;
-  --u-red-glow:     rgba(220,38,38,0.25);
+  --u-red-glow:     rgba(220,38,38,0.28);
   --u-gold:         #d4af37;
-  --u-gold-dim:     rgba(212,175,55,0.15);
+  --u-gold-dim:     rgba(212,175,55,0.18);
   --u-text:         #f1f5f9;
-  --u-text-2:       #cbd5e1;
-  --u-text-muted:   #64748b;
+  --u-text-2:       #d8e4f0;
+  --u-text-muted:   #96a8bc;
 }
 
 /* ── 2. Page body ── */
@@ -1151,13 +1152,13 @@ body:not(.admin-mode) {
 }
 body:not(.admin-mode)::before {
   background:
-    radial-gradient(circle at 15% 10%, rgba(220,38,38,0.10) 0%, transparent 45%),
-    radial-gradient(circle at 85% 85%, rgba(212,175,55,0.06) 0%, transparent 45%) !important;
+    radial-gradient(circle at 15% 10%, rgba(220,38,38,0.06) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(212,175,55,0.04) 0%, transparent 40%) !important;
 }
 
 /* ── 3. Header ── */
 body:not(.admin-mode) .app-header {
-  background: rgba(11,11,15,0.92) !important;
+  background: rgba(24,24,31,0.95) !important;
   border-bottom: 1px solid var(--u-border) !important;
   backdrop-filter: blur(16px) !important;
   box-shadow: 0 1px 0 var(--u-border) !important;
@@ -1170,7 +1171,7 @@ body:not(.admin-mode) .dark-toggle-btn { color: var(--u-text-muted) !important; 
 
 /* ── 4. Sidebar Drawer ── */
 body:not(.admin-mode) .sidebar-drawer {
-  background: #09090d !important;
+  background: #15151e !important;
   border-right: 1px solid var(--u-border) !important;
   box-shadow: 4px 0 32px rgba(0,0,0,0.6) !important;
 }
@@ -1241,8 +1242,8 @@ body:not(.admin-mode) input[type="number"],
 body:not(.admin-mode) input[type="date"],
 body:not(.admin-mode) select,
 body:not(.admin-mode) textarea {
-  background: #0f0f16 !important;
-  border: 1px solid #2a2a38 !important;
+  background: #1c1c28 !important;
+  border: 1px solid #35354a !important;
   color: var(--u-text) !important;
   box-shadow: inset 0 1px 3px rgba(0,0,0,0.4) !important;
 }
@@ -1254,9 +1255,9 @@ body:not(.admin-mode) textarea:focus {
 }
 body:not(.admin-mode) input[type="date"] {
   color-scheme: dark !important;
-  background: #0f0f16 !important;
+  background: #1c1c28 !important;
   color: var(--u-text) !important;
-  border: 1px solid #2a2a38 !important;
+  border: 1px solid #35354a !important;
 }
 body:not(.admin-mode) input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7) sepia(1) saturate(2) hue-rotate(300deg); opacity: 0.8; }
 
@@ -1369,6 +1370,20 @@ body:not(.admin-mode) #dash-profile-username { color: var(--u-text) !important; 
 /* ── 19. HR dividers ── */
 body:not(.admin-mode) hr { border-color: rgba(255,255,255,0.06) !important; }
 
+/* ── Settings panel top fix ── */
+#view-settings {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+#view-settings .panel-scroll-content {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+#main-content-layout {
+  overflow-y: auto;
+  scroll-margin-top: 0;
+}
+
 /* ── 20. Scrollbar ── */
 body:not(.admin-mode) ::-webkit-scrollbar { width: 5px; background: #0b0b0f; }
 body:not(.admin-mode) ::-webkit-scrollbar-thumb { background: #2a2a38; border-radius: 99px; }
@@ -1478,7 +1493,7 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
     </form>
     <div id="message-box" class="message"></div>
     
-    <div style="text-align:center; padding:20px 0 10px; font-size:11px; color:var(--text-muted); opacity:0.7;">Developed by Amran</div>
+    <div style="text-align:center; padding:20px 0 10px; font-size:10px; color:rgba(255,255,255,0.35); letter-spacing:0.4px;">dev. by Amran Hiluf</div>
   </div>
 </div>
 
@@ -1534,7 +1549,7 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
       </nav>
       <div class="admin-sidebar-footer">
         <div class="admin-sidebar-footer-text">Version 2.1.0 | Schürmann Edition</div>
-        
+        <div style="font-size:9px; color:#2a3347; text-align:center; margin-top:4px; letter-spacing:0.3px;">dev. by Amran Hiluf</div>
       </div>
     </aside>
 
@@ -1848,7 +1863,20 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
                   </button>
                 </div>
               </div>
-              <div style="background:rgba(255,255,255,0.03); border:1px solid var(--admin-border); border-radius:10px; padding:20px;">
+              <!-- Broadcast message panel -->
+            <div style="background:rgba(255,255,255,0.03); border:1px solid var(--admin-border); border-radius:10px; padding:20px; margin-bottom:16px;">
+              <div style="font-size:13px; font-weight:700; color:#fff; margin-bottom:6px;"><i class="fa-solid fa-bullhorn" style="color:var(--admin-gold);margin-right:8px;"></i>Broadcast-Nachricht</div>
+              <p style="font-size:11px;color:var(--admin-text-muted);margin-bottom:12px;">Nachricht an alle Mitarbeiter senden — erscheint beim nächsten Login als Benachrichtigungs-Banner.</p>
+              <textarea id="admin-broadcast-input" rows="3" placeholder="Wichtige Mitteilung eingeben..." style="width:100%;background:#0f172a;border:1px solid #334155;color:#f1f5f9;padding:10px 12px;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical;"></textarea>
+              <div style="display:flex;gap:10px;margin-top:10px;align-items:center;">
+                <button type="button" onclick="sendAdminBroadcast()" style="background:var(--admin-gold);border:none;color:#0f172a;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i>Senden</button>
+                <button type="button" onclick="clearAdminBroadcast()" style="background:transparent;border:1px solid #475569;color:#94a3b8;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Löschen</button>
+                <span id="admin-broadcast-status" style="font-size:12px;color:#34d399;font-weight:600;"></span>
+              </div>
+              <div id="admin-broadcast-preview" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.25);border-radius:8px;font-size:12px;color:#d4af37;font-weight:600;"></div>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.03); border:1px solid var(--admin-border); border-radius:10px; padding:20px;">
                 <div style="font-size:13px; font-weight:700; color:#fff; margin-bottom:8px;">Systemstatus</div>
                 <div style="font-size:12px; color:var(--admin-text-muted);">
                   <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--admin-border);">
@@ -1879,6 +1907,13 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
 
   <header class="app-header">
     <button class="menu-trigger-btn" onclick="toggleSidebarDrawer(true)"><i class="fa-solid fa-bars"></i></button>
+
+    <!-- Live German Clock -->
+    <div id="live-clock-widget" style="text-align:center; flex:1; pointer-events:none; user-select:none;">
+      <div id="live-clock-date" style="font-size:10px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:#d4af37; line-height:1;"></div>
+      <div id="live-clock-time" style="font-size:16px; font-weight:800; letter-spacing:1.5px; color:#f1f5f9; font-variant-numeric:tabular-nums; line-height:1.3;"></div>
+    </div>
+
     <div style="display:flex; align-items:center; gap:4px;">
       <span class="offline-badge" id="offline-queue-badge">● Offline</span>
       <button class="dark-toggle-btn" id="dark-mode-btn" onclick="toggleDarkMode()" title="Dark/Light Mode">🌙</button>
@@ -1900,8 +1935,13 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
 
   <nav id="sidebar-drawer" class="sidebar-drawer">
     <div class="drawer-user-section">
-      <h3 id="user-profile-title">User</h3>
-      <p id="lbl-sidebar-subtext">Schürmann Log Portal</p>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:4px;">
+        <div id="sidebar-avatar" style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#dc2626,#7c0a02);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:900;color:#fff;flex-shrink:0;border:2px solid rgba(212,175,55,0.35);box-shadow:0 4px 16px rgba(220,38,38,0.35);">?</div>
+        <div>
+          <h3 id="user-profile-title">User</h3>
+          <p id="lbl-sidebar-subtext">Schürmann Log Portal</p>
+        </div>
+      </div>
     </div>
     <ul class="drawer-nav-list">
       <li id="nav-dash-link" class="nav-item active" onclick="switchActiveView('dashboard', this)">
@@ -1930,9 +1970,9 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
         <span id="nav-lbl-logout" style="color:var(--primary-red);">Abmelden</span>
       </li>
     </ul>
-    <div style="border-top:1px solid #f1f5f9; padding:12px 0; text-align:center; line-height:1.4;">
-      <div style="font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Version 2.1.0</div>
-      
+    <div style="border-top:1px solid rgba(255,255,255,0.07); padding:14px 0 10px; text-align:center; line-height:1.6;">
+      <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Version 2.1.0</div>
+      <div style="font-size:9px; font-weight:500; color:#394558; letter-spacing:0.3px; margin-top:3px;">dev. by Amran Hiluf</div>
     </div>
   </nav>
 
@@ -1961,6 +2001,15 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
           <div class="metric-card" onclick="displayOvertimeBreakdownSummary()">
             <label id="lbl-card-overtime">Überstunden</label>
             <div id="dash-overtime-hours" class="value" style="color:#10b981;">+0.00 hrs</div>
+          </div>
+          <div class="metric-card" style="border-top-color:#d4af37 !important;">
+            <label style="color:#d4af37 !important;">FEIERTAGE VERBLEIBEND</label>
+            <div id="dash-feiertage-remaining" class="value" style="color:#d4af37;">—</div>
+            <div id="dash-next-feiertag-label" style="font-size:10px;color:#64748b;margin-top:4px;font-weight:600;"></div>
+          </div>
+          <div class="metric-card" style="border-top-color:#7c3aed !important;">
+            <label>BENACHRICHTIGUNGEN</label>
+            <div id="dash-notif-status" class="value" style="font-size:13px;cursor:pointer;" onclick="requestWorkReminderPermission()">Aktivieren</div>
           </div>
         </div>
       </div>
@@ -2109,7 +2158,12 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
             <button class="primary-btn red-btn" id="btn-hist-export" style="width:auto; padding:8px 16px; font-size:13px;" onclick="triggerPDFExportEngine(true)">
               <i class="fa-solid fa-file-pdf" style="margin-right:6px;"></i>PDF
             </button>
-          
+            <button class="primary-btn" id="btn-hist-share" style="width:auto; padding:8px 14px; font-size:13px; background:#059669;" onclick="shareWorkPDF()" title="Als PDF teilen">
+              <i class="fa-solid fa-share-nodes"></i>
+            </button>
+            <button class="primary-btn" id="btn-hist-calendar" style="width:auto; padding:8px 14px; font-size:13px; background:#7c3aed;" onclick="toggleHistoryCalendar()" title="Kalenderansicht">
+              <i class="fa-solid fa-calendar-days"></i>
+            </button>
 </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;margin:8px 0 16px;padding:10px;background:#f8fafc;border-radius:10px;flex-wrap:wrap;">
@@ -2125,6 +2179,31 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
             <div id="pdf-user-metadata" class="pdf-meta-line">Elektronischer Stundenzettel-Nachweis</div>
             <div class="pdf-meta-line" id="pdf-lbl-sub" style="font-size:10px; color:#666;">Erstellt über die automatisierte Kernmetrik-Engine</div>
           </div>
+          <!-- Calendar view (hidden by default) -->
+          <div id="history-calendar-panel" style="display:none;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <button onclick="shiftCalendarMonth(-1)" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);color:#f1f5f9;padding:6px 12px;border-radius:6px;font-size:14px;cursor:pointer;">&#8592;</button>
+              <span id="cal-month-label" style="font-size:14px;font-weight:800;color:#d4af37;letter-spacing:0.5px;"></span>
+              <button onclick="shiftCalendarMonth(1)" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);color:#f1f5f9;padding:6px 12px;border-radius:6px;font-size:14px;cursor:pointer;">&#8594;</button>
+            </div>
+            <div id="cal-weekday-header" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px;">
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#64748b;padding:4px 0;">Mo</div>
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#64748b;padding:4px 0;">Di</div>
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#64748b;padding:4px 0;">Mi</div>
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#64748b;padding:4px 0;">Do</div>
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#64748b;padding:4px 0;">Fr</div>
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#64748b;padding:4px 0;">Sa</div>
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#64748b;padding:4px 0;">So</div>
+            </div>
+            <div id="history-calendar-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;"></div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:10px;font-weight:700;">
+              <span><span style="display:inline-block;width:10px;height:10px;background:#dc2626;border-radius:2px;margin-right:4px;"></span>Arbeit</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#10b981;border-radius:2px;margin-right:4px;"></span>Urlaub</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#ef4444;border-radius:2px;opacity:0.7;margin-right:4px;"></span>Krank</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#d4af37;border-radius:2px;margin-right:4px;"></span>Feiertag</span>
+            </div>
+          </div>
+
           <!-- Sort bar -->
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
             <span style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">Sortierung:</span>
@@ -2877,6 +2956,10 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
     const displayName = localStorage.getItem('schuermann_current_user') || authenticatedUserGlobal;
     document.getElementById('user-profile-title').textContent  = displayName;
     document.getElementById('dash-profile-username').textContent = displayName;
+    // Avatar initials
+    const initials = displayName.split(' ').filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('');
+    const avatarEl = document.getElementById('sidebar-avatar');
+    if (avatarEl) avatarEl.textContent = initials || '?';
 
     const adminLink = document.getElementById('nav-admin-link');
     adminLink.style.display = 'none';
@@ -2894,6 +2977,9 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
     updateOfflineBadge();
     setTimeout(restoreDraftWorkEntry, 400);
     if (navigator.onLine) flushOfflineQueue();
+    setTimeout(checkBroadcastOnLogin, 600);
+    initWorkReminders();
+    updateNotifStatusCard();
   }
 
   // ── Admin Dashboard Launch ─────────────────────────────────────────────────
@@ -3052,6 +3138,12 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
     }
     if (targetId === 'log-work') setTimeout(restoreDraftWorkEntry, 100);
     toggleSidebarDrawer(false);
+    // Always jump to top of page when switching tabs
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const mainEl = document.getElementById('main-content-layout');
+    if (mainEl) mainEl.scrollTop = 0;
   }
 
   function routeToMainDashboard() {
@@ -3571,6 +3663,18 @@ let activeVacationBookingMode = 'days';
     const otEl    = document.getElementById('dash-overtime-hours');
     if (grossEl) { grossEl.textContent = `${netHrs.toFixed(2)} hrs`; grossEl.parentElement.style.borderTop = netHrs > 0 ? '4px solid var(--primary-blue)' : '4px solid #cbd5e1'; }
     if (otEl)    { otEl.textContent = `+${otHrs.toFixed(2)} hrs`; otEl.parentElement.style.borderTop = otHrs > 0 ? '4px solid #10b981' : '4px solid #cbd5e1'; }
+    // Feiertage remaining
+    const remEl   = document.getElementById('dash-feiertage-remaining');
+    const nextEl  = document.getElementById('dash-next-feiertag-label');
+    if (remEl) {
+      const now      = new Date(); now.setHours(0,0,0,0);
+      const upcoming = getNiedersachsenHolidays(now.getFullYear()).filter(h => h.date >= now);
+      remEl.textContent = upcoming.length;
+      if (nextEl && upcoming.length > 0) {
+        const n = upcoming[0];
+        nextEl.textContent = `Nächster: ${n.name} (${n.date.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})})`;
+      }
+    }
   }
 
   // ── Modals ─────────────────────────────────────────────────────────────────
@@ -4861,6 +4965,28 @@ function triggerPDFExportEngine(useCustom = false) {
   window.addEventListener('offline', updateOfflineBadge);
   document.addEventListener('DOMContentLoaded', updateOfflineBadge);
 
+  // ── Live German Clock ────────────────────────────────────────────────────────
+  const DE_DAYS   = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+  const DE_MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+
+  function tickLiveClock() {
+    const dateEl = document.getElementById('live-clock-date');
+    const timeEl = document.getElementById('live-clock-time');
+    if (!dateEl || !timeEl) return;
+    const now = new Date();
+    const dayName = DE_DAYS[now.getDay()];
+    const day     = now.getDate();
+    const month   = DE_MONTHS[now.getMonth()];
+    const year    = now.getFullYear();
+    const hh      = String(now.getHours()).padStart(2,'0');
+    const mm      = String(now.getMinutes()).padStart(2,'0');
+    const ss      = String(now.getSeconds()).padStart(2,'0');
+    dateEl.textContent = `${dayName}, ${day}. ${month} ${year}`;
+    timeEl.textContent = `${hh}:${mm}:${ss}`;
+  }
+  tickLiveClock();
+  setInterval(tickLiveClock, 1000);
+
   // ══════════════════════════════════════════════════════════════════
   // ⑧ PROJECT NAME AUTOCOMPLETE
   // ══════════════════════════════════════════════════════════════════
@@ -5057,9 +5183,325 @@ function triggerPDFExportEngine(useCustom = false) {
     }
   });
 
-</script><div style="display:flex; justify-content:space-between; align-items:center; padding:20px 30px 40px; font-size:12px; color:#e6e6e6; width:100%; box-sizing:border-box;">
-  <div style="font-weight:500;">Dev. by Amran Hiluf</div>
-  <div style="font-weight:500; opacity:0.9;">Firmen Portal</div>
+
+// ═══════════════════════════════════════════════════════════════
+// ⑬ FEATURE BLOCK: Calendar · Share PDF · Broadcast · Push Notif
+// ═══════════════════════════════════════════════════════════════
+
+// ── ① MONTHLY CALENDAR VIEW ────────────────────────────────────
+let calendarIsOpen = false;
+let calendarYear   = new Date().getFullYear();
+let calendarMonth  = new Date().getMonth(); // 0-indexed
+
+const DE_CAL_MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+
+function toggleHistoryCalendar() {
+  const panel = document.getElementById('history-calendar-panel');
+  const btn   = document.getElementById('btn-hist-calendar');
+  calendarIsOpen = !calendarIsOpen;
+  panel.style.display = calendarIsOpen ? 'block' : 'none';
+  if (btn) btn.style.background = calendarIsOpen ? '#5b21b6' : '#7c3aed';
+  if (calendarIsOpen) renderHistoryCalendar();
+}
+
+function shiftCalendarMonth(delta) {
+  calendarMonth += delta;
+  if (calendarMonth < 0)  { calendarMonth = 11; calendarYear--; }
+  if (calendarMonth > 11) { calendarMonth = 0;  calendarYear++; }
+  renderHistoryCalendar();
+}
+
+function renderHistoryCalendar() {
+  const grid     = document.getElementById('history-calendar-grid');
+  const lbl      = document.getElementById('cal-month-label');
+  if (!grid) return;
+  lbl.textContent = `${DE_CAL_MONTHS[calendarMonth]} ${calendarYear}`;
+
+  // Build entry map: day number → [type, ...]
+  const eMap = {};
+  const add  = (dateStr, type) => {
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return;
+    const [dd, mm, yy] = parts.map(Number);
+    if (yy === calendarYear && mm - 1 === calendarMonth) {
+      if (!eMap[dd]) eMap[dd] = [];
+      eMap[dd].push(type);
+    }
+  };
+  (window.globalLoggedSessionsDatabaseMock || []).forEach(s => add(s.date, 'work'));
+  (window.vacationLoggedDaysArrayCache || []).forEach(s => add(s.date, s.type || 'vacation'));
+  // Feiertage
+  const feiertage = getNiedersachsenHolidays(calendarYear);
+  feiertage.forEach(f => {
+    const d = f.date;
+    if (d.getFullYear() === calendarYear && d.getMonth() === calendarMonth) {
+      const day = d.getDate();
+      if (!eMap[day]) eMap[day] = [];
+      eMap[day].push('feiertag');
+    }
+  });
+
+  const today       = new Date();
+  const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+  // JS getDay: 0=Sun → remap to Mon=0
+  let firstDow = new Date(calendarYear, calendarMonth, 1).getDay();
+  firstDow = (firstDow + 6) % 7; // Mon-based offset
+
+  const colourOf = (types) => {
+    if (!types || !types.length) return null;
+    if (types.includes('feiertag')) return '#d4af37';
+    if (types.includes('vacation'))  return '#10b981';
+    if (types.includes('krank') || types.includes('sick')) return '#ef4444';
+    if (types.includes('work'))      return '#dc2626';
+    return '#7c3aed';
+  };
+
+  let html = '';
+  // Leading empty cells
+  for (let i = 0; i < firstDow; i++) {
+    html += `<div style="aspect-ratio:1;"></div>`;
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = (d === today.getDate() && calendarMonth === today.getMonth() && calendarYear === today.getFullYear());
+    const types   = eMap[d];
+    const bg      = colourOf(types);
+    const border  = isToday ? 'border:2px solid #d4af37;' : 'border:1px solid rgba(255,255,255,0.06);';
+    const dot     = bg ? `<div style="width:6px;height:6px;border-radius:50%;background:${bg};margin:0 auto 1px;"></div>` : '';
+    html += `<div onclick="scrollToCalendarDay(${d})" title="${d}. ${DE_CAL_MONTHS[calendarMonth]}" style="aspect-ratio:1;border-radius:6px;background:${bg ? bg+'1a' : 'rgba(255,255,255,0.03)'};${border}display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${bg || '#64748b'};cursor:pointer;transition:all .15s;">
+      ${dot}${d}
+    </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function scrollToCalendarDay(day) {
+  const dd   = String(day).padStart(2,'0');
+  const mm   = String(calendarMonth + 1).padStart(2,'0');
+  const yy   = calendarYear;
+  const key  = `${dd}/${mm}/${yy}`;
+  const cards = document.querySelectorAll('#history-items-container [data-date]');
+  for (const card of cards) {
+    if (card.getAttribute('data-date') === key) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.style.outline = '2px solid #d4af37';
+      setTimeout(() => { card.style.outline = ''; }, 1800);
+      return;
+    }
+  }
+  showToast(`Kein Eintrag am ${dd}.${mm}.${yy}`);
+}
+
+// ── ② SHARE PDF (Web Share API) ────────────────────────────────
+async function shareWorkPDF() {
+  showToast('PDF wird erstellt…');
+  try {
+    // Generate PDF blob via jsPDF (reuse existing engine logic)
+    const { jsPDF } = window.jspdf;
+    const doc       = new jsPDF({ unit: 'mm', format: 'a4' });
+    const user      = localStorage.getItem('schuermann_current_user') || authenticatedUserGlobal || 'Mitarbeiter';
+    const dateStr   = new Date().toLocaleDateString('de-DE');
+
+    doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text('SCHÜRMANN GEBÄUDE + ENERGIE', 105, 18, { align:'center' });
+    doc.setFontSize(10); doc.setFont('helvetica','normal');
+    doc.text(`Stundenzettel – ${user} – Erstellt: ${dateStr}`, 105, 26, { align:'center' });
+    doc.setDrawColor(200,30,30); doc.setLineWidth(0.4);
+    doc.line(14, 30, 196, 30);
+
+    let y = 38;
+    doc.setFontSize(9);
+    const sorted = [...(window.globalLoggedSessionsDatabaseMock || [])].sort((a,b) => {
+      const p = s => { const [d,m,yy] = s.date.split('/'); return new Date(yy,m-1,d); };
+      return p(b) - p(a);
+    });
+    sorted.forEach(s => {
+      if (y > 270) { doc.addPage(); y = 20; }
+      doc.text(`${s.date}  |  ${s.project}  |  ${(s.duration - s.breakTime/60).toFixed(2)} h`, 14, y);
+      y += 6;
+    });
+
+    const pdfBlob = doc.output('blob');
+    const fileName = `Stundenzettel_${user.replace(/\s/g,'_')}_${dateStr.replace(/\./g,'-')}.pdf`;
+
+    if (navigator.canShare && navigator.canShare({ files: [new File([pdfBlob], fileName, { type:'application/pdf' })] })) {
+      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      await navigator.share({ title: 'Stundenzettel', text: `Stundenzettel ${user}`, files: [file] });
+    } else {
+      // Fallback: direct download
+      const url = URL.createObjectURL(pdfBlob);
+      const a   = Object.assign(document.createElement('a'), { href: url, download: fileName });
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 800);
+      showToast('PDF heruntergeladen');
+    }
+  } catch(e) {
+    if (e.name !== 'AbortError') showToast('Fehler beim Teilen');
+  }
+}
+
+// ── ③ ADMIN BROADCAST ──────────────────────────────────────────
+async function sendAdminBroadcast() {
+  const msg = (document.getElementById('admin-broadcast-input')?.value || '').trim();
+  if (!msg) { showToast('Nachricht eingeben'); return; }
+  const statusEl = document.getElementById('admin-broadcast-status');
+  if (statusEl) statusEl.textContent = 'Speichert…';
+  try {
+    await window.db.collection('broadcasts').doc('global').set({
+      message:   msg,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      sentAt:    new Date().toISOString()
+    });
+    if (statusEl) statusEl.textContent = '✓ Gesendet';
+    showToast('Broadcast gesendet');
+    loadAdminBroadcastPreview();
+    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
+  } catch(e) {
+    if (statusEl) statusEl.textContent = 'Fehler';
+    showToast('Fehler beim Senden');
+  }
+}
+
+async function clearAdminBroadcast() {
+  try {
+    await window.db.collection('broadcasts').doc('global').delete();
+    document.getElementById('admin-broadcast-input').value = '';
+    const prev = document.getElementById('admin-broadcast-preview');
+    if (prev) prev.style.display = 'none';
+    showToast('Broadcast gelöscht');
+  } catch(e) { showToast('Fehler'); }
+}
+
+async function loadAdminBroadcastPreview() {
+  try {
+    const snap = await window.db.collection('broadcasts').doc('global').get();
+    const prev = document.getElementById('admin-broadcast-preview');
+    if (!prev) return;
+    if (snap.exists) {
+      const d = snap.data();
+      prev.style.display = 'block';
+      const ts = d.sentAt ? new Date(d.sentAt).toLocaleString('de-DE') : '';
+      prev.innerHTML = `<i class="fa-solid fa-bullhorn" style="margin-right:6px;"></i>${d.message}<br><span style="font-size:10px;opacity:0.6;">${ts}</span>`;
+    } else {
+      prev.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+async function checkBroadcastOnLogin() {
+  try {
+    const snap = await window.db.collection('broadcasts').doc('global').get();
+    if (!snap.exists) return;
+    const d   = snap.data();
+    const msg = d.message || '';
+    const ts  = d.sentAt  || d.timestamp?.toDate?.().toISOString() || '';
+    if (!msg) return;
+    const seenKey = 'sch_broadcast_seen';
+    if (localStorage.getItem(seenKey) === ts) return;
+
+    // Show banner
+    const overlay = document.createElement('div');
+    overlay.id    = 'broadcast-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+    overlay.innerHTML = `
+      <div style="background:#1e293b;border:1px solid rgba(212,175,55,0.35);border-radius:16px;padding:28px 24px;max-width:440px;width:100%;box-shadow:0 8px 48px rgba(0,0,0,0.6);">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#d4af37,#b8961e);display:flex;align-items:center;justify-content:center;font-size:18px;color:#0f172a;flex-shrink:0;"><i class="fa-solid fa-bullhorn"></i></div>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#d4af37;text-transform:uppercase;letter-spacing:0.5px;">Mitteilung der Geschäftsleitung</div>
+            <div style="font-size:10px;color:#64748b;">${ts ? new Date(ts).toLocaleString('de-DE') : ''}</div>
+          </div>
+        </div>
+        <div style="font-size:14px;color:#f1f5f9;line-height:1.6;margin-bottom:20px;">${msg}</div>
+        <button onclick="dismissBroadcastBanner('${ts.replace(/'/g,"\\'")}', '${seenKey}')" style="width:100%;background:linear-gradient(135deg,#d4af37,#b8961e);border:none;color:#0f172a;padding:12px;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;">Verstanden</button>
+      </div>`;
+    document.body.appendChild(overlay);
+  } catch(e) {}
+}
+
+function dismissBroadcastBanner(ts, key) {
+  localStorage.setItem(key, ts);
+  const el = document.getElementById('broadcast-overlay');
+  if (el) el.remove();
+}
+
+// ── ④ PUSH / LOCAL NOTIFICATIONS ──────────────────────────────
+let _notifInterval = null;
+
+function updateNotifStatusCard() {
+  const el = document.getElementById('dash-notif-status');
+  if (!el) return;
+  if (!('Notification' in window)) { el.textContent = 'N/A'; return; }
+  const p = Notification.permission;
+  if (p === 'granted') {
+    el.textContent = '✓ Aktiv';
+    el.style.color = '#10b981';
+    el.style.cursor = 'default';
+    el.onclick = null;
+  } else if (p === 'denied') {
+    el.textContent = '✗ Blockiert';
+    el.style.color = '#ef4444';
+    el.style.cursor = 'default';
+    el.onclick = null;
+  } else {
+    el.textContent = 'Aktivieren ▶';
+    el.style.color = '#d4af37';
+    el.style.cursor = 'pointer';
+    el.onclick = requestWorkReminderPermission;
+  }
+}
+
+async function requestWorkReminderPermission() {
+  if (!('Notification' in window)) { showToast('Benachrichtigungen nicht unterstützt'); return; }
+  if (Notification.permission === 'granted') { showToast('Benachrichtigungen bereits aktiv'); return; }
+  const perm = await Notification.requestPermission();
+  updateNotifStatusCard();
+  if (perm === 'granted') {
+    showToast('Benachrichtigungen aktiviert ✓');
+    initWorkReminders();
+  } else {
+    showToast('Benachrichtigungen blockiert');
+  }
+}
+
+function initWorkReminders() {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  if (_notifInterval) return; // already running
+  _notifInterval = setInterval(() => {
+    const now  = new Date();
+    const dow  = now.getDay();       // 0=Sun 1=Mon ... 5=Fri 6=Sat
+    const h    = now.getHours();
+    const m    = now.getMinutes();
+    const isMoToDo = dow >= 1 && dow <= 4;
+    const isFri    = dow === 5;
+    const trigMoToDo = isMoToDo && h === 17 && m === 0;
+    const trigFri    = isFri    && h === 14 && m === 0;
+    if (!trigMoToDo && !trigFri) return;
+
+    const todayKey  = `sch_notif_${now.toDateString()}`;
+    if (localStorage.getItem(todayKey)) return;
+    localStorage.setItem(todayKey, '1');
+
+    new Notification('⏱ Arbeitszeiterfassung', {
+      body: 'Bitte Arbeitszeit für heute eintragen!',
+      icon: 'https://fonts.gstatic.com/s/i/materialicons/schedule/v12/24px.svg',
+      badge: 'https://fonts.gstatic.com/s/i/materialicons/schedule/v12/24px.svg',
+      tag:  'sch-work-reminder'
+    });
+  }, 30000); // check every 30 s
+}
+
+// Load admin broadcast preview when settings tab is opened
+document.addEventListener('DOMContentLoaded', () => {
+  const origSwitch = window.switchActiveView;
+  if (typeof origSwitch === 'function') {
+    window.switchActiveView = function(view, el) {
+      origSwitch.apply(this, arguments);
+      if (view === 'admin-panel') setTimeout(loadAdminBroadcastPreview, 400);
+    };
+  }
+});
+</script><div style="text-align:center; padding:20px 30px 40px; font-size:11px; color:rgba(255,255,255,0.22); width:100%; box-sizing:border-box;">
+  <div style="font-weight:500; letter-spacing:0.4px;">dev. by Amran Hiluf</div>
 </div>
 </body>
 </html>
