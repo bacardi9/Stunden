@@ -2929,9 +2929,20 @@ body:not(.admin-mode) span[style*="background:#fde68a"] {
       setTimeout(() => launchSessionUI(), 500);
     } catch (err) {
       console.error(err);
-      msgBox.innerHTML = activeLanguageGlobal === 'de'
-        ? `Mitarbeiter nicht gefunden oder falsches Kennwort.<br><span style="font-size:11px;color:#aaa;font-weight:normal;">Groß-/Kleinschreibung beachten!</span>`
-        : `Invalid name or password.<br><span style="font-size:11px;color:#aaa;font-weight:normal;">Check case sensitivity!</span>`;
+      const code = err.code || '';
+      let hint = '';
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
+        hint = 'Kein Konto mit diesem Namen gefunden.';
+      } else if (code === 'auth/wrong-password') {
+        hint = 'Kennwort ist falsch.';
+      } else if (code === 'auth/too-many-requests') {
+        hint = 'Zu viele Versuche – bitte kurz warten.';
+      } else if (code === 'auth/user-disabled') {
+        hint = 'Dieses Konto wurde deaktiviert.';
+      } else {
+        hint = code || 'Unbekannter Fehler';
+      }
+      msgBox.innerHTML = `Anmeldung fehlgeschlagen.<br><span style="font-size:11px;color:#f87171;font-weight:600;">${hint}</span>`;
       msgBox.className = 'message error';
     }
   }
