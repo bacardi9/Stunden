@@ -649,7 +649,7 @@
             </div>
 
             <!-- Dropzone -->
-            <div class="ai-scan-dropzone" id="ai-dropzone" onclick="document.getElementById('ai-file-input').click()"
+            <div class="ai-scan-dropzone" id="ai-dropzone" onclick="triggerAiGallery()"
               ondragover="event.preventDefault();this.classList.add('dragover')"
               ondragleave="this.classList.remove('dragover')"
               ondrop="handleAiDrop(event)">
@@ -660,12 +660,16 @@
                 <div style="font-size:12px;color:var(--text-muted);">JPG, PNG, HEIC · max 10 MB</div>
               </div>
             </div>
-            <input type="file" id="ai-file-input" accept="image/*" capture="environment" style="display:none;" onchange="handleAiFileSelect(event)">
+
+            <!-- ✅ NO capture attribute here — gallery opens file picker, camera button adds it dynamically -->
+            <input type="file" id="ai-file-input" accept="image/*" style="display:none;" onchange="handleAiFileSelect(event)">
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">
-              <button type="button" class="primary-btn" style="background:#1e293b;" onclick="document.getElementById('ai-file-input').click()">
+              <!-- Gallery button: removes capture so file picker opens -->
+              <button type="button" class="primary-btn" style="background:#1e293b;" onclick="triggerAiGallery()">
                 <i class="fa-solid fa-image" style="margin-right:6px;"></i>Galerie
               </button>
+              <!-- Camera button: adds capture=environment then clicks -->
               <button type="button" class="primary-btn" onclick="triggerAiCamera()">
                 <i class="fa-solid fa-camera" style="margin-right:6px;"></i>Kamera
               </button>
