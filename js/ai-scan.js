@@ -42,6 +42,9 @@ function getAiApiKey() {
 // ── File Handling ─────────────────────────────────────────────────────────
 function handleAiFileSelect(event) {
   const file = event.target.files[0];
+  // Reset capture after selection so next gallery open works correctly
+  const input = document.getElementById('ai-file-input');
+  input.removeAttribute('capture');
   if (file) loadAiImageFile(file);
 }
 
@@ -52,6 +55,14 @@ function handleAiDrop(event) {
   if (file && file.type.startsWith('image/')) loadAiImageFile(file);
 }
 
+// Gallery: remove capture so the file picker / photo library opens
+function triggerAiGallery() {
+  const input = document.getElementById('ai-file-input');
+  input.removeAttribute('capture');
+  input.click();
+}
+
+// Camera: add capture=environment so the camera opens directly
 function triggerAiCamera() {
   const input = document.getElementById('ai-file-input');
   input.setAttribute('capture', 'environment');
@@ -66,18 +77,15 @@ function loadAiImageFile(file) {
   const reader = new FileReader();
   reader.onload = (e) => {
     const dataUrl = e.target.result;
-    // Extract base64 and mime
     const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
     if (!match) { showToast('Ungültiges Bildformat', 'error'); return; }
     aiPendingImageMime   = match[1];
     aiPendingImageBase64 = match[2];
-    // Show preview
     const img  = document.getElementById('ai-preview-img');
     const ph   = document.getElementById('ai-dropzone-placeholder');
     img.src    = dataUrl;
     img.style.display = 'block';
     ph.style.display  = 'none';
-    // Show analyze button
     document.getElementById('btn-ai-analyze').style.display = 'block';
     showToast('✓ Bild geladen – bereit zur Analyse', 'info');
   };
@@ -97,31 +105,9 @@ async function runAiAnalysis() {
     return;
   }
 
-  // Show scanning overlay
   showAiScanningOverlay(true);
 
-  const prompt = `Du bist ein intelligenter Stundenzettel-Parser für ein deutsches Bauunternehmen.
-
-Analysiere dieses handgeschriebene Bild eines Stundenzettels und extrahiere alle Arbeitseinträge.
-
-Für jeden Eintrag gib zurück:
-- date: Datum im Format DD/MM/YYYY (z.B. 15/01/2025)
-- project: Baustelle oder Kundenname (string)
-- startTime: Startzeit im Format HH:MM (z.B. 07:00)
-- endTime: Endzeit im Format HH:MM (z.B. 16:15)
-- breakTime: Pause in Minuten (number, z.B. 30, oder 0 wenn keine)
-- notes: Notizen oder Tätigkeiten (string oder leer)
-- confidence: "high", "medium" oder "low" je nach Lesbarkeit
-
-Antworte NUR mit einem gültigen JSON-Array. Kein erklärender Text. Beispiel:
-[
-  {"date":"15/01/2025","project":"Baustelle Müller","startTime":"07:00","endTime":"16:15","breakTime":30,"notes":"Maurerarbeiten","confidence":"high"},
-  {"date":"16/01/2025","project":"Kunde Schmidt","startTime":"08:00","endTime":"17:00","breakTime":45,"notes":"","confidence":"medium"}
-]
-
-Wenn du nichts lesen kannst, gib zurück: []
-Wenn das Datum fehlt oder unklar ist, versuche es aus dem Kontext zu schließen (z.B. Wochentag + naheliegendes Datum).
-Heute ist: ${new Date().toLocaleDateString('de-DE', {weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'})}.`;
+  const prompt = `Du bist ein intelligenter Stundenzettel-Parser für ein deutsches Bauunternehmen.\n\nAnalysiere dieses handgeschriebene Bild eines Stundenzettels und extrahiere alle Arbeitseinträge.\n\nFür jeden Eintrag gib zurück:\n- date: Datum im Format DD/MM/YYYY (z.B. 15/01/2025)\n- project: Baustelle oder Kundenname (string)\n- startTime: Startzeit im Format HH:MM (z.B. 07:00)\n- endTime: Endzeit im Format HH:MM (z.B. 16:15)\n- breakTime: Pause in Minuten (number, z.B. 30, oder 0 wenn keine)\n- notes: Notizen oder Tätigkeiten (string oder leer)\n- confidence: "high", "medium" oder "low" je nach Lesbarkeit\n\nAntworte NUR mit einem gültigen JSON-Array. Kein erklärender Text. Beispiel:\n[\n  {"date":"15/01/2025","project":"Baustelle Müller","startTime":"07:00","endTime":"16:15","breakTime":30,"notes":"Maurerarbeiten","confidence":"high"},\n  {"date":"16/01/2025","project":"Kunde Schmidt","startTime":"08:00","endTime":"17:00","breakTime":45,"notes":"","confidence":"medium"}\n]\n\nWenn du nichts lesen kannst, gib zurück: []\nWenn das Datum fehlt oder unklar ist, versuche es aus dem Kontext zu schließen (z.B. Wochentag + naheliegendes Datum).\nHeute ist: ${new Date().toLocaleDateString('de-DE', {weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'})}.`;
 
   try {
     const resp = await fetch(
@@ -150,7 +136,6 @@ Heute ist: ${new Date().toLocaleDateString('de-DE', {weekday:'long', day:'2-digi
     const data = await resp.json();
     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
 
-    // Extract JSON from response (strip markdown fences if present)
     const jsonMatch = rawText.match(/\[[\s\S]*\]/);
     if (!jsonMatch) throw new Error('Keine gültigen Daten erkannt');
 
@@ -321,12 +306,7 @@ function confirmAiEntries() {
   let added = 0, skipped = 0, errors = 0;
 
   toAdd.forEach(entry => {
-    // Validate
-    if (!entry.date || !entry.startTime || !entry.endTime || !entry.project) {
-      errors++;
-      return;
-    }
-    // Parse duration
+    if (!entry.date || !entry.startTime || !entry.endTime || !entry.project) { errors++; return; }
     try {
       const [sh, sm] = entry.startTime.split(':').map(Number);
       const [eh, em] = entry.endTime.split(':').map(Number);
@@ -334,7 +314,6 @@ function confirmAiEntries() {
       if (gross <= 0) { errors++; return; }
       const duration = gross / 60;
 
-      // Check for overlap
       const existing = globalLoggedSessionsDatabaseMock.filter(r => r.type === 'work' && r.date === entry.date);
       const startMins = sh * 60 + sm, endMins = eh * 60 + em;
       let overlap = false;
@@ -345,7 +324,6 @@ function confirmAiEntries() {
       }
       if (overlap) { skipped++; return; }
 
-      // Convert DD/MM/YYYY to internal format
       const dateParts = entry.date.match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})$/);
       let formattedDate = entry.date;
       if (dateParts) {
@@ -372,7 +350,6 @@ function confirmAiEntries() {
   renderHistoricalRecordsSheet();
   runGlobalApplicationMetricsEngine();
 
-  // Build result message
   let msg = `✓ ${added} Eintrag${added!==1?'e':''} hinzugefügt`;
   if (skipped) msg += ` · ${skipped} Überschneidung(en) übersprungen`;
   if (errors)  msg += ` · ${errors} Fehler`;
@@ -380,7 +357,6 @@ function confirmAiEntries() {
 
   if (added > 0) {
     triggerSaveHaptic();
-    // Navigate to history after short delay
     setTimeout(() => {
       switchActiveView('history', document.querySelector('[onclick*="switchActiveView(\'history\'"]'));
       resetAiScan();
@@ -402,7 +378,7 @@ function resetAiScan() {
   if (btn) btn.style.display = 'none';
 
   const fileInput = document.getElementById('ai-file-input');
-  if (fileInput) fileInput.value = '';
+  if (fileInput) { fileInput.value = ''; fileInput.removeAttribute('capture'); }
 
   document.getElementById('ai-step-upload').style.display  = 'block';
   document.getElementById('ai-step-review').style.display  = 'none';
