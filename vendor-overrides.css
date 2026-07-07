@@ -1,0 +1,35 @@
+:root, html { color-scheme: dark; }
+input[type="date"], input[type="datetime-local"] {
+  color-scheme: dark !important;
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #334155 !important;
+  -webkit-appearance: none;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.5);
+  opacity: 0.9;
+  cursor: pointer;
+}
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  color: #e2e8f0 !important;
+  background: transparent !important;
+}
+@media (prefers-color-scheme: dark) {
+  ::-webkit-calendar-picker { background: #1e293b; color: #fff; }
+}
+
+.flatpickr-calendar { background: #0f172a !important; border: 1px solid #334155 !important; box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important; }
+.flatpickr-day { color: #cbd5e1 !important; }
+.flatpickr-day:hover { background: #1e293b !important; border-color: #475569 !important; }
+.flatpickr-day.today { border-color: var(--admin-gold) !important; }
+.flatpickr-day.selected { background: var(--admin-gold) !important; color: #0f172a !important; border-color: var(--admin-gold) !important; }
+.flatpickr-months .flatpickr-month, .flatpickr-current-month, .flatpickr-weekday { color: #e2e8f0 !important; fill: #e2e8f0 !important; }
+.flatpickr-prev-month svg, .flatpickr-next-month svg { fill: #94a3b8 !important; }
+.numInputWrapper span { border-color: #475569 !important; }
+.flatpickr-input { background: #334155 !important; color: #fff !important; }
