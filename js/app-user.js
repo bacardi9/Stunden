@@ -2,10 +2,13 @@ window.addEventListener('DOMContentLoaded', () => {
   populateLogTimeFormDropdowns();
   setApplicationLanguage('de');
   document.getElementById('login-form').addEventListener('submit', handleLoginSubmit);
-  document.getElementById('log-date-picker').value = new Date().toISOString().split('T')[0];
-  document.getElementById('vacation-from-date-input').value = new Date().toISOString().split('T')[0];
-  document.getElementById('vacation-to-date-input').value   = new Date().toISOString().split('T')[0];
-  document.getElementById('schule-date-picker').value = new Date().toISOString().split('T')[0];
+
+  // Set default dates
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('log-date-picker').value       = today;
+  document.getElementById('vacation-from-date-input').value = today;
+  document.getElementById('vacation-to-date-input').value   = today;
+  document.getElementById('schule-date-picker').value    = today;
 
   const def = getDefault20to20Period();
   const startInput = document.getElementById('export-start-date');
@@ -15,20 +18,83 @@ window.addEventListener('DOMContentLoaded', () => {
     endInput.value   = new Date(def.end.getTime()   - def.end.getTimezoneOffset()*60000).toISOString().split('T')[0];
   }
 
-  document.getElementById('log-date-picker').addEventListener('change', () => {
-    document.getElementById('log-start-time').value = '07:00';
-    document.getElementById('log-end-time').value   = '16:15';
-    document.querySelectorAll('.break-pill').forEach(p => p.classList.remove('active'));
-    document.querySelector('.break-pill').classList.add('active');
-    activeSelectedFormBreakDuration = 0;
+  // ── Init ALL flatpickr date pickers ─────────────────────────────
+  if (window.flatpickr) {
+    const commonOpts = {
+      dateFormat: 'Y-m-d',
+      allowInput: false,
+      disableMobile: true, // force flatpickr on mobile too, no native picker
+      locale: {
+        firstDayOfWeek: 1,
+        weekdays: {
+          shorthand: ['So','Mo','Di','Mi','Do','Fr','Sa'],
+          longhand:  ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag']
+        },
+        months: {
+          shorthand: ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'],
+          longhand:  ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']
+        }
+      }
+    };
+
+    // Log work date
+    flatpickr('#log-date-picker', {
+      ...commonOpts,
+      defaultDate: today,
+      onChange: () => {
+        document.getElementById('log-start-time').value = '07:00';
+        document.getElementById('log-end-time').value   = '16:15';
+        document.querySelectorAll('.break-pill').forEach(p => p.classList.remove('active'));
+        document.querySelector('.break-pill').classList.add('active');
+        activeSelectedFormBreakDuration = 0;
+        saveDraftWorkEntry();
+      }
+    });
+
+    // Schule date
+    flatpickr('#schule-date-picker', { ...commonOpts, defaultDate: today });
+
+    // Vacation from/to
+    flatpickr('#vacation-from-date-input', { ...commonOpts, defaultDate: today });
+    flatpickr('#vacation-to-date-input',   { ...commonOpts, defaultDate: today });
+
+    // Export range
+    flatpickr('#export-start-date', { ...commonOpts });
+    flatpickr('#export-end-date',   { ...commonOpts });
+
+    // Admin absence dates (dark theme)
+    const adminOpts = {
+      ...commonOpts,
+      dateFormat: 'Y-m-d',
+    };
+    flatpickr('#absence-start', adminOpts);
+    flatpickr('#absence-end',   adminOpts);
+  }
+
+  // Make the whole form-group block clickable to open flatpickr
+  document.querySelectorAll('.form-group').forEach(group => {
+    const fp = group.querySelector('input._flatpickr, input[data-input]');
+    if (!fp || !fp._flatpickr) {
+      // Try finding by checking if flatpickr instance exists on the input
+      const inp = group.querySelector('input[type="date"], input[type="text"][readonly]');
+      if (inp && inp._flatpickr) {
+        group.style.cursor = 'pointer';
+        group.addEventListener('click', (e) => {
+          if (e.target === inp) return; // let flatpickr handle direct clicks
+          inp._flatpickr.open();
+        });
+      }
+    }
   });
+
+  document.getElementById('log-date-picker').addEventListener('change', saveDraftWorkEntry);
 
   setInterval(enforceTrashLifespanPurgeEngine, 60000);
   window.addEventListener('online',  updateCloudBackupStatusIndicator);
   window.addEventListener('offline', updateCloudBackupStatusIndicator);
   updateCloudBackupStatusIndicator();
 
-  ['log-date-picker','log-project-name','log-start-time','log-end-time','log-notes'].forEach(id => {
+  ['log-project-name','log-start-time','log-end-time','log-notes'].forEach(id => {
     document.getElementById(id)?.addEventListener('input',  saveDraftWorkEntry);
     document.getElementById(id)?.addEventListener('change', saveDraftWorkEntry);
   });
@@ -41,7 +107,6 @@ window.addEventListener('DOMContentLoaded', () => {
       try {
         const snap = await db.collection('userProfiles').doc(cached).get();
         const profileData = snap.exists ? snap.data() : {};
-        // Always read isAdmin from Firestore — never trust localStorage
         authenticatedUserRoleGlobal = profileData.isAdmin === true ? 'admin' : 'user';
         localStorage.setItem('schuermann_auth_role', authenticatedUserRoleGlobal);
       } catch(e) {
@@ -51,17 +116,54 @@ window.addEventListener('DOMContentLoaded', () => {
     })();
   }
 
-  if (window.flatpickr) {
-    const fpOpts = { dateFormat:"Y-m-d", altInput:true, altFormat:"d.m.Y", allowInput:false };
-    flatpickr("#absence-start", fpOpts);
-    flatpickr("#absence-end",   fpOpts);
-  }
-
   window.addEventListener('online',  flushOfflineQueue);
   window.addEventListener('online',  updateOfflineBadge);
   window.addEventListener('offline', updateOfflineBadge);
   updateOfflineBadge();
 });
+
+// ── After launchSessionUI re-init flatpickr on dynamic elements ──────────
+function reinitDatePickers() {
+  if (!window.flatpickr) return;
+  const commonOpts = {
+    dateFormat: 'Y-m-d',
+    allowInput: false,
+    disableMobile: true,
+    locale: {
+      firstDayOfWeek: 1,
+      weekdays: {
+        shorthand: ['So','Mo','Di','Mi','Do','Fr','Sa'],
+        longhand:  ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag']
+      },
+      months: {
+        shorthand: ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'],
+        longhand:  ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']
+      }
+    }
+  };
+  const ids = ['log-date-picker','schule-date-picker','vacation-from-date-input',
+               'vacation-to-date-input','export-start-date','export-end-date'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el._flatpickr) flatpickr(el, commonOpts);
+  });
+
+  // Make all .form-group blocks with a date input open calendar on click
+  setTimeout(() => {
+    document.querySelectorAll('.form-group').forEach(group => {
+      const inp = group.querySelector('input[type="date"], input[readonly]');
+      if (inp && inp._flatpickr && !group.dataset.fpClick) {
+        group.dataset.fpClick = '1';
+        group.style.cursor = 'pointer';
+        group.addEventListener('click', (e) => {
+          if (e.target.tagName === 'LABEL') { inp._flatpickr.open(); return; }
+          if (e.target === inp) return;
+          inp._flatpickr.open();
+        });
+      }
+    });
+  }, 300);
+}
 
 function showToast(msg, type = 'success') {
   const toast  = document.getElementById('toast-notification');
@@ -82,7 +184,6 @@ async function handleLoginSubmit(e) {
   msgBox.className = 'message success';
 
   try {
-    // Build email key from name — any name works, not just "admin"
     const loginKey = rawName.toLowerCase()
       .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
       .replace(/[^a-z0-9]/gi,'');
@@ -94,35 +195,25 @@ async function handleLoginSubmit(e) {
 
     authenticatedUserGlobal = cred.user.uid;
 
-    // Build display name from what user typed
     const displayName = rawName.split(' ')
       .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
       .join(' ');
 
-    // Read isAdmin ONLY from Firestore — username has zero influence on role
     let isAdminFlag = false;
     try {
       const profileSnap = await db.collection('userProfiles').doc(cred.user.uid).get();
-      if (profileSnap.exists) {
-        isAdminFlag = profileSnap.data().isAdmin === true;
-      }
-    } catch(e) {
-      isAdminFlag = false;
-    }
+      if (profileSnap.exists) isAdminFlag = profileSnap.data().isAdmin === true;
+    } catch(e) { isAdminFlag = false; }
 
     authenticatedUserRoleGlobal = isAdminFlag ? 'admin' : 'user';
-
     localStorage.setItem('schuermann_auth_user',    authenticatedUserGlobal);
     localStorage.setItem('schuermann_auth_role',    authenticatedUserRoleGlobal);
     localStorage.setItem('schuermann_current_user', displayName);
 
-    // Update profile — never overwrite isAdmin here, use merge:true
-    // Only write isAdmin on first creation (when field doesn't exist yet)
     await db.collection('userProfiles').doc(cred.user.uid).set({
       name:      displayName,
       uid:       cred.user.uid,
       lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-      // isAdmin is NOT set here — set it manually in Firebase Console
     }, { merge: true });
 
     msgBox.textContent = activeLanguageGlobal === 'de'
@@ -166,6 +257,7 @@ async function launchSessionUI() {
   updateCloudBackupStatusIndicator();
   updateOfflineBadge();
   setTimeout(restoreDraftWorkEntry, 400);
+  setTimeout(reinitDatePickers, 500);
   if (navigator.onLine) flushOfflineQueue();
   initializeDeviceTrackingEngine(displayName);
 }
@@ -184,7 +276,7 @@ function switchActiveView(targetId, navEl) {
   const main = document.getElementById('main-content-layout');
   if (targetId === 'admin-panel') { main.classList.add('admin-layout-widescreen'); refreshAdminData(); }
   else main.classList.remove('admin-layout-widescreen');
-  if (targetId === 'log-work') setTimeout(restoreDraftWorkEntry, 100);
+  if (targetId === 'log-work') setTimeout(() => { restoreDraftWorkEntry(); reinitDatePickers(); }, 100);
   toggleSidebarDrawer(false);
 }
 
@@ -436,8 +528,8 @@ window.initializeInlineEditRow = function(id) {
     <div class="inline-edit-box">
       <div class="form-group"><label style="font-size:10px;">Baustelle/Kunde</label><input type="text" id="edit-proj-${id}" value="${s.project}"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="form-group"><label style="font-size:10px;">Kommen</label><input type="text" id="edit-start-${id}" value="07:00"></div>
-        <div class="form-group"><label style="font-size:10px;">Gehen</label><input type="text" id="edit-end-${id}" placeholder="16:30"></div>
+        <div class="form-group"><label style="font-size:10px;">Kommen</label><input type="text" id="edit-start-${id}" value="${s.startTime||'07:00'}"></div>
+        <div class="form-group"><label style="font-size:10px;">Gehen</label><input type="text" id="edit-end-${id}" value="${s.endTime||''}"></div>
       </div>
       <div class="form-group"><label style="font-size:10px;">Pause</label>
         <select id="edit-brk-${id}">
