@@ -1,5 +1,5 @@
 document.write(`
-<div id="app-view" style="display:none;">
+<div id="app-view">
   <header class="app-header">
     <button class="menu-trigger-btn" onclick="toggleSidebarDrawer(true)"><i class="fa-solid fa-bars"></i></button>
     <div style="display:flex;align-items:center;gap:4px;">
