@@ -1,9 +1,10 @@
+let _trashPurgeInterval = null; // Bug 4 Fix: store interval reference for cleanup
+
 window.addEventListener('DOMContentLoaded', () => {
   populateLogTimeFormDropdowns();
   setApplicationLanguage('de');
   document.getElementById('login-form').addEventListener('submit', handleLoginSubmit);
 
-  // Set default dates
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('log-date-picker').value       = today;
   document.getElementById('vacation-from-date-input').value = today;
@@ -18,12 +19,11 @@ window.addEventListener('DOMContentLoaded', () => {
     endInput.value   = new Date(def.end.getTime()   - def.end.getTimezoneOffset()*60000).toISOString().split('T')[0];
   }
 
-  // ── Init ALL flatpickr date pickers ─────────────────────────────
   if (window.flatpickr) {
     const commonOpts = {
       dateFormat: 'Y-m-d',
       allowInput: false,
-      disableMobile: true, // force flatpickr on mobile too, no native picker
+      disableMobile: true,
       locale: {
         firstDayOfWeek: 1,
         weekdays: {
@@ -37,7 +37,6 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    // Log work date
     flatpickr('#log-date-picker', {
       ...commonOpts,
       defaultDate: today,
@@ -51,36 +50,25 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Schule date
     flatpickr('#schule-date-picker', { ...commonOpts, defaultDate: today });
-
-    // Vacation from/to
     flatpickr('#vacation-from-date-input', { ...commonOpts, defaultDate: today });
     flatpickr('#vacation-to-date-input',   { ...commonOpts, defaultDate: today });
-
-    // Export range
     flatpickr('#export-start-date', { ...commonOpts });
     flatpickr('#export-end-date',   { ...commonOpts });
 
-    // Admin absence dates (dark theme)
-    const adminOpts = {
-      ...commonOpts,
-      dateFormat: 'Y-m-d',
-    };
+    const adminOpts = { ...commonOpts, dateFormat: 'Y-m-d' };
     flatpickr('#absence-start', adminOpts);
     flatpickr('#absence-end',   adminOpts);
   }
 
-  // Make the whole form-group block clickable to open flatpickr
   document.querySelectorAll('.form-group').forEach(group => {
     const fp = group.querySelector('input._flatpickr, input[data-input]');
     if (!fp || !fp._flatpickr) {
-      // Try finding by checking if flatpickr instance exists on the input
       const inp = group.querySelector('input[type="date"], input[type="text"][readonly]');
       if (inp && inp._flatpickr) {
         group.style.cursor = 'pointer';
         group.addEventListener('click', (e) => {
-          if (e.target === inp) return; // let flatpickr handle direct clicks
+          if (e.target === inp) return;
           inp._flatpickr.open();
         });
       }
@@ -89,7 +77,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('log-date-picker').addEventListener('change', saveDraftWorkEntry);
 
-  setInterval(enforceTrashLifespanPurgeEngine, 60000);
+  // Bug 4 Fix: store interval so it can be cleared on logout
+  _trashPurgeInterval = setInterval(enforceTrashLifespanPurgeEngine, 60000);
+
   window.addEventListener('online',  updateCloudBackupStatusIndicator);
   window.addEventListener('offline', updateCloudBackupStatusIndicator);
   updateCloudBackupStatusIndicator();
@@ -99,21 +89,38 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById(id)?.addEventListener('change', saveDraftWorkEntry);
   });
 
-  // Auto-restore session
+  const lp = document.getElementById('landing-page');
+
   const cached = localStorage.getItem('schuermann_auth_user');
   if (cached) {
     authenticatedUserGlobal = cached;
     (async () => {
       try {
+        await new Promise((resolve, reject) => {
+          const unsubscribe = auth.onAuthStateChanged(user => {
+            unsubscribe();
+            if (user) resolve(user);
+            else reject(new Error('no-session'));
+          });
+        });
+
         const snap = await db.collection('userProfiles').doc(cached).get();
         const profileData = snap.exists ? snap.data() : {};
         authenticatedUserRoleGlobal = profileData.isAdmin === true ? 'admin' : 'user';
         localStorage.setItem('schuermann_auth_role', authenticatedUserRoleGlobal);
+
+        if (lp) lp.style.display = 'none';
+        launchSessionUI();
       } catch(e) {
+        localStorage.removeItem('schuermann_auth_user');
+        localStorage.removeItem('schuermann_auth_role');
+        authenticatedUserGlobal = '';
         authenticatedUserRoleGlobal = 'user';
+        if (lp) lp.style.display = 'block';
       }
-      launchSessionUI();
     })();
+  } else {
+    if (lp) lp.style.display = 'block';
   }
 
   window.addEventListener('online',  flushOfflineQueue);
@@ -122,7 +129,6 @@ window.addEventListener('DOMContentLoaded', () => {
   updateOfflineBadge();
 });
 
-// ── After launchSessionUI re-init flatpickr on dynamic elements ──────────
 function reinitDatePickers() {
   if (!window.flatpickr) return;
   const commonOpts = {
@@ -148,7 +154,6 @@ function reinitDatePickers() {
     if (el && !el._flatpickr) flatpickr(el, commonOpts);
   });
 
-  // Make all .form-group blocks with a date input open calendar on click
   setTimeout(() => {
     document.querySelectorAll('.form-group').forEach(group => {
       const inp = group.querySelector('input[type="date"], input[readonly]');
@@ -288,13 +293,19 @@ function handleSecureSignOutRequest() {
     auth.signOut().catch(()=>{});
     localStorage.removeItem('schuermann_auth_user');
     localStorage.removeItem('schuermann_auth_role');
+
+    // Bug 4 Fix: clear the trash purge interval on logout
+    if (_trashPurgeInterval) { clearInterval(_trashPurgeInterval); _trashPurgeInterval = null; }
+
     authenticatedUserGlobal = ''; authenticatedUserRoleGlobal = 'user';
     globalLoggedSessionsDatabaseMock = []; vacationLoggedDaysArrayCache = [];
     recentlyDeletedItemsBinCache = []; adminAllEntriesCache = [];
     document.getElementById('app-view').style.display        = 'none';
     document.getElementById('admin-full-view').style.display = 'none';
-    document.getElementById('login-view').style.display      = 'flex';
+    document.getElementById('login-view').style.display      = 'none';
     document.body.classList.remove('admin-mode');
+    const lp = document.getElementById('landing-page');
+    if (lp) lp.style.display = 'block';
   });
 }
 
@@ -528,8 +539,8 @@ window.initializeInlineEditRow = function(id) {
     <div class="inline-edit-box">
       <div class="form-group"><label style="font-size:10px;">Baustelle/Kunde</label><input type="text" id="edit-proj-${id}" value="${s.project}"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="form-group"><label style="font-size:10px;">Kommen</label><input type="text" id="edit-start-${id}" value="${s.startTime||'07:00'}"></div>
-        <div class="form-group"><label style="font-size:10px;">Gehen</label><input type="text" id="edit-end-${id}" value="${s.endTime||''}"></div>
+        <div class="form-group"><label style="font-size:10px;">Kommen (HH:MM)</label><input type="text" id="edit-start-${id}" value="${s.startTime||'07:00'}" placeholder="HH:MM"></div>
+        <div class="form-group"><label style="font-size:10px;">Gehen (HH:MM)</label><input type="text" id="edit-end-${id}" value="${s.endTime||''}" placeholder="HH:MM"></div>
       </div>
       <div class="form-group"><label style="font-size:10px;">Pause</label>
         <select id="edit-brk-${id}">
@@ -557,9 +568,17 @@ window.commitInlineChanges = function(id) {
   const end   = document.getElementById(`edit-end-${id}`).value.trim();
   const brk   = parseInt(document.getElementById(`edit-brk-${id}`).value);
   if (!proj || !start || !end) { alert('Bitte alle Felder ausfüllen.'); return; }
+  if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) {
+    alert('Bitte Zeiten im Format HH:MM eingeben (z.B. 07:00).');
+    return;
+  }
   const hrs = computeRawHoursDiff(start, end);
   if (hrs <= 0) { alert('Ungültige Zeitspanne.'); return; }
-  s.project = proj; s.duration = hrs; s.breakTime = brk;
+  s.project   = proj;
+  s.startTime = start;
+  s.endTime   = end;
+  s.duration  = hrs;
+  s.breakTime = brk;
   persistUserData(); renderHistoricalRecordsSheet(); runGlobalApplicationMetricsEngine();
   showToast(activeLanguageGlobal === 'de' ? '✓ Gespeichert' : '✓ Saved');
 };
@@ -589,9 +608,13 @@ window.restoreItemFromTrashBin = function(id) {
 };
 
 function enforceTrashLifespanPurgeEngine() {
+  if (!authenticatedUserGlobal) return;
   const limit = 12 * 60 * 60 * 1000, now = Date.now();
+  const before = recentlyDeletedItemsBinCache.length;
   recentlyDeletedItemsBinCache = recentlyDeletedItemsBinCache.filter(i => (now - i.deletedAtTimestamp) < limit);
-  persistUserData();
+  if (recentlyDeletedItemsBinCache.length !== before) {
+    persistUserData();
+  }
   if (document.getElementById('view-deleted').classList.contains('active')) renderRecentlyDeletedBinSheet();
 }
 
