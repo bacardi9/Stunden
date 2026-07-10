@@ -7,10 +7,7 @@
   var HANDLER_NAME = 'playablesGameEventHandler';
   var ANDROID_BRIDGE_NAME = '_MetaPlayablesBridge';
   var RAF_FRAME_THRESHOLD = 3;
-  var gameReadySent = false;
-  var firstInteractionSent = false;
-  var errorSent = false;
-  var frameCount = 0;
+  var gameReadySent = false; var firstInteractionSent = false; var errorSent = false; var frameCount = 0;
   var originalRAF = window.requestAnimationFrame;
   function hasIOSBridge() { return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers[HANDLER_NAME]); }
   function hasAndroidBridge() { return !!(window[ANDROID_BRIDGE_NAME] && typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function'); }
@@ -22,8 +19,7 @@
     if (isInIframe()) { try { window.parent.postMessage(message, '*'); } catch (e) {} return; }
   }
   function onFrame() {
-    if (gameReadySent) return;
-    frameCount++;
+    if (gameReadySent) return; frameCount++;
     if (frameCount >= RAF_FRAME_THRESHOLD) { gameReadySent = true; sendEvent('game_ready', { frame_count: frameCount, detected_at: Date.now() }); return; }
     originalRAF.call(window, onFrame);
   }
@@ -41,25 +37,13 @@
   }
   function setupFirstInteractionDetection() {
     var events = ['touchstart', 'mousedown', 'keydown'];
-    function onFirstInteraction() {
-      if (firstInteractionSent) return;
-      firstInteractionSent = true;
-      sendEvent('user_interaction_start', null);
-      for (var i = 0; i < events.length; i++) document.removeEventListener(events[i], onFirstInteraction, true);
-    }
+    function onFirstInteraction() { if (firstInteractionSent) return; firstInteractionSent = true; sendEvent('user_interaction_start', null); for (var i = 0; i < events.length; i++) document.removeEventListener(events[i], onFirstInteraction, true); }
     for (var i = 0; i < events.length; i++) document.addEventListener(events[i], onFirstInteraction, true);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupFirstInteractionDetection);
   else setupFirstInteractionDetection();
-  window.addEventListener('error', function(event) {
-    if (errorSent) return; errorSent = true;
-    sendEvent('error', { message: event.message || 'Unknown error', source: event.filename || '', lineno: event.lineno || 0, colno: event.colno || 0, auto_captured: true });
-  });
-  window.addEventListener('unhandledrejection', function(event) {
-    if (errorSent) return; errorSent = true;
-    var reason = event.reason;
-    sendEvent('error', { message: (reason instanceof Error) ? reason.message : String(reason), type: 'unhandled_promise_rejection', auto_captured: true });
-  });
+  window.addEventListener('error', function(event) { if (errorSent) return; errorSent = true; sendEvent('error', { message: event.message || 'Unknown error', source: event.filename || '', lineno: event.lineno || 0, colno: event.colno || 0, auto_captured: true }); });
+  window.addEventListener('unhandledrejection', function(event) { if (errorSent) return; errorSent = true; var reason = event.reason; sendEvent('error', { message: (reason instanceof Error) ? reason.message : String(reason), type: 'unhandled_promise_rejection', auto_captured: true }); });
   window.playablesSDK = {
     complete: function(score) { sendEvent('game_ended', { score: score, completed: true }); },
     error: function(message) { if (errorSent) return; errorSent = true; sendEvent('error', { message: message || 'Unknown error', auto_captured: false }); },
@@ -94,18 +78,206 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Meine Stunden Online">
 <link rel="manifest" id="pwa-manifest-link">
-<title>Meine Stunden Online</title>
+<title>Meine Stunden Online – Professionelle Zeiterfassung</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&family=Playfair+Display:wght@300;400;700&family=Cormorant+Garamond:wght@300;400;600&display=swap" rel="stylesheet">
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/admin.css">
 <link rel="stylesheet" href="css/vendor-overrides.css">
+<link rel="stylesheet" href="css/landing.css">
+
+<style>
+/* ══════════════════════════════════════════════
+   QUICK INTRO SECTION (replaces old hero body)
+══════════════════════════════════════════════ */
+.lp-intro {
+  position: relative; z-index: 1;
+  max-width: 780px; margin: 0 auto;
+  padding: 56px 28px 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.lp-intro-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px; padding: 18px 20px;
+  transition: all 0.2s;
+}
+.lp-intro-item:hover { background: rgba(255,255,255,0.055); border-color: rgba(255,255,255,0.1); }
+.lp-intro-icon {
+  width: 40px; height: 40px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+}
+.lp-intro-text h4 { font-size: 13px; font-weight: 800; color: #f1f5f9; margin-bottom: 4px; line-height: 1.2; }
+.lp-intro-text p  { font-size: 11px; color: #64748b; line-height: 1.55; }
+
+@media (max-width: 560px) {
+  .lp-intro { grid-template-columns: 1fr; padding: 32px 16px 28px; gap: 12px; }
+}
+
+/* ══════════════════════════════════════════════
+   FEATURE SHOWCASE SECTION
+══════════════════════════════════════════════ */
+.lp-showcase {
+  position: relative; z-index: 1;
+  padding: 0 28px 80px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.lp-showcase-label {
+  text-align: center; font-size: 11px; font-weight: 800;
+  color: #E30613; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px;
+}
+.lp-showcase-title {
+  text-align: center; font-size: clamp(24px,4vw,36px); font-weight: 900;
+  color: #fff; letter-spacing: -1px; margin-bottom: 12px;
+}
+.lp-showcase-sub {
+  text-align: center; font-size: 15px; color: #64748b;
+  max-width: 520px; margin: 0 auto 60px; line-height: 1.6;
+}
+
+.lp-feature-row {
+  display: flex; align-items: center; gap: 48px;
+  margin-bottom: 80px; flex-wrap: wrap;
+}
+.lp-feature-row.reverse { flex-direction: row-reverse; }
+.lp-feature-row-text { flex: 1; min-width: 260px; }
+.lp-feature-row-mock { flex: 1; min-width: 280px; max-width: 420px; }
+
+.lp-feature-row-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 4px 12px;
+  border-radius: 99px; margin-bottom: 14px;
+}
+.lp-feature-row-title {
+  font-size: clamp(20px,3vw,28px); font-weight: 900; color: #fff;
+  letter-spacing: -0.6px; line-height: 1.2; margin-bottom: 12px;
+}
+.lp-feature-row-desc { font-size: 14px; color: #64748b; line-height: 1.75; margin-bottom: 20px; }
+.lp-feature-row-bullets { list-style: none; padding: 0; margin: 0; }
+.lp-feature-row-bullets li {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 13px; color: #94a3b8; font-weight: 500;
+  margin-bottom: 10px; line-height: 1.5;
+}
+.lp-feature-row-bullets li i { color: #10b981; font-size: 12px; margin-top: 3px; flex-shrink: 0; }
+
+/* Phone mock shared */
+.lp-phone {
+  background: rgba(10,16,32,0.97);
+  border-radius: 24px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset;
+  width: 100%; max-width: 340px; margin: 0 auto;
+  font-size: 11px;
+}
+.lp-phone-bar {
+  background: rgba(5,8,20,0.95);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding: 10px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.lp-phone-bar-title { font-size: 11px; font-weight: 800; color: #fff; }
+.lp-phone-body { padding: 14px; }
+
+/* Missing days mock */
+.mock-period-bar-wrap { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.mock-period-label { font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: flex; justify-content: space-between; }
+.mock-progress-track { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+.mock-progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg,#E30613,#0ea5e9); }
+.mock-missing-btn { display: inline-flex; align-items: center; gap: 5px; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); color: #ef4444; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
+.mock-missing-panel { margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; }
+.mock-missing-chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(239,68,68,0.08); border: 1.5px solid rgba(239,68,68,0.2); color: #ef4444; padding: 4px 10px; border-radius: 99px; font-size: 10px; font-weight: 700; margin: 3px; cursor: pointer; }
+.mock-save-row { display: flex; gap: 6px; margin-top: 10px; }
+.mock-save-btn { flex: 1; background: linear-gradient(135deg,#E30613,#b8000f); border: none; color: #fff; padding: 9px; border-radius: 8px; font-size: 11px; font-weight: 800; text-align: center; }
+.mock-schule-btn { background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.2); color: #0ea5e9; padding: 9px 12px; border-radius: 8px; font-size: 10px; font-weight: 700; }
+
+/* Weekly chart mock */
+.mock-chart-bars { display: flex; align-items: flex-end; gap: 5px; height: 80px; margin: 12px 0 8px; }
+.mock-chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; justify-content: flex-end; }
+.mock-chart-bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 3px; }
+.mock-chart-lbl { font-size: 8px; font-weight: 700; color: #475569; }
+.mock-day-detail { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px; margin-top: 8px; }
+.mock-day-entry { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.mock-day-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+.mock-day-text { flex: 1; }
+.mock-day-proj { font-size: 11px; font-weight: 700; color: #e2e8f0; }
+.mock-day-meta { font-size: 9px; color: #475569; }
+.mock-day-hrs { font-size: 12px; font-weight: 800; color: #0ea5e9; }
+
+/* AI Scan mock */
+.mock-ai-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid #0ea5e9; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+.mock-ai-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+.mock-ai-field { background: rgba(255,255,255,0.05); border-radius: 6px; padding: 6px 8px; }
+.mock-ai-field-label { font-size: 8px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 2px; }
+.mock-ai-field-val { font-size: 11px; font-weight: 700; color: #e2e8f0; }
+.mock-ai-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: #10b981; font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 99px; margin-bottom: 8px; }
+
+/* PDF mock */
+.mock-pdf-frame { background: #fff; border-radius: 8px; padding: 14px; color: #1e293b; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.mock-pdf-header-bar { height: 3px; background: #c0392b; border-radius: 2px; margin-bottom: 10px; }
+.mock-pdf-logo-row { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 10px; }
+.mock-pdf-logo-accent { width: 3px; height: 14px; background: #c0392b; border-radius: 1px; flex-shrink: 0; margin-top: 1px; }
+.mock-pdf-logo-name { font-size: 11px; font-weight: 900; color: #0f172a; line-height: 1; }
+.mock-pdf-logo-sub { font-size: 7px; color: #64748b; margin-top: 1px; }
+.mock-pdf-title { font-size: 9px; font-weight: 800; color: #0f172a; text-align: right; line-height: 1; margin-top: 1px; }
+.mock-pdf-date-text { font-size: 7px; color: #64748b; text-align: right; }
+.mock-pdf-divider { height: 1px; background: #e2e8f0; margin: 8px 0; }
+.mock-pdf-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-bottom: 8px; }
+.mock-pdf-card { background: #f8fafc; border-radius: 4px; padding: 6px 5px; }
+.mock-pdf-card-lbl { font-size: 6px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 3px; }
+.mock-pdf-card-val { font-size: 9px; font-weight: 800; color: #0f172a; }
+.mock-pdf-section { background: #f1f5f9; border-radius: 4px; padding: 5px 7px; margin-bottom: 4px; }
+.mock-pdf-section-title { font-size: 8px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+.mock-pdf-row { display: flex; justify-content: space-between; font-size: 7px; color: #475569; padding: 2px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+.mock-pdf-row:last-child { border-bottom: none; }
+.mock-pdf-row-hrs { font-weight: 700; color: #c0392b; }
+.mock-pdf-footer { display: flex; justify-content: space-between; font-size: 6px; color: #94a3b8; margin-top: 6px; border-top: 1px solid #e2e8f0; padding-top: 5px; }
+
+/* Streak mock */
+.mock-streak-card { background: linear-gradient(135deg, rgba(227,6,19,0.12), rgba(227,6,19,0.04)); border: 1px solid rgba(227,6,19,0.2); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.mock-streak-flame { font-size: 26px; animation: flamePulse 1.5s ease-in-out infinite alternate; }
+@keyframes flamePulse { from{transform:scale(1)} to{transform:scale(1.1)} }
+.mock-streak-num { font-size: 20px; font-weight: 900; color: #E30613; letter-spacing: -1px; line-height: 1; }
+.mock-streak-lbl { font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+.mock-streak-best { margin-left: auto; text-align: right; }
+.mock-streak-best-num { font-size: 12px; font-weight: 800; color: #64748b; }
+.mock-streak-best-lbl { font-size: 9px; color: #334155; font-weight: 600; }
+
+.lp-showcase-divider { border: none; border-top: 1px solid rgba(255,255,255,0.04); margin: 0 0 80px; }
+
+/* ── STATS BAR ── */
+.lp-stats-bar {
+  position: relative; z-index: 1;
+  background: rgba(255,255,255,0.02);
+  border-top: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding: 36px 28px;
+  display: flex; justify-content: center; gap: 48px; flex-wrap: wrap;
+}
+.lp-stat-item { text-align: center; }
+.lp-stat-num { font-size: 32px; font-weight: 900; color: #fff; letter-spacing: -1.5px; line-height: 1; }
+.lp-stat-num span { color: #E30613; }
+.lp-stat-lbl { font-size: 11px; font-weight: 600; color: #475569; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+@media (max-width: 640px) {
+  .lp-feature-row { gap: 28px; margin-bottom: 56px; }
+  .lp-feature-row.reverse { flex-direction: column; }
+  .lp-showcase { padding: 0 16px 60px; }
+  .lp-stats-bar { gap: 28px; }
+}
+</style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
@@ -113,170 +285,572 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-<style>
-/* ── Premium Global Tokens ── */
-* { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-
-/* ── Login Logo Canvas ── */
-.login-logo-canvas-wrap {
-  display: flex; align-items: center; justify-content: center;
-  width: 100%; padding: 8px 0 28px;
-  user-select: none; -webkit-user-select: none;
-}
-#login-logo-canvas {
-  display: block; pointer-events: none;
-  user-select: none; -webkit-user-select: none;
-  filter: drop-shadow(0 0 20px rgba(227,6,19,0.2));
-}
-
-/* ── Login form submit button premium ── */
-.login-card .primary-btn {
-  background: linear-gradient(135deg, #E30613 0%, #b8000f 100%) !important;
-  box-shadow: 0 6px 24px rgba(227,6,19,0.4), 0 2px 6px rgba(0,0,0,0.2) !important;
-  letter-spacing: 0.4px; font-size: 14px !important;
-  padding: 14px !important; border-radius: 12px !important; margin-top: 8px;
-}
-.login-card .developer-signature {
-  color: rgba(100,116,139,0.6);
-  border-top: 1px solid rgba(255,255,255,0.06);
-  margin-top: 20px; padding-top: 16px; font-size: 10px; letter-spacing: 0.8px;
-}
-.portal-context-caption { color: rgba(100,116,139,0.75) !important; }
-.dash-centered-logo-wrapper > div > div:first-child {
-  font-family: 'Inter', sans-serif !important; font-weight: 900 !important;
-  letter-spacing: -0.5px !important;
-  background: linear-gradient(135deg, #0f172a, #334155);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-hr { border: 0; border-top: 1px solid rgba(0,0,0,0.07); margin: 20px 0; }
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
-body.admin-mode ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
-body.dark-mode ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
-::selection { background: rgba(227,6,19,0.15); color: inherit; }
-
-/* ── View title gradient ── */
-.view-title > span:first-child {
-  background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-input[type="password"] { letter-spacing: 2px; }
-input[type="password"]::placeholder { letter-spacing: 0; }
-.toggle-switch-btn.active {
-  background: white !important; color: var(--primary-blue) !important;
-  font-weight: 800 !important; box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
-}
-
-/* ── Button variants ── */
-.primary-btn[style*="background:#1e293b"],.primary-btn[style*="background: #1e293b"] { background: rgba(30,41,59,0.9) !important; box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important; }
-.primary-btn[style*="background:#475569"],.primary-btn[style*="background: #475569"] { background: rgba(71,85,105,0.9) !important; box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important; }
-.primary-btn[style*="background:#3b82f6"],.primary-btn[style*="background: #3b82f6"] { background: linear-gradient(135deg, #3b82f6, #2563eb) !important; box-shadow: 0 4px 14px rgba(59,130,246,0.3) !important; }
-.primary-btn[style*="background:#10b981"],.primary-btn[style*="background: #10b981"] { background: linear-gradient(135deg, #10b981, #059669) !important; box-shadow: 0 4px 14px rgba(16,185,129,0.3) !important; }
-.primary-btn[style*="background:#dc2626"],.primary-btn[style*="background: #dc2626"] { background: linear-gradient(135deg, #dc2626, #b91c1c) !important; box-shadow: 0 4px 14px rgba(220,38,38,0.3) !important; }
-.primary-btn[style*="background:var(--primary-blue)"],.primary-btn[style*="background: var(--primary-blue)"] { background: linear-gradient(135deg, #0ea5e9, #0284c7) !important; box-shadow: 0 4px 14px rgba(14,165,233,0.3) !important; }
-
-/* ── Command Palette trigger hint in header ── */
-.cmd-k-hint {
-  display: flex; align-items: center; gap: 6px;
-  background: rgba(15,23,42,0.05); border: 1px solid rgba(15,23,42,0.08);
-  border-radius: 8px; padding: 6px 12px; cursor: pointer;
-  font-size: 11px; font-weight: 700; color: var(--text-muted);
-  transition: all 0.15s; white-space: nowrap;
-}
-.cmd-k-hint:hover { background: rgba(14,165,233,0.08); color: var(--primary-blue); border-color: rgba(14,165,233,0.2); }
-.cmd-k-hint kbd { font-size: 10px; background: rgba(15,23,42,0.08); border: 1px solid rgba(15,23,42,0.12); padding: 1px 5px; border-radius: 4px; font-family: inherit; }
-body.dark-mode .cmd-k-hint { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08); color: #64748b; }
-body.dark-mode .cmd-k-hint:hover { background: rgba(14,165,233,0.1); color: #38bdf8; }
-body.dark-mode .cmd-k-hint kbd { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
-
-/* ── AI Scan ── */
-#ai-scan-view { display:none; }
-#ai-scan-view.active { display:flex; }
-.ai-scan-dropzone { border:2px dashed rgba(0,0,0,0.1); border-radius:16px; padding:36px 20px; text-align:center; cursor:pointer; transition:all 0.22s cubic-bezier(0.16,1,0.3,1); background:rgba(248,250,252,0.8); position:relative; overflow:hidden; }
-.ai-scan-dropzone:hover { border-color:var(--primary-blue); background:rgba(14,165,233,0.03); }
-.ai-scan-dropzone.dragover { border-color:var(--primary-blue); background:rgba(14,165,233,0.06); transform:scale(1.01); }
-.ai-scan-preview { width:100%; max-height:260px; object-fit:contain; border-radius:12px; display:none; margin-bottom:12px; border:1px solid rgba(0,0,0,0.06); box-shadow:var(--shadow-md); }
-.ai-thumbs-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; justify-content:center; }
-.ai-thumb-item { position:relative; width:72px; height:72px; border-radius:10px; overflow:hidden; border:2px solid rgba(0,0,0,0.08); cursor:pointer; flex-shrink:0; transition:border-color 0.15s,transform 0.15s; box-shadow:var(--shadow-sm); }
-.ai-thumb-item:hover { transform:scale(1.04); }
-.ai-thumb-item.active-thumb { border-color:#E30613; }
-.ai-thumb-item img { width:100%; height:100%; object-fit:cover; display:block; }
-.ai-thumb-item .thumb-remove { position:absolute; top:3px; right:3px; width:18px; height:18px; background:rgba(227,6,19,0.9); color:#fff; border:none; border-radius:50%; font-size:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; line-height:1; box-shadow:0 2px 6px rgba(0,0,0,0.2); }
-.ai-thumb-counter { font-size:11px; font-weight:700; color:var(--text-muted); text-align:center; margin-bottom:8px; }
-.ai-review-card { background:rgba(255,255,255,0.9); border:1px solid rgba(0,0,0,0.06); border-left:4px solid var(--primary-blue); border-radius:14px; padding:18px; margin-bottom:12px; animation:slideInUp 0.25s ease; box-shadow:var(--shadow-sm); backdrop-filter:blur(8px); }
-@keyframes slideInUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-.ai-review-card .ai-field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
-.ai-review-card .ai-field-row.single { grid-template-columns:1fr; }
-.ai-confidence-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:700; padding:3px 9px; border-radius:99px; text-transform:uppercase; letter-spacing:0.5px; }
-.ai-confidence-high   { background:rgba(16,185,129,0.1); color:#065f46; border:1px solid rgba(16,185,129,0.2); }
-.ai-confidence-medium { background:rgba(245,158,11,0.1); color:#92400e; border:1px solid rgba(245,158,11,0.2); }
-.ai-confidence-low    { background:rgba(227,6,19,0.08); color:#991b1b; border:1px solid rgba(227,6,19,0.15); }
-.ai-scanning-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(3,6,15,0.88); backdrop-filter:blur(16px) saturate(120%); -webkit-backdrop-filter:blur(16px) saturate(120%); z-index:9998; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; }
-.ai-scanning-spinner { width:64px; height:64px; border:3px solid rgba(227,6,19,0.15); border-top-color:#E30613; border-radius:50%; animation:aiSpin 0.75s linear infinite; box-shadow:0 0 30px rgba(227,6,19,0.15); }
-@keyframes aiSpin { to { transform:rotate(360deg); } }
-.ai-scan-fab { position:fixed; bottom:28px; right:20px; width:56px; height:56px; background:linear-gradient(135deg,#E30613,#b8000f); border:none; border-radius:50%; box-shadow:0 8px 28px rgba(227,6,19,0.45); color:white; font-size:22px; cursor:pointer; z-index:90; display:none; align-items:center; justify-content:center; transition:transform 0.2s cubic-bezier(0.16,1,0.3,1),box-shadow 0.2s; }
-.ai-scan-fab:hover { transform:scale(1.1); box-shadow:0 12px 36px rgba(227,6,19,0.55); }
-.ai-scan-fab.visible { display:flex; }
-</style>
 </head>
 <body>
 
-<div id="login-view" class="login-container">
-  <div class="login-card">
-    <div class="login-logo-canvas-wrap">
-      <canvas id="login-logo-canvas"></canvas>
+<!-- LANDING PAGE -->
+<div id="landing-page">
+  <!-- ── NAV ── -->
+  <nav class="lp-nav">
+    <div class="lp-nav-brand" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+      <div class="lp-nav-brand-main">MEINE STUNDEN</div>
+      <div class="lp-nav-brand-sub">ONLINE</div>
     </div>
+    <div class="lp-nav-actions">
+      <button class="lp-btn-ghost" onclick="openLoginModal()">Anmelden</button>
+      <button class="lp-btn-primary" onclick="openRegisterModal()">
+        <i class="fa-solid fa-bolt" style="font-size:11px;"></i> Jetzt starten — 9,99 €
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════════
+       1. HERO — short title + two CTA buttons only
+  ══════════════════════════════════════════ -->
+  <section class="lp-hero" style="padding-bottom: 32px;">
+    <div class="lp-hero-badge">
+      <i class="fa-solid fa-circle" style="font-size:7px;color:#E30613;"></i>
+      Professionelle Zeiterfassung für Handwerksbetriebe
+    </div>
+    <h1>Deine Arbeitszeit.<br><span>Automatisch erfasst.</span></h1>
+    <p style="margin-bottom:32px;">Stundenzettel erfassen, Überstunden berechnen, fehlende Tage erkennen und professionelle PDFs exportieren — alles in einer App, einmalig 9,99 €.</p>
+    <div class="lp-hero-btns">
+      <button class="lp-hero-btn-main" onclick="openRegisterModal()">
+        <i class="fa-solid fa-rocket"></i> Konto erstellen – einmalig 9,99 €
+      </button>
+      <button class="lp-hero-btn-secondary" onclick="openLoginModal()">
+        <i class="fa-solid fa-right-to-bracket"></i> Bereits Kunde? Anmelden
+      </button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       2. QUICK FEATURE INTRO — 4 cards
+  ══════════════════════════════════════════ -->
+  <div class="lp-intro">
+    <div class="lp-intro-item">
+      <div class="lp-intro-icon" style="background:rgba(239,68,68,0.12);"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i></div>
+      <div class="lp-intro-text">
+        <h4>Fehlende Tage automatisch erkannt</h4>
+        <p>Die App zeigt dir jeden Morgen welche Arbeitstage noch fehlen — direkt dort nachbuchen.</p>
+      </div>
+    </div>
+    <div class="lp-intro-item">
+      <div class="lp-intro-icon" style="background:rgba(14,165,233,0.12);"><i class="fa-solid fa-chart-column" style="color:#0ea5e9;"></i></div>
+      <div class="lp-intro-text">
+        <h4>Klickbare Wochenübersicht</h4>
+        <p>Balkendiagramm der aktuellen Woche — jeden Tag antippen für alle Einträge mit Zeiten.</p>
+      </div>
+    </div>
+    <div class="lp-intro-item">
+      <div class="lp-intro-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-wand-magic-sparkles" style="color:#E30613;"></i></div>
+      <div class="lp-intro-text">
+        <h4>KI-Stundenzettel Scan</h4>
+        <p>Foto vom handgeschriebenen Zettel machen — Gemini AI trägt alles automatisch ein.</p>
+      </div>
+    </div>
+    <div class="lp-intro-item">
+      <div class="lp-intro-icon" style="background:rgba(192,57,43,0.12);"><i class="fa-solid fa-file-pdf" style="color:#c0392b;"></i></div>
+      <div class="lp-intro-text">
+        <h4>PDF mit deinem Firmennamen</h4>
+        <p>Auf Knopfdruck ein professioneller Stundenzettel-PDF mit deinem Betriebs&shy;namen.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       3. FEATURE SHOWCASE — phone mockup rows
+  ══════════════════════════════════════════ -->
+  <section class="lp-showcase">
+    <div class="lp-showcase-label">So sieht's aus</div>
+    <h2 class="lp-showcase-title">Echte Features. Live im Einsatz.</h2>
+    <p class="lp-showcase-sub">Kein Marketing-Blabla — sieh selbst wie die App aussieht und was sie kann.</p>
+
+    <!-- ROW 1: Fehltag-Erkennung -->
+    <div class="lp-feature-row">
+      <div class="lp-feature-row-text">
+        <div class="lp-feature-row-badge" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;">
+          <i class="fa-solid fa-triangle-exclamation" style="font-size:10px;"></i> Nie wieder vergessen
+        </div>
+        <h3 class="lp-feature-row-title">Fehlende Tage werden<br>automatisch erkannt</h3>
+        <p class="lp-feature-row-desc">Die App prüft jeden Morgen welche Arbeitstage noch nicht erfasst sind. Du siehst sofort die offenen Tage und kannst sie direkt dort mit einem Klick nachbuchen — ohne suchen, ohne scrollen.</p>
+        <ul class="lp-feature-row-bullets">
+          <li><i class="fa-solid fa-check"></i> Alle fehlenden Werktage auf einen Blick</li>
+          <li><i class="fa-solid fa-check"></i> Direkt im Fehltag-Panel nachbuchen</li>
+          <li><i class="fa-solid fa-check"></i> Schultag mit einem Klick eintragen</li>
+          <li><i class="fa-solid fa-check"></i> Abrechnungszeitraum-Fortschrittsbalken</li>
+        </ul>
+      </div>
+      <div class="lp-feature-row-mock">
+        <div class="lp-phone">
+          <div class="lp-phone-bar">
+            <div class="lp-phone-bar-title"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;margin-right:6px;font-size:10px;"></i>Abrechnungszeitraum</div>
+            <span style="font-size:9px;color:#475569;">20. Mai – 19. Jun</span>
+          </div>
+          <div class="lp-phone-body">
+            <div class="mock-period-bar-wrap">
+              <div class="mock-period-label">
+                <span>KW 24 · 20. Mai – 19. Jun</span>
+                <span style="color:#0ea5e9;">68%</span>
+              </div>
+              <div class="mock-progress-track"><div class="mock-progress-fill" style="width:68%;"></div></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:9px;color:#475569;"><i class="fa-solid fa-calendar-day" style="color:#0ea5e9;margin-right:3px;"></i>6 Arbeitstage verbleibend</span>
+                <div class="mock-missing-btn">
+                  <i class="fa-solid fa-triangle-exclamation" style="font-size:9px;"></i>
+                  3 fehlende Einträge
+                  <i class="fa-solid fa-chevron-down" style="font-size:8px;"></i>
+                </div>
+              </div>
+              <div class="mock-missing-panel">
+                <div style="font-size:9px;font-weight:800;color:#ef4444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px;">
+                  <i class="fa-solid fa-calendar-xmark" style="margin-right:4px;"></i>3 fehlende Arbeitstage — Tippe zum Eintragen
+                </div>
+                <div>
+                  <div class="mock-missing-chip"><i class="fa-solid fa-circle-plus" style="font-size:8px;"></i>Mo, 10. Jun</div>
+                  <div class="mock-missing-chip"><i class="fa-solid fa-circle-plus" style="font-size:8px;"></i>Di, 11. Jun</div>
+                  <div class="mock-missing-chip" style="background:#ef4444;border-color:#ef4444;color:#fff;"><i class="fa-solid fa-circle-plus" style="font-size:8px;"></i>Mi, 12. Jun</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(239,68,68,0.15);border-radius:10px;padding:10px;margin-top:8px;">
+                  <div style="font-size:10px;font-weight:800;color:#fff;margin-bottom:8px;">Eintrag für Mi, 12. Jun</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+                    <div style="background:rgba(255,255,255,0.06);border-radius:6px;padding:7px;"><div style="font-size:8px;color:#475569;font-weight:700;margin-bottom:2px;">KOMMEN</div><div style="font-size:11px;color:#fff;font-weight:700;">07:00</div></div>
+                    <div style="background:rgba(255,255,255,0.06);border-radius:6px;padding:7px;"><div style="font-size:8px;color:#475569;font-weight:700;margin-bottom:2px;">GEHEN</div><div style="font-size:11px;color:#fff;font-weight:700;">16:15</div></div>
+                  </div>
+                  <div style="background:rgba(255,255,255,0.06);border-radius:6px;padding:7px;margin-bottom:8px;"><div style="font-size:8px;color:#475569;font-weight:700;margin-bottom:2px;">BAUSTELLE</div><div style="font-size:11px;color:#fff;font-weight:700;">Baustelle Hauptstr. 5</div></div>
+                  <div style="text-align:center;font-size:10px;font-weight:700;color:#10b981;margin-bottom:8px;">⏱ 07:00 – 16:15 | Netto: 8.75 h</div>
+                  <div class="mock-save-row">
+                    <div class="mock-save-btn"><i class="fa-solid fa-floppy-disk" style="margin-right:4px;"></i>Speichern</div>
+                    <div class="mock-schule-btn">🎓 Schultag</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="lp-showcase-divider">
+
+    <!-- ROW 2: Wochendiagramm -->
+    <div class="lp-feature-row reverse">
+      <div class="lp-feature-row-text">
+        <div class="lp-feature-row-badge" style="background:rgba(14,165,233,0.12);border:1px solid rgba(14,165,233,0.25);color:#7dd3fc;">
+          <i class="fa-solid fa-chart-column" style="font-size:10px;"></i> Wochenübersicht
+        </div>
+        <h3 class="lp-feature-row-title">Woche auf einen Blick —<br>jeden Tag anklicken</h3>
+        <p class="lp-feature-row-desc">Das interaktive Balkendiagramm zeigt dir alle Arbeitsstunden der aktuellen Woche. Tippe auf einen Tag und du siehst sofort alle Einträge mit Zeiten, Baustelle und Pause — direkt im Dashboard.</p>
+        <ul class="lp-feature-row-bullets">
+          <li><i class="fa-solid fa-check"></i> Wochenübersicht mit Kalenderwoche</li>
+          <li><i class="fa-solid fa-check"></i> Heute wird rot hervorgehoben</li>
+          <li><i class="fa-solid fa-check"></i> Tag anklicken → alle Einträge sehen</li>
+          <li><i class="fa-solid fa-check"></i> Gesamtstunden der Woche auf einen Blick</li>
+        </ul>
+      </div>
+      <div class="lp-feature-row-mock">
+        <div class="lp-phone">
+          <div class="lp-phone-bar">
+            <div class="lp-phone-bar-title"><i class="fa-solid fa-chart-column" style="color:#0ea5e9;margin-right:6px;font-size:10px;"></i>Wochenübersicht</div>
+            <span style="font-size:9px;color:#0ea5e9;font-weight:800;background:rgba(14,165,233,0.1);padding:2px 8px;border-radius:6px;">42.5 h</span>
+          </div>
+          <div class="lp-phone-body">
+            <div style="font-size:9px;color:#475569;font-weight:700;margin-bottom:2px;">KW 24 · 10. Jun – 16. Jun</div>
+            <div class="mock-chart-bars">
+              <div class="mock-chart-col"><div style="font-size:8px;font-weight:700;color:#94a3b8;">8.8</div><div class="mock-chart-bar" style="height:72%;background:#E30613;box-shadow:0 3px 10px rgba(227,6,19,0.3);"></div><div class="mock-chart-lbl" style="color:#E30613;font-weight:800;">Mo</div></div>
+              <div class="mock-chart-col"><div style="font-size:8px;font-weight:700;color:#94a3b8;">9.3</div><div class="mock-chart-bar" style="height:86%;background:#0ea5e9;"></div><div class="mock-chart-lbl">Di</div></div>
+              <div class="mock-chart-col" style="background:rgba(14,165,233,0.08);border-radius:6px;"><div style="font-size:8px;font-weight:700;color:#0ea5e9;">8.5</div><div class="mock-chart-bar" style="height:78%;background:#0ea5e9;"></div><div class="mock-chart-lbl" style="color:#0ea5e9;font-weight:800;">Mi ▾</div></div>
+              <div class="mock-chart-col"><div style="font-size:8px;font-weight:700;color:#94a3b8;">9.0</div><div class="mock-chart-bar" style="height:82%;background:#f59e0b;"></div><div class="mock-chart-lbl">Do</div></div>
+              <div class="mock-chart-col"><div style="font-size:8px;font-weight:700;color:#94a3b8;">6.9</div><div class="mock-chart-bar" style="height:55%;background:#8b5cf6;"></div><div class="mock-chart-lbl">Fr</div></div>
+              <div class="mock-chart-col"><div style="font-size:8px;color:#334155;"></div><div class="mock-chart-bar" style="height:3%;background:#6366f1;opacity:0.2;"></div><div class="mock-chart-lbl" style="color:#334155;">Sa</div></div>
+              <div class="mock-chart-col"><div style="font-size:8px;color:#334155;"></div><div class="mock-chart-bar" style="height:3%;background:#ec4899;opacity:0.2;"></div><div class="mock-chart-lbl" style="color:#334155;">So</div></div>
+            </div>
+            <div class="mock-day-detail">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <div style="width:8px;height:8px;background:#0ea5e9;border-radius:50%;box-shadow:0 0 6px #0ea5e955;"></div>
+                  <span style="font-size:11px;font-weight:800;color:#f1f5f9;">Mittwoch, 12. Jun</span>
+                </div>
+                <span style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.2);color:#0ea5e9;font-size:9px;font-weight:800;padding:2px 8px;border-radius:99px;">8.50 h</span>
+              </div>
+              <div class="mock-day-entry">
+                <div class="mock-day-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-hard-hat" style="color:#E30613;"></i></div>
+                <div class="mock-day-text"><div class="mock-day-proj">Baustelle Hauptstr. 5</div><div class="mock-day-meta">07:00 – 16:00 · 30 min Pause</div></div>
+                <div class="mock-day-hrs">8.50 h</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="lp-showcase-divider">
+
+    <!-- ROW 3: KI-Scan -->
+    <div class="lp-feature-row">
+      <div class="lp-feature-row-text">
+        <div class="lp-feature-row-badge" style="background:rgba(227,6,19,0.12);border:1px solid rgba(227,6,19,0.25);color:#fca5a5;">
+          <i class="fa-solid fa-wand-magic-sparkles" style="font-size:10px;"></i> KI-Technologie
+        </div>
+        <h3 class="lp-feature-row-title">Handzettel fotografieren —<br>KI trägt alles ein</h3>
+        <p class="lp-feature-row-desc">Einfach ein Foto vom handgeschriebenen Stundenzettel machen. Gemini AI liest Datum, Zeiten, Baustelle und Pausen automatisch aus und zeigt dir alle erkannten Einträge zur Prüfung — du bestätigst und fertig.</p>
+        <ul class="lp-feature-row-bullets">
+          <li><i class="fa-solid fa-check"></i> Bis zu 10 Fotos gleichzeitig scannen</li>
+          <li><i class="fa-solid fa-check"></i> Kamera direkt aus der App nutzen</li>
+          <li><i class="fa-solid fa-check"></i> Alle Felder vor dem Speichern prüfbar</li>
+          <li><i class="fa-solid fa-check"></i> Überschneidungen werden automatisch erkannt</li>
+        </ul>
+      </div>
+      <div class="lp-feature-row-mock">
+        <div class="lp-phone">
+          <div class="lp-phone-bar">
+            <div class="lp-phone-bar-title"><i class="fa-solid fa-camera-retro" style="color:#E30613;margin-right:6px;font-size:10px;"></i>KI-Stundenzettel Scan</div>
+            <span style="font-size:9px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);color:#10b981;padding:2px 8px;border-radius:6px;font-weight:800;">✓ Analyse fertig</span>
+          </div>
+          <div class="lp-phone-body">
+            <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);border-radius:8px;padding:8px 10px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+              <i class="fa-solid fa-circle-check" style="color:#10b981;font-size:14px;"></i>
+              <div><div style="font-size:11px;font-weight:700;color:#f1f5f9;">KI-Analyse abgeschlossen</div><div style="font-size:9px;color:#475569;">3 Einträge aus 1 Foto erkannt</div></div>
+            </div>
+            <div class="mock-ai-card">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                <div style="width:22px;height:22px;background:linear-gradient(135deg,#E30613,#b8000f);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;">1</div>
+                <span style="font-size:10px;font-weight:700;color:#f1f5f9;">Eintrag 1</span>
+                <div class="mock-ai-badge"><i class="fa-solid fa-check" style="font-size:8px;"></i>Sicher</div>
+                <label style="margin-left:auto;display:flex;align-items:center;gap:4px;font-size:9px;color:#64748b;cursor:pointer;">
+                  <input type="checkbox" checked style="accent-color:#E30613;width:12px;height:12px;"> Hinzufügen
+                </label>
+              </div>
+              <div class="mock-ai-field-row">
+                <div class="mock-ai-field"><div class="mock-ai-field-label">Datum</div><div class="mock-ai-field-val">10/06/2025</div></div>
+                <div class="mock-ai-field"><div class="mock-ai-field-label">Pause</div><div class="mock-ai-field-val">30 min</div></div>
+              </div>
+              <div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:5px 8px;margin-top:6px;">
+                <div style="font-size:8px;font-weight:700;color:#475569;margin-bottom:2px;">BAUSTELLE</div>
+                <div style="font-size:11px;font-weight:700;color:#e2e8f0;">Musterstraße 12</div>
+              </div>
+              <div class="mock-ai-field-row" style="margin-top:6px;">
+                <div class="mock-ai-field"><div class="mock-ai-field-label">Kommen</div><div class="mock-ai-field-val">07:00</div></div>
+                <div class="mock-ai-field"><div class="mock-ai-field-label">Gehen</div><div class="mock-ai-field-val">16:15</div></div>
+              </div>
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#10b981;margin-top:8px;background:rgba(16,185,129,0.06);border-radius:6px;padding:5px;">
+                ⏱ Brutto: 9.25 h | Netto: 8.75 h (30 min Pause)
+              </div>
+            </div>
+            <button style="width:100%;background:linear-gradient(135deg,#E30613,#b8000f);border:none;color:#fff;padding:10px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;">
+              <i class="fa-solid fa-check" style="margin-right:5px;"></i>Alle bestätigten Einträge hinzufügen
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="lp-showcase-divider">
+
+    <!-- ROW 4: PDF Export -->
+    <div class="lp-feature-row reverse">
+      <div class="lp-feature-row-text">
+        <div class="lp-feature-row-badge" style="background:rgba(192,57,43,0.12);border:1px solid rgba(192,57,43,0.25);color:#fca5a5;">
+          <i class="fa-solid fa-file-pdf" style="font-size:10px;"></i> PDF Export
+        </div>
+        <h3 class="lp-feature-row-title">Professioneller Stundenzettel<br>mit deinem Firmennamen</h3>
+        <p class="lp-feature-row-desc">Auf Knopfdruck wird ein sauberer PDF-Arbeitsbericht erstellt — mit deinem Firmennamen, dem Abrechnungszeitraum, allen Einträgen nach Datum sortiert und einer Zusammenfassung der Gesamtstunden.</p>
+        <ul class="lp-feature-row-bullets">
+          <li><i class="fa-solid fa-check"></i> Dein Firmen- / Betriebsname oben im PDF</li>
+          <li><i class="fa-solid fa-check"></i> Automatischer Zeitraum 20. bis 19.</li>
+          <li><i class="fa-solid fa-check"></i> Oder eigenen Zeitraum wählen</li>
+          <li><i class="fa-solid fa-check"></i> Kommen, Gehen, Pause, Nettostunden</li>
+        </ul>
+      </div>
+      <div class="lp-feature-row-mock">
+        <div class="lp-phone" style="border-radius:16px;">
+          <div class="lp-phone-bar">
+            <div class="lp-phone-bar-title"><i class="fa-solid fa-file-pdf" style="color:#E30613;margin-right:6px;font-size:10px;"></i>PDF Vorschau</div>
+            <span style="font-size:9px;color:#10b981;font-weight:800;"><i class="fa-solid fa-download" style="margin-right:3px;"></i>Export</span>
+          </div>
+          <div class="lp-phone-body">
+            <div class="mock-pdf-frame">
+              <div class="mock-pdf-header-bar"></div>
+              <div class="mock-pdf-logo-row">
+                <div style="flex:1;"><div style="display:flex;align-items:flex-start;gap:5px;"><div class="mock-pdf-logo-accent"></div><div><div class="mock-pdf-logo-name">MUSTERMANN</div><div class="mock-pdf-logo-sub">Gebäude + Energie</div></div></div></div>
+                <div><div class="mock-pdf-title">ARBEITSBERICHT</div><div class="mock-pdf-date-text">Erstellt: 19.06.2025</div></div>
+              </div>
+              <div class="mock-pdf-divider"></div>
+              <div class="mock-pdf-cards">
+                <div class="mock-pdf-card"><div class="mock-pdf-card-lbl">Mitarbeiter</div><div class="mock-pdf-card-val">Max M.</div></div>
+                <div class="mock-pdf-card"><div class="mock-pdf-card-lbl">Einträge</div><div class="mock-pdf-card-val">18</div></div>
+                <div class="mock-pdf-card" style="background:#2c3e50;"><div class="mock-pdf-card-lbl" style="color:#94a3b8;">Gesamtzeit</div><div class="mock-pdf-card-val" style="color:#fff;">162.5 h</div></div>
+              </div>
+              <div class="mock-pdf-section"><div class="mock-pdf-section-title">Montag, 10. Juni 2025</div><div class="mock-pdf-row"><span>07:00 – 16:15</span><span>Baustelle Musterstr. 12</span><span class="mock-pdf-row-hrs">8.75 h</span></div></div>
+              <div class="mock-pdf-section"><div class="mock-pdf-section-title">Dienstag, 11. Juni 2025</div><div class="mock-pdf-row"><span>07:00 – 17:00</span><span>Kunde Schmitt GmbH</span><span class="mock-pdf-row-hrs">9.25 h</span></div></div>
+              <div class="mock-pdf-section"><div class="mock-pdf-section-title">Mittwoch, 12. Juni 2025</div><div class="mock-pdf-row"><span>07:00 – 16:00</span><span>Hauptstraße 5</span><span class="mock-pdf-row-hrs">8.50 h</span></div></div>
+              <div class="mock-pdf-footer"><span>Mustermann Gebäude + Energie</span><span>Seite 1 von 2</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="lp-showcase-divider">
+
+    <!-- ROW 5: Streak + Überstunden Dashboard -->
+    <div class="lp-feature-row">
+      <div class="lp-feature-row-text">
+        <div class="lp-feature-row-badge" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.25);color:#fde68a;">
+          <i class="fa-solid fa-fire" style="font-size:10px;"></i> Motivation & Stats
+        </div>
+        <h3 class="lp-feature-row-title">Überstunden, Serien &<br>tägliche Kennzahlen</h3>
+        <p class="lp-feature-row-desc">Die App berechnet deine Überstunden täglich automatisch und zeigt dir deine aktuelle Arbeitsserie — wie viele Tage in Folge du schon erfasst hast. Fünf-Tage-Meilensteine werden mit Konfetti gefeiert!</p>
+        <ul class="lp-feature-row-bullets">
+          <li><i class="fa-solid fa-check"></i> Überstunden täglich automatisch berechnet</li>
+          <li><i class="fa-solid fa-check"></i> Freitag = 6h Sollzeit, Sa/So = frei</li>
+          <li><i class="fa-solid fa-check"></i> Aktuelle Arbeitsserie mit Bestleistung</li>
+          <li><i class="fa-solid fa-check"></i> Alle Kennzahlen anklickbar für Details</li>
+        </ul>
+      </div>
+      <div class="lp-feature-row-mock">
+        <div class="lp-phone">
+          <div class="lp-phone-bar">
+            <div class="lp-phone-bar-title"><i class="fa-solid fa-chart-simple" style="color:#f59e0b;margin-right:6px;font-size:10px;"></i>Dashboard</div>
+            <div style="display:flex;gap:4px;align-items:center;"><div style="width:6px;height:6px;background:#10b981;border-radius:50%;box-shadow:0 0 5px #10b981;"></div><span style="font-size:9px;color:#475569;font-weight:700;">Cloud Sync</span></div>
+          </div>
+          <div class="lp-phone-body">
+            <div class="mock-streak-card">
+              <div class="mock-streak-flame">🔥</div>
+              <div><div class="mock-streak-num">12 Tage</div><div class="mock-streak-lbl">Aktuelle Serie</div></div>
+              <div class="mock-streak-best"><div class="mock-streak-best-num">18 Tage</div><div class="mock-streak-best-lbl">Bestleistung</div></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+              <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-top:3px solid #0ea5e9;border-radius:10px;padding:12px;">
+                <div style="font-size:8px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Netto-Arbeitszeit</div>
+                <div style="font-size:20px;font-weight:800;color:#f1f5f9;letter-spacing:-0.8px;">162.50 <span style="font-size:11px;color:#64748b;">hrs</span></div>
+              </div>
+              <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);border-top:3px solid #10b981;border-radius:10px;padding:12px;">
+                <div style="font-size:8px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Überstunden</div>
+                <div style="font-size:20px;font-weight:800;color:#10b981;letter-spacing:-0.8px;">+14.25 <span style="font-size:11px;">hrs</span></div>
+              </div>
+            </div>
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:center;">
+              <span style="font-size:10px;font-weight:700;color:#475569;"><i class="fa-solid fa-calendar-check" style="color:#0ea5e9;margin-right:3px;"></i>18 Einträge</span>
+              <span style="color:rgba(255,255,255,0.1);">|</span>
+              <span style="font-size:10px;font-weight:700;color:#475569;"><i class="fa-solid fa-clock" style="color:#10b981;margin-right:3px;"></i>162.5 hrs</span>
+              <span style="color:rgba(255,255,255,0.1);">|</span>
+              <span style="font-size:10px;font-weight:700;color:#475569;"><i class="fa-solid fa-chart-bar" style="color:#f59e0b;margin-right:3px;"></i>9.0 h/Tag Ø</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       4. STATS BAR
+  ══════════════════════════════════════════ -->
+  <div class="lp-stats-bar">
+    <div class="lp-stat-item"><div class="lp-stat-num">9<span>,99</span></div><div class="lp-stat-lbl">Euro einmalig</div></div>
+    <div class="lp-stat-item"><div class="lp-stat-num"><span>∞</span></div><div class="lp-stat-lbl">Lebenslanger Zugang</div></div>
+    <div class="lp-stat-item"><div class="lp-stat-num">10<span>+</span></div><div class="lp-stat-lbl">Premium Features</div></div>
+    <div class="lp-stat-item"><div class="lp-stat-num"><span>0</span></div><div class="lp-stat-lbl">Folgekosten</div></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       5. HERO MOCKUP (main app screenshot)
+  ══════════════════════════════════════════ -->
+  <div class="lp-mockup-section" style="padding-top:80px;">
+    <div class="lp-mockup-frame">
+      <div class="lp-mockup-notch"></div>
+      <div class="lp-mockup-header">
+        <div class="lp-mockup-brand">MEINE STUNDEN<span>ONLINE</span></div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div style="width:7px;height:7px;background:#10b981;border-radius:50%;box-shadow:0 0 6px #10b981;"></div>
+          <span style="font-size:9px;color:#475569;font-weight:700;">Live</span>
+        </div>
+      </div>
+      <div class="lp-mockup-body">
+        <div class="lp-mockup-welcome">Willkommen zurück, <strong>Max Mustermann</strong></div>
+        <div class="lp-mockup-metrics">
+          <div class="lp-mockup-metric"><label>Netto-Arbeitszeit</label><div class="val">162.50 h</div></div>
+          <div class="lp-mockup-metric"><label>Überstunden</label><div class="val green">+14.25 h</div></div>
+        </div>
+        <div class="lp-mockup-chart-label">Wochenübersicht KW 24</div>
+        <div class="lp-mockup-bars">
+          <div class="lp-mockup-bar" style="height:72%;background:#E30613;animation-delay:0.1s;"></div>
+          <div class="lp-mockup-bar" style="height:85%;background:#0ea5e9;animation-delay:0.2s;"></div>
+          <div class="lp-mockup-bar" style="height:60%;background:#10b981;animation-delay:0.3s;"></div>
+          <div class="lp-mockup-bar" style="height:90%;background:#f59e0b;animation-delay:0.4s;"></div>
+          <div class="lp-mockup-bar" style="height:55%;background:#8b5cf6;animation-delay:0.5s;"></div>
+          <div class="lp-mockup-bar" style="height:10%;background:#6366f1;opacity:0.3;animation-delay:0.6s;"></div>
+          <div class="lp-mockup-bar" style="height:10%;background:#ec4899;opacity:0.3;animation-delay:0.7s;"></div>
+        </div>
+        <div class="lp-mockup-entry">
+          <div><div class="lp-mockup-entry-title">Baustelle Musterstraße 12</div><div class="lp-mockup-entry-sub">Mo, 10. Jun · 07:00 – 16:15 · 30 min Pause</div></div>
+          <div class="lp-mockup-entry-hrs">8.75 h</div>
+        </div>
+        <div class="lp-mockup-entry" style="border-left-color:#10b981;">
+          <div><div class="lp-mockup-entry-title">Kunde Schmitt GmbH</div><div class="lp-mockup-entry-sub">Di, 11. Jun · 07:00 – 17:00 · 45 min Pause</div></div>
+          <div class="lp-mockup-entry-hrs" style="color:#10b981;">9.25 h</div>
+        </div>
+        <div class="lp-mockup-badge"><i class="fa-solid fa-cloud-arrow-up" style="font-size:9px;"></i> Cloud gespeichert</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       6. FEATURES GRID
+  ══════════════════════════════════════════ -->
+  <section class="lp-features">
+    <div class="lp-section-label">Was du bekommst</div>
+    <h2 class="lp-section-title">Alles was ein Handwerksbetrieb braucht</h2>
+    <p class="lp-section-sub">Einmalig kaufen — alle Features, kein Abo, lebenslanger Zugang.</p>
+    <div class="lp-features-grid">
+      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-file-pdf" style="color:#E30613;"></i></div><div class="lp-feature-title">PDF Export mit deinem Firmennamen</div><div class="lp-feature-desc">Dein Firmenname erscheint automatisch auf jedem exportierten Stundenzettel — professionell, sauber und sofort einsatzbereit.</div></div>
+      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(16,185,129,0.1);"><i class="fa-solid fa-clock" style="color:#10b981;"></i></div><div class="lp-feature-title">Automatische Überstundenberechnung</div><div class="lp-feature-desc">Überstunden werden täglich automatisch berechnet und über den gesamten Zeitraum summiert — kein manuelles Rechnen.</div></div>
+      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(239,68,68,0.1);"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i></div><div class="lp-feature-title">Fehlende Tage erkennen & nachtragen</div><div class="lp-feature-desc">Die App erkennt automatisch welche Arbeitstage noch nicht erfasst sind — mit einem Klick direkt dort nachbuchen.</div></div>
+      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(14,165,233,0.1);"><i class="fa-solid fa-chart-column" style="color:#0ea5e9;"></i></div><div class="lp-feature-title">Interaktive Wochenübersicht</div><div class="lp-feature-desc">Alle Arbeitsstunden der aktuellen Woche als anklickbares Balkendiagramm — jeden Tag antippen für volle Details.</div></div>
+      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(227,6,19,0.1);"><i class="fa-solid fa-wand-magic-sparkles" style="color:#E30613;"></i></div><div class="lp-feature-title">KI-Stundenzettel Scan</div><div class="lp-feature-desc">Foto aufnehmen — die KI liest Datum, Zeiten, Baustelle und Pausen automatisch aus und trägt alles ein.</div></div>
+      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(139,92,246,0.1);"><i class="fa-solid fa-cloud-arrow-up" style="color:#8b5cf6;"></i></div><div class="lp-feature-title">Cloud-Sync & Datensicherheit</div><div class="lp-feature-desc">Deine Daten sicher in der Cloud — auf jedem Gerät verfügbar. Auch offline erfassen, automatisch synchronisieren.</div></div>
+      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(245,158,11,0.1);"><i class="fa-solid fa-umbrella-beach" style="color:#f59e0b;"></i></div><div class="lp-feature-title">Urlaub & Krankmeldungen</div><div class="lp-feature-desc">Urlaubstage und Krankmeldungen erfassen, Resturlaub automatisch berechnen — alles an einem Ort.</div></div>
+      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(14,165,233,0.1);"><i class="fa-solid fa-moon" style="color:#0ea5e9;"></i></div><div class="lp-feature-title">Dark Mode & mehrsprachig</div><div class="lp-feature-desc">Augenschonendes dunkles Design für frühe Morgenstunden. Verfügbar auf Deutsch und Englisch.</div></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       7. HOW IT WORKS
+  ══════════════════════════════════════════ -->
+  <section class="lp-how">
+    <div class="lp-section-label">So funktioniert's</div>
+    <h2 class="lp-section-title">In 3 Schritten startklar</h2>
+    <div class="lp-steps">
+      <div class="lp-step"><div class="lp-step-num">1</div><h4>Konto erstellen</h4><p>Name, Firmenname und Kennwort eingeben. Einmalig 9,99 € bezahlen — fertig.</p></div>
+      <div class="lp-step"><div class="lp-step-num">2</div><h4>Stunden erfassen</h4><p>Täglich Kommen, Gehen und Pause eintragen — oder per KI-Scan von einem Foto.</p></div>
+      <div class="lp-step"><div class="lp-step-num">3</div><h4>PDF exportieren</h4><p>Professioneller Stundenzettel mit deinem Firmennamen — auf Knopfdruck bereit.</p></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       8. TRUST STRIP + CTA (moved to bottom)
+  ══════════════════════════════════════════ -->
+  <div class="lp-cta-bottom" style="position:relative;z-index:1;">
+    <!-- Trust pills now live here -->
+    <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:28px;">
+      <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#64748b;"><i class="fa-solid fa-check-circle" style="color:#10b981;"></i> Einmalige Zahlung</div>
+      <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#64748b;"><i class="fa-solid fa-check-circle" style="color:#10b981;"></i> Kein Abo</div>
+      <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#64748b;"><i class="fa-solid fa-check-circle" style="color:#10b981;"></i> Cloud-Backup inklusive</div>
+      <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#64748b;"><i class="fa-solid fa-check-circle" style="color:#10b981;"></i> Lebenslanger Zugang</div>
+    </div>
+    <div class="lp-cta-price-badge"><sup>€</sup>9,99<span>Einmalig — kein Abo, keine Folgekosten</span></div>
+    <h2>Bereit loszulegen?</h2>
+    <p>Konto erstellen, Firmennamen hinterlegen und sofort alle Features nutzen. Lebenslanger Zugang für einmalig 9,99 €.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <button class="lp-hero-btn-main" onclick="openRegisterModal()" style="font-size:14px;padding:14px 28px;"><i class="fa-solid fa-rocket"></i> Jetzt Konto erstellen</button>
+      <button class="lp-hero-btn-secondary" onclick="openLoginModal()" style="font-size:14px;padding:14px 22px;"><i class="fa-solid fa-right-to-bracket"></i> Anmelden</button>
+    </div>
+  </div>
+
+  <div class="lp-footer">
+    <div style="font-size:14px;font-weight:800;color:#1e293b;margin-bottom:6px;">MEINE STUNDEN <span style="color:#E30613;">ONLINE</span></div>
+    <div>© 2025 Meine Stunden Online · Professionelle Zeiterfassung für Handwerksbetriebe</div>
+  </div>
+</div><!-- /#landing-page -->
+
+
+<!-- LOGIN MODAL -->
+<div id="modal-login-backdrop" onclick="if(event.target===this)closeLoginModal()">
+  <div class="modal-login-box">
+    <button class="modal-close-x" onclick="closeLoginModal()"><i class="fa-solid fa-xmark"></i></button>
+    <div class="modal-login-header">
+      <div class="modal-login-logo-main">MEINE STUNDEN</div>
+      <div class="modal-login-logo-sub">ONLINE</div>
+      <div class="modal-login-subtitle">Mitarbeiter-Portal · Zeiterfassung</div>
+    </div>
+    <div class="modal-login-body">
+      <form id="modal-login-form" onsubmit="handleModalLogin(event)">
+        <div class="modal-form-group"><label>Mitarbeitername</label><input type="text" id="modal-username" placeholder="Name eingeben" autocomplete="off" required></div>
+        <div class="modal-form-group"><label>Kennwort / PIN</label><input type="password" id="modal-passcode" placeholder="••••••" required style="letter-spacing:2px;"></div>
+        <button type="submit" class="modal-login-btn" id="modal-login-btn"><i class="fa-solid fa-right-to-bracket" style="margin-right:8px;"></i>Anmelden</button>
+      </form>
+      <div class="modal-msg" id="modal-login-msg"></div>
+      <div class="modal-login-switch">Noch kein Konto? <a onclick="closeLoginModal();openRegisterModal();">Jetzt registrieren →</a></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- REGISTER MODAL -->
+<div id="modal-register-backdrop" onclick="if(event.target===this)closeRegisterModal()">
+  <div class="modal-register-box">
+    <button class="modal-close-x" onclick="closeRegisterModal()" style="top:20px;right:20px;z-index:2;"><i class="fa-solid fa-xmark"></i></button>
+    <div class="reg-steps">
+      <div class="reg-step-tab active" id="reg-tab-1"><i class="fa-solid fa-user" style="margin-right:5px;font-size:10px;"></i>1. Konto</div>
+      <div class="reg-step-tab" id="reg-tab-2"><i class="fa-solid fa-credit-card" style="margin-right:5px;font-size:10px;"></i>2. Bezahlen & Aktivieren</div>
+    </div>
+    <div class="reg-step-panel active" id="reg-panel-1">
+      <div class="reg-step-title">Dein Konto erstellen</div>
+      <div class="reg-step-sub">Gib deine Daten ein. Dein Firmenname erscheint auf allen exportierten Stundenzetteln.</div>
+      <div class="modal-form-group"><label>Dein vollständiger Name</label><input type="text" id="reg-name" placeholder="Max Mustermann" autocomplete="off" required></div>
+      <div class="modal-form-group"><label>Firmen- / Betriebsname <span style="color:#E30613;font-size:10px;">(für PDF Export)</span></label><input type="text" id="reg-company" placeholder="Muster GmbH oder Einzelunternehmen" autocomplete="off" required></div>
+      <div class="modal-form-group"><label>Kennwort wählen</label><input type="password" id="reg-password" placeholder="Mind. 6 Zeichen" required style="letter-spacing:2px;"></div>
+      <div class="modal-form-group"><label>Kennwort bestätigen</label><input type="password" id="reg-password2" placeholder="Kennwort wiederholen" required style="letter-spacing:2px;"></div>
+      <div class="modal-msg" id="reg-step1-msg"></div>
+      <button type="button" class="reg-next-btn" onclick="regGoToStep2()">Weiter zur Zahlung <i class="fa-solid fa-arrow-right" style="margin-left:8px;"></i></button>
+      <div class="reg-back-link">Bereits Konto? <a onclick="closeRegisterModal();openLoginModal()">Anmelden</a></div>
+    </div>
+    <div class="reg-step-panel" id="reg-panel-2">
+      <div class="reg-step-title">Einmalig freischalten</div>
+      <div class="reg-step-sub">Zahle einmalig und erhalte sofortigen Zugang zu allen Features — lebenslang, ohne Abo.</div>
+      <div class="reg-price-block">
+        <div class="reg-price-amount"><sup>€</sup>9<span style="font-size:28px;">,99</span></div>
+        <div class="reg-price-label">Einmalige Zahlung · Kein Abo · Keine Folgekosten</div>
+        <div class="reg-price-badge"><i class="fa-solid fa-infinity" style="margin-right:5px;"></i>Lebenslanger Zugang</div>
+      </div>
+      <div class="reg-features-title"><i class="fa-solid fa-star" style="color:#f59e0b;margin-right:5px;"></i>Was du bekommst</div>
+      <div class="reg-feature-item highlight"><div class="reg-feature-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-file-pdf" style="color:#E30613;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">PDF Export mit deinem Firmennamen</div><div class="reg-feature-desc">Dein Betriebsname erscheint automatisch auf jedem Stundenzettel-Export.</div></div></div>
+      <div class="reg-feature-item highlight"><div class="reg-feature-icon" style="background:rgba(16,185,129,0.12);"><i class="fa-solid fa-clock" style="color:#10b981;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">Automatische Überstundenberechnung</div><div class="reg-feature-desc">Täglich automatisch berechnet und summiert — kein manuelles Rechnen.</div></div></div>
+      <div class="reg-feature-item highlight"><div class="reg-feature-icon" style="background:rgba(239,68,68,0.12);"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">Fehlende Tage automatisch erkennen</div><div class="reg-feature-desc">Die App zeigt dir sofort welche Arbeitstage noch fehlen.</div></div></div>
+      <div class="reg-feature-item"><div class="reg-feature-icon" style="background:rgba(14,165,233,0.1);"><i class="fa-solid fa-chart-column" style="color:#0ea5e9;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">Interaktive Wochenübersicht</div><div class="reg-feature-desc">Balkendiagramm der aktuellen Woche — jeden Tag anklicken für volle Details.</div></div></div>
+      <div class="reg-feature-item"><div class="reg-feature-icon" style="background:rgba(227,6,19,0.1);"><i class="fa-solid fa-wand-magic-sparkles" style="color:#E30613;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">KI-Stundenzettel Scan</div><div class="reg-feature-desc">Foto aufnehmen, KI liest alles automatisch aus.</div></div></div>
+      <div class="reg-feature-item"><div class="reg-feature-icon" style="background:rgba(139,92,246,0.1);"><i class="fa-solid fa-cloud-arrow-up" style="color:#8b5cf6;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">Cloud-Sync auf allen Geräten</div><div class="reg-feature-desc">Deine Daten sicher in der Cloud — auf Handy, Tablet und PC immer aktuell.</div></div></div>
+      <div class="modal-msg" id="reg-step2-msg" style="margin-top:12px;"></div>
+      <button type="button" class="reg-pay-btn" onclick="handleRegisterAndPay()" id="reg-pay-btn"><i class="fa-solid fa-lock"></i> Jetzt kaufen & Konto aktivieren — 9,99 €</button>
+      <div class="reg-trust-line"><i class="fa-solid fa-shield-halved"></i> Sichere Zahlung · Sofortiger Zugang · Kein Abo</div>
+      <div class="reg-back-link"><a onclick="regGoToStep1()">← Zurück zu Schritt 1</a></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Hidden legacy login -->
+<div id="login-view" class="login-container" style="display:none!important;">
+  <div class="login-card">
+    <div class="login-logo-canvas-wrap"><canvas id="login-logo-canvas"></canvas></div>
     <div class="portal-context-caption" id="lbl-login-sub">Mitarbeiter-Portal | Zeiterfassung</div>
     <form id="login-form">
-      <div class="form-group" style="text-align:left;">
-        <label id="lbl-login-user" for="username">Mitarbeitername</label>
-        <input type="text" id="username" placeholder="Name eingeben" autocomplete="off" required>
-      </div>
-      <div class="form-group" style="text-align:left;">
-        <label id="lbl-login-pass" for="passcode">Kennwort / PIN</label>
-        <input type="password" id="passcode" placeholder="••••••" required>
-      </div>
+      <div class="form-group" style="text-align:left;"><label id="lbl-login-user" for="username">Mitarbeitername</label><input type="text" id="username" placeholder="Name eingeben" autocomplete="off" required></div>
+      <div class="form-group" style="text-align:left;"><label id="lbl-login-pass" for="passcode">Kennwort / PIN</label><input type="password" id="passcode" placeholder="••••••" required></div>
       <button type="submit" id="btn-login-submit" class="primary-btn">Anmelden</button>
     </form>
     <div id="message-box" class="message"></div>
-    <div style="text-align:center; padding:20px 0 10px; font-size:11px; color:rgba(100,116,139,0.5); opacity:0.7;">©</div>
   </div>
 </div>
 
 <script>
 (function() {
-  var FONT_MAIN = '300 34px "Playfair Display", Georgia, serif';
-  var FONT_SUB  = '600 11px "Cormorant Garamond", Georgia, serif';
-  var CHAR_SPACING_MAIN = 5, CHAR_SPACING_SUB = 4.5;
-  function measureSpaced(ctx, text, spacing) { var w=0; text.split('').forEach(function(c){w+=ctx.measureText(c).width+spacing;}); return w-spacing; }
-  function drawSpaced(ctx, text, spacing, startX, y) { var x=startX; text.split('').forEach(function(c){ctx.fillText(c,x,y);x+=ctx.measureText(c).width+spacing;}); }
-  function draw() {
-    var canvas=document.getElementById('login-logo-canvas'); if(!canvas) return;
-    var ctx=canvas.getContext('2d'), dpr=window.devicePixelRatio||1;
-    var logW=340, logH=110;
-    canvas.width=logW*dpr; canvas.height=logH*dpr; canvas.style.width=logW+'px'; canvas.style.height=logH+'px';
-    ctx.scale(dpr,dpr); ctx.clearRect(0,0,logW,logH);
-    var cx=logW/2;
-    ctx.font=FONT_MAIN;
-    var mainW=measureSpaced(ctx,'MEINE STUNDEN',CHAR_SPACING_MAIN);
-    if(mainW>logW-20){var ratio=(logW-20)/mainW;ctx.font='300 '+Math.floor(34*ratio)+'px "Playfair Display",Georgia,serif';mainW=measureSpaced(ctx,'MEINE STUNDEN',CHAR_SPACING_MAIN);}
-    ctx.fillStyle='#ffffff'; ctx.textBaseline='middle';
-    drawSpaced(ctx,'MEINE STUNDEN',CHAR_SPACING_MAIN,cx-mainW/2,36);
-    var lineY=54, lineW=Math.min(mainW+20,logW-20);
-    var grad=ctx.createLinearGradient(cx-lineW/2,0,cx+lineW/2,0);
-    grad.addColorStop(0,'rgba(227,6,19,0)'); grad.addColorStop(0.3,'rgba(227,6,19,0.9)'); grad.addColorStop(0.7,'rgba(227,6,19,0.9)'); grad.addColorStop(1,'rgba(227,6,19,0)');
-    ctx.strokeStyle=grad; ctx.lineWidth=0.8; ctx.beginPath(); ctx.moveTo(cx-lineW/2,lineY); ctx.lineTo(cx+lineW/2,lineY); ctx.stroke();
-    var subY=80; ctx.font=FONT_SUB; ctx.fillStyle='#E30613'; ctx.textBaseline='middle';
-    var subW=measureSpaced(ctx,'ONLINE',CHAR_SPACING_SUB);
-    drawSpaced(ctx,'ONLINE',CHAR_SPACING_SUB,cx-subW/2,subY);
-    var gap=10,accentW=38,lineLeft=cx-subW/2-gap,lineRight=cx+subW/2+gap;
-    var lg1=ctx.createLinearGradient(lineLeft-accentW,0,lineLeft,0); lg1.addColorStop(0,'rgba(227,6,19,0)'); lg1.addColorStop(1,'rgba(227,6,19,0.85)');
-    ctx.strokeStyle=lg1; ctx.lineWidth=0.7; ctx.beginPath(); ctx.moveTo(lineLeft-accentW,subY); ctx.lineTo(lineLeft,subY); ctx.stroke();
-    var lg2=ctx.createLinearGradient(lineRight,0,lineRight+accentW,0); lg2.addColorStop(0,'rgba(227,6,19,0.85)'); lg2.addColorStop(1,'rgba(227,6,19,0)');
-    ctx.strokeStyle=lg2; ctx.beginPath(); ctx.moveTo(lineRight,subY); ctx.lineTo(lineRight+accentW,subY); ctx.stroke();
+  var FONT_MAIN='300 34px "Playfair Display",Georgia,serif', FONT_SUB='600 11px "Cormorant Garamond",Georgia,serif';
+  var CS_MAIN=5, CS_SUB=4.5;
+  function ms(ctx,t,s){var w=0;t.split('').forEach(function(c){w+=ctx.measureText(c).width+s;});return w-s;}
+  function ds(ctx,t,s,x,y){t.split('').forEach(function(c){ctx.fillText(c,x,y);x+=ctx.measureText(c).width+s;});}
+  function draw(){
+    var c=document.getElementById('login-logo-canvas');if(!c)return;
+    var ctx=c.getContext('2d'),dpr=window.devicePixelRatio||1,lW=340,lH=110;
+    c.width=lW*dpr;c.height=lH*dpr;c.style.width=lW+'px';c.style.height=lH+'px';
+    ctx.scale(dpr,dpr);ctx.clearRect(0,0,lW,lH);var cx=lW/2;
+    ctx.font=FONT_MAIN;var mW=ms(ctx,'MEINE STUNDEN',CS_MAIN);
+    if(mW>lW-20){var r=(lW-20)/mW;ctx.font='300 '+Math.floor(34*r)+'px "Playfair Display",Georgia,serif';mW=ms(ctx,'MEINE STUNDEN',CS_MAIN);}
+    ctx.fillStyle='#ffffff';ctx.textBaseline='middle';ds(ctx,'MEINE STUNDEN',CS_MAIN,cx-mW/2,36);
+    var lY=54,lnW=Math.min(mW+20,lW-20),g=ctx.createLinearGradient(cx-lnW/2,0,cx+lnW/2,0);
+    g.addColorStop(0,'rgba(227,6,19,0)');g.addColorStop(0.3,'rgba(227,6,19,0.9)');g.addColorStop(0.7,'rgba(227,6,19,0.9)');g.addColorStop(1,'rgba(227,6,19,0)');
+    ctx.strokeStyle=g;ctx.lineWidth=0.8;ctx.beginPath();ctx.moveTo(cx-lnW/2,lY);ctx.lineTo(cx+lnW/2,lY);ctx.stroke();
+    ctx.font=FONT_SUB;ctx.fillStyle='#E30613';ctx.textBaseline='middle';var sW=ms(ctx,'ONLINE',CS_SUB);ds(ctx,'ONLINE',CS_SUB,cx-sW/2,80);
   }
   if(document.readyState!=='loading') setTimeout(draw,0); else document.addEventListener('DOMContentLoaded',function(){setTimeout(draw,0);});
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){setTimeout(draw,50);});
@@ -284,579 +858,9 @@ body.dark-mode .cmd-k-hint kbd { background: rgba(255,255,255,0.08); border-colo
 })();
 </script>
 
-<!-- ADMIN VIEW -->
-<div id="admin-full-view">
-  <div class="admin-layout">
-    <div class="admin-sidebar-backdrop" id="admin-sidebar-backdrop" onclick="toggleAdminSidebar()"></div>
-    <aside class="admin-sidebar" id="admin-sidebar">
-      <div class="admin-sidebar-header">
-        <div class="admin-sidebar-brand">MEINE STUNDEN</div>
-        <div class="admin-sidebar-subtitle">ONLINE</div>
-        <div class="admin-sidebar-user">
-          <div class="admin-sidebar-user-label">Angemeldet als</div>
-          <div class="admin-sidebar-user-name" id="admin-user-display">Administrator</div>
-        </div>
-      </div>
-      <nav class="admin-sidebar-nav">
-        <div class="admin-nav-section">
-          <div class="admin-nav-section-title">Hauptmenü</div>
-          <div class="admin-nav-item active" onclick="switchAdminSection('overview')" id="admin-nav-overview"><i class="fa-solid fa-chart-line"></i><span>Übersicht</span></div>
-          <div class="admin-nav-item" onclick="switchAdminSection('employees')" id="admin-nav-employees"><i class="fa-solid fa-users"></i><span>Mitarbeiter</span></div>
-          <div class="admin-nav-item" onclick="switchAdminSection('absences')" id="admin-nav-absences"><i class="fa-solid fa-calendar-xmark"></i><span>Urlaub & Krank</span></div>
-        </div>
-        <div class="admin-nav-section">
-          <div class="admin-nav-section-title">Berichte</div>
-          <div class="admin-nav-item" onclick="switchAdminSection('reports')" id="admin-nav-reports"><i class="fa-solid fa-file-pdf"></i><span>PDF Exporte</span></div>
-        </div>
-        <div class="admin-nav-section">
-          <div class="admin-nav-section-title">System</div>
-          <div class="admin-nav-item" onclick="switchAdminSection('settings')" id="admin-nav-settings"><i class="fa-solid fa-gear"></i><span>Einstellungen</span></div>
-          <div class="admin-nav-item danger" onclick="handleAdminSignOut()"><i class="fa-solid fa-right-from-bracket"></i><span>Abmelden</span></div>
-        </div>
-      </nav>
-      <div class="admin-sidebar-footer"><div class="admin-sidebar-footer-text">Version 2.1.0 | Meine Stunden Online</div></div>
-    </aside>
-    <main class="admin-main">
-      <header class="admin-header">
-        <div class="admin-header-title">
-          <button class="admin-mobile-toggle" onclick="toggleAdminSidebar()"><i class="fa-solid fa-bars"></i></button>
-          <h1 id="admin-page-title">Dashboard</h1>
-          <div style="display:flex;align-items:center;gap:14px;margin-left:18px;padding-left:18px;border-left:1px solid rgba(227,6,19,0.2);">
-            <div style="display:flex;flex-direction:column;">
-              <span style="font-size:12px;font-weight:300;color:rgba(255,255,255,0.85);letter-spacing:3px;line-height:1;opacity:0.9;">MEINE STUNDEN</span>
-              <span style="font-size:8px;font-weight:800;color:#E30613;letter-spacing:2.5px;margin-top:3px;opacity:0.9;">ONLINE</span>
-            </div>
-          </div>
-        </div>
-        <div class="admin-header-actions">
-          <button class="admin-header-btn" onclick="exportAdminCSV()"><i class="fa-solid fa-file-csv"></i><span>CSV</span></button>
-          <button class="admin-header-btn" onclick="printAdminOverview()"><i class="fa-solid fa-print"></i><span>Drucken</span></button>
-          <button class="admin-header-btn" onclick="refreshAdminData()"><i class="fa-solid fa-rotate-right"></i><span>Aktualisieren</span></button>
-          <div style="color:#475569;font-size:11px;" id="admin-last-update">Letzte Aktualisierung: --</div>
-        </div>
-      </header>
-      <div class="admin-content">
-        <div class="admin-content-inner">
-          <section id="admin-section-overview" class="admin-section">
-            <div class="admin-metrics-row" style="margin-bottom:28px;">
-              <div class="admin-metric-tile"><label>Gesamteinträge</label><div class="number-callout" id="admin-stat-total">0</div></div>
-              <div class="admin-metric-tile"><label>Aktive Mitarbeiter</label><div class="number-callout" id="admin-stat-users">0</div></div>
-              <div class="admin-metric-tile"><label>Gesamtstunden (Netto)</label><div class="number-callout" id="admin-stat-hours">0.00</div></div>
-            </div>
-            <div style="background:var(--admin-card);border:1px solid var(--admin-border);border-radius:16px;padding:28px;margin-bottom:24px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-                <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0;letter-spacing:-0.3px;"><i class="fa-solid fa-clock-rotate-left" style="color:var(--admin-gold);margin-right:10px;"></i>Neueste Einträge</h3>
-                <div style="display:flex;gap:10px;align-items:center;">
-                  <select id="admin-user-filter-dropdown" onchange="runAdminTableRender()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:8px 12px;border-radius:8px;font-size:12px;"><option value="ALL">Alle Mitarbeiter</option></select>
-                  <select id="admin-type-filter" onchange="runAdminTableRender()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:8px 12px;border-radius:8px;font-size:12px;">
-                    <option value="ALL">Alle Typen</option><option value="WORK">Arbeitsstunden</option><option value="VACATION">Urlaub</option><option value="SICK">Krankmeldungen</option>
-                  </select>
-                </div>
-              </div>
-              <div id="print-admin-area">
-                <div id="print-admin-title">MEINE STUNDEN ONLINE — Mitarbeiterübersicht</div>
-                <div class="admin-table-scroll-shield">
-                  <table class="admin-enterprise-table">
-                    <thead><tr><th>Mitarbeiter</th><th>Datum</th><th>Typ</th><th>Baustelle/Kunde</th><th style="text-align:right;">Dauer</th></tr></thead>
-                    <tbody id="admin-global-table-body"><tr><td colspan="5" style="text-align:center;padding:40px;color:var(--admin-text-muted);"><i class="fa-solid fa-circle-notch fa-spin" style="margin-right:8px;"></i>Laden...</td></tr></tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </section>
-          <section id="admin-section-employees" class="admin-section" style="display:none;">
-            <div style="background:var(--admin-card);border:1px solid var(--admin-border);border-radius:16px;padding:28px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
-                <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0;letter-spacing:-0.3px;"><i class="fa-solid fa-user-tie" style="color:var(--admin-gold);margin-right:10px;"></i>Mitarbeiter Einzelansicht</h3>
-                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-                  <select id="admin-employee-select" onchange="renderEmployeeDetail()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 14px;border-radius:8px;font-size:12px;min-width:180px;"><option value="">-- Mitarbeiter auswählen --</option></select>
-                  <button type="button" onclick="exportEmployeePDF()" id="btn-export-employee-pdf" style="background:var(--admin-gold);border:none;color:#0f172a;padding:10px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;opacity:0.5;" disabled><i class="fa-solid fa-file-pdf" style="margin-right:6px;"></i>PDF Export</button>
-                </div>
-              </div>
-              <div id="admin-employee-note-box" class="admin-note-box" style="display:none;">
-                <div style="font-size:11px;color:var(--admin-gold);font-weight:700;letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;"><i class="fa-solid fa-lock" style="margin-right:6px;"></i>Interne Notiz (nur für dich sichtbar)</div>
-                <textarea id="admin-employee-note-input" placeholder="Notiz zu diesem Mitarbeiter..."></textarea>
-                <button type="button" onclick="saveAdminEmployeeNote()" style="margin-top:8px;background:var(--admin-gold);border:none;color:#0f172a;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-floppy-disk" style="margin-right:6px;"></i>Notiz speichern</button>
-                <span id="admin-note-saved-msg" style="font-size:11px;color:#34d399;margin-left:10px;display:none;">✓ Gespeichert</span>
-              </div>
-              <div id="employee-stats-cards" style="display:none;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px;width:100%;">
-                <div style="background:linear-gradient(135deg,rgba(227,6,19,0.12),rgba(227,6,19,0.04));border:1px solid rgba(227,6,19,0.2);border-radius:12px;padding:18px;"><div style="font-size:10px;color:var(--admin-gold);font-weight:700;letter-spacing:1px;margin-bottom:6px;">MITARBEITER</div><div id="emp-stat-name" style="font-size:18px;color:#fff;font-weight:800;letter-spacing:-0.3px;">-</div></div>
-                <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:18px;"><div style="font-size:10px;color:var(--admin-text-muted);font-weight:700;letter-spacing:1px;margin-bottom:6px;">ARBEITSSTUNDEN</div><div id="emp-stat-hours" style="font-size:18px;color:var(--admin-gold);font-weight:800;letter-spacing:-0.3px;">0.00 h</div></div>
-                <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.18);border-radius:12px;padding:18px;"><div style="font-size:10px;color:#10b981;font-weight:700;letter-spacing:1px;margin-bottom:6px;">ÜBERSTUNDEN</div><div id="emp-stat-overtime" style="font-size:18px;color:#10b981;font-weight:800;letter-spacing:-0.3px;">+0.00 h</div></div>
-                <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:18px;"><div style="font-size:10px;color:var(--admin-text-muted);font-weight:700;letter-spacing:1px;margin-bottom:6px;">URLAUBSTAGE</div><div id="emp-stat-vacation" style="font-size:18px;color:#3b82f6;font-weight:800;letter-spacing:-0.3px;">0</div></div>
-                <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:18px;"><div style="font-size:10px;color:var(--admin-text-muted);font-weight:700;letter-spacing:1px;margin-bottom:6px;">KRANKTAGE</div><div id="emp-stat-sick" style="font-size:18px;color:#ef4444;font-weight:800;letter-spacing:-0.3px;">0</div></div>
-              </div>
-              <div class="admin-table-scroll-shield">
-                <table class="admin-enterprise-table">
-                  <thead><tr><th>Datum</th><th>Typ</th><th>Projekt/Beschreibung</th><th>Startzeit</th><th>Endzeit</th><th style="text-align:right;">Dauer</th></tr></thead>
-                  <tbody id="admin-employee-table-body"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--admin-text-muted);"><i class="fa-solid fa-user-clock" style="margin-right:8px;font-size:16px;"></i>Bitte Mitarbeiter auswählen.</td></tr></tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-          <section id="admin-section-absences" class="admin-section" style="display:none;">
-            <div style="background:var(--admin-card);border:1px solid var(--admin-border);border-radius:16px;padding:28px;margin-bottom:24px;">
-              <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 6px 0;letter-spacing:-0.3px;"><i class="fa-solid fa-calendar-plus" style="color:var(--admin-gold);margin-right:10px;"></i>Abwesenheit erfassen</h3>
-              <p style="color:var(--admin-text-muted);font-size:13px;margin:0 0 20px 0;">Urlaub oder Krankmeldung für Mitarbeiter eintragen</p>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px;">
-                <div><label style="display:block;font-size:11px;color:var(--admin-text-muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Mitarbeiter</label><select id="absence-employee" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 12px;border-radius:8px;font-size:13px;"><option value="">-- auswählen --</option></select></div>
-                <div><label style="display:block;font-size:11px;color:var(--admin-text-muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Art</label><select id="absence-type" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 12px;border-radius:8px;font-size:13px;"><option value="VACATION">Urlaub</option><option value="SICK">Krankmeldung</option></select></div>
-                <div><label style="display:block;font-size:11px;color:var(--admin-text-muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Von</label><input type="text" id="absence-start" readonly inputmode="numeric" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:9px 12px;border-radius:8px;font-size:13px;color-scheme:dark;"></div>
-                <div><label style="display:block;font-size:11px;color:var(--admin-text-muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Bis</label><input type="text" id="absence-end" readonly inputmode="numeric" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:9px 12px;border-radius:8px;font-size:13px;color-scheme:dark;"></div>
-              </div>
-              <div style="margin-bottom:20px;"><label style="display:block;font-size:11px;color:var(--admin-text-muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Grund / Notiz (optional)</label><input type="text" id="absence-note" placeholder="z.B. Arzttermin, Urlaub genehmigt" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 12px;border-radius:8px;font-size:13px;"></div>
-              <button onclick="registerAbsence()" style="background:var(--admin-gold);border:none;color:#0f172a;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(227,6,19,0.3);"><i class="fa-solid fa-plus" style="margin-right:8px;"></i>Abwesenheit speichern</button>
-              <div id="absence-status" style="margin-top:12px;font-size:12px;"></div>
-            </div>
-            <div style="background:var(--admin-card);border:1px solid var(--admin-border);border-radius:16px;padding:28px;">
-              <h3 style="font-size:14px;font-weight:700;color:#fff;margin:0 0 16px 0;">Letzte Einträge</h3>
-              <div id="absence-recent-list" style="font-size:12px;color:var(--admin-text-muted);">Noch keine Einträge</div>
-            </div>
-          </section>
-          <section id="admin-section-reports" class="admin-section" style="display:none;">
-            <div style="background:var(--admin-card);border:1px solid var(--admin-border);border-radius:16px;padding:28px;">
-              <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 20px 0;letter-spacing:-0.3px;"><i class="fa-solid fa-file-export" style="color:var(--admin-gold);margin-right:10px;"></i>PDF Berichte exportieren</h3>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
-                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:22px;">
-                  <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:8px;"><i class="fa-solid fa-user" style="color:var(--admin-gold);margin-right:8px;"></i>Einzelner Mitarbeiter</div>
-                  <p style="font-size:12px;color:var(--admin-text-muted);margin-bottom:16px;">Bericht für einen Mitarbeiter erstellen.</p>
-                  <select id="report-employee-select" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 12px;border-radius:8px;font-size:12px;margin-bottom:12px;"><option value="">-- Mitarbeiter wählen --</option></select>
-                  <button onclick="exportSingleEmployeeReport()" style="width:100%;background:var(--admin-gold);border:none;color:#0f172a;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(227,6,19,0.25);"><i class="fa-solid fa-download" style="margin-right:8px;"></i>PDF erstellen</button>
-                </div>
-                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:22px;">
-                  <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:8px;"><i class="fa-solid fa-users" style="color:#3b82f6;margin-right:8px;"></i>Alle Mitarbeiter</div>
-                  <p style="font-size:12px;color:var(--admin-text-muted);margin-bottom:16px;">PDF für jeden Mitarbeiter exportieren.</p>
-                  <button onclick="exportAllEmployeesPDF()" style="width:100%;background:linear-gradient(135deg,#3b82f6,#2563eb);border:none;color:#fff;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:auto;box-shadow:0 4px 14px rgba(59,130,246,0.25);"><i class="fa-solid fa-file-zipper" style="margin-right:8px;"></i>Alle PDFs exportieren</button>
-                </div>
-              </div>
-            </div>
-          </section>
-          <section id="admin-section-settings" class="admin-section" style="display:none;">
-            <div style="background:var(--admin-card);border:1px solid var(--admin-border);border-radius:16px;padding:28px;margin-bottom:16px;">
-              <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 20px 0;letter-spacing:-0.3px;"><i class="fa-solid fa-key" style="color:var(--admin-gold);margin-right:10px;"></i>Kennwort ändern</h3>
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
-                <div><label style="display:block;font-size:11px;color:var(--admin-text-muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;">Aktuelles Kennwort</label><input type="password" id="admin-pin-current" placeholder="••••••" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 12px;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>
-                <div><label style="display:block;font-size:11px;color:var(--admin-text-muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;">Neues Kennwort</label><input type="password" id="admin-pin-new" placeholder="••••••" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 12px;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>
-                <div><label style="display:block;font-size:11px;color:var(--admin-text-muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;">Bestätigen</label><input type="password" id="admin-pin-confirm" placeholder="••••••" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 12px;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>
-              </div>
-              <button type="button" onclick="handleAdminPasswordChange()" style="background:var(--admin-gold);border:none;color:#0f172a;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(227,6,19,0.25);"><i class="fa-solid fa-lock" style="margin-right:8px;"></i>Kennwort aktualisieren</button>
-              <div id="admin-pin-msg" style="font-size:12px;margin-top:10px;font-weight:600;"></div>
-            </div>
-            <div style="background:var(--admin-card);border:1px solid var(--admin-border);border-radius:16px;padding:28px;margin-bottom:16px;">
-              <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 20px 0;letter-spacing:-0.3px;"><i class="fa-solid fa-image" style="color:var(--admin-gold);margin-right:10px;"></i>Firmenlogo hochladen</h3>
-              <p style="font-size:12px;color:var(--admin-text-muted);margin-bottom:14px;">PNG/JPG, empfohlen 200×60 px.</p>
-              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-                <label for="logo-upload-input" style="background:var(--admin-gold);color:#0f172a;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(227,6,19,0.25);"><i class="fa-solid fa-upload" style="margin-right:8px;"></i>Logo auswählen</label>
-                <input type="file" id="logo-upload-input" accept="image/*" style="display:none;" onchange="handleLogoUpload(this)">
-                <div id="logo-preview-thumb" style="display:none;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px;background:rgba(255,255,255,0.04);"><img id="logo-preview-img" src="" alt="Logo" style="height:36px;max-width:140px;object-fit:contain;"></div>
-                <button type="button" id="logo-remove-btn" onclick="removeLogo()" style="display:none;background:transparent;border:1px solid #ef4444;color:#ef4444;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-trash" style="margin-right:6px;"></i>Entfernen</button>
-              </div>
-            </div>
-            <div style="background:var(--admin-card);border:1px solid var(--admin-border);border-radius:16px;padding:28px;">
-              <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 20px 0;letter-spacing:-0.3px;"><i class="fa-solid fa-gear" style="color:var(--admin-gold);margin-right:10px;"></i>Einstellungen</h3>
-              <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px;margin-bottom:16px;">
-                <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:12px;">Sprache / Language</div>
-                <div style="display:flex;gap:10px;">
-                  <button type="button" onclick="setApplicationLanguage('de')" style="flex:1;background:rgba(227,6,19,0.12);border:1px solid rgba(227,6,19,0.25);color:var(--admin-gold);padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">Deutsch</button>
-                  <button type="button" onclick="setApplicationLanguage('en')" style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#fff;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">English</button>
-                </div>
-              </div>
-              <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px;">
-                <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:8px;">Systemstatus</div>
-                <div style="font-size:12px;color:var(--admin-text-muted);">
-                  <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Verbindung</span><span style="color:#34d399;"><i class="fa-solid fa-circle" style="font-size:8px;margin-right:6px;"></i>Verbunden</span></div>
-                  <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Sync</span><span style="color:#34d399;"><i class="fa-solid fa-circle" style="font-size:8px;margin-right:6px;"></i>Aktiv</span></div>
-                  <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Version</span><span style="color:var(--admin-gold);">2.1.0</span></div>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-      </div>
-    </main>
-  </div>
-</div>
+<script src="partials/admin-view.js"></script>
+<script src="partials/app-view.js"></script>
 
-<!-- USER APP VIEW -->
-<div id="app-view" style="display:none;">
-
-  <header class="app-header">
-    <button class="menu-trigger-btn" onclick="toggleSidebarDrawer(true)"><i class="fa-solid fa-bars"></i></button>
-    <div style="display:flex;align-items:center;gap:4px;">
-      <span class="offline-badge" id="offline-queue-badge">● Offline</span>
-      <!-- Command Palette Trigger -->
-      <button class="cmd-k-hint" onclick="openCommandPalette()" title="Schnellsuche (Ctrl+K)">
-        <i class="fa-solid fa-magnifying-glass" style="font-size:11px;"></i>
-        <span style="display:none;" id="cmd-k-label-desktop">Suchen</span>
-        <kbd>⌘K</kbd>
-      </button>
-      <button class="dark-toggle-btn" id="dark-mode-btn" onclick="toggleDarkMode()" title="Dark/Light Mode">🌙</button>
-      <div class="lang-selector-wrapper">
-        <button type="button" id="lang-btn-en" class="lang-btn" onclick="setApplicationLanguage('en')">EN</button>
-        <button type="button" id="lang-btn-de" class="lang-btn active" onclick="setApplicationLanguage('de')">DE</button>
-      </div>
-      <div id="live-clock-display" style="font-size:12px;font-weight:700;color:var(--text-muted);padding:0 8px;font-variant-numeric:tabular-nums;min-width:68px;text-align:center;"></div>
-      <div style="text-align:right;cursor:pointer;">
-        <img id="header-logo-img" class="header-logo-img" src="" alt="Logo">
-        <div class="header-logo-text">
-          <div style="font-weight:900;font-size:14px;letter-spacing:-0.4px;color:#0f172a;">MEINE STUNDEN</div>
-          <div style="font-size:8px;font-weight:800;color:var(--primary-red);letter-spacing:0.8px;margin-top:-1px;">ONLINE</div>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <div id="menu-backdrop" class="drawer-backdrop" onclick="toggleSidebarDrawer(false)"></div>
-
-  <nav id="sidebar-drawer" class="sidebar-drawer">
-    <div class="drawer-user-section">
-      <h3 id="user-profile-title">User</h3>
-      <p id="lbl-sidebar-subtext">Meine Stunden Online</p>
-      <div id="last-login-info" style="margin-top:8px;"></div>
-    </div>
-    <ul class="drawer-nav-list">
-      <li id="nav-dash-link" class="nav-item active" onclick="switchActiveView('dashboard', this)"><i class="fa-solid fa-chart-simple"></i><span id="nav-lbl-dash">Übersicht</span></li>
-      <li class="nav-item" onclick="switchActiveView('log-work', this)"><i class="fa-solid fa-pen-to-square"></i><span id="nav-lbl-log">Arbeitszeit buchen</span></li>
-      <li class="nav-item" onclick="switchActiveView('vacation', this)"><i class="fa-solid fa-umbrella-beach"></i><span id="nav-lbl-vac">Urlaubs- &amp; Fehlzeitenmanagement</span></li>
-      <li class="nav-item" onclick="switchActiveView('history', this)"><i class="fa-solid fa-clock-rotate-left"></i><span id="nav-lbl-hist">Stundenzettel-Archiv</span></li>
-      <li class="nav-item" onclick="switchActiveView('ai-scan', this)" style="background:linear-gradient(135deg,rgba(227,6,19,0.06),transparent);border-left:3px solid #E30613;border-radius:12px;">
-        <i class="fa-solid fa-camera-retro" style="color:#E30613;"></i>
-        <span style="font-weight:700;">KI-Scan</span>
-        <span style="font-size:9px;background:#E30613;color:#fff;padding:2px 7px;border-radius:99px;margin-left:auto;font-weight:800;box-shadow:0 2px 8px rgba(227,6,19,0.3);">NEU</span>
-      </li>
-      <li class="nav-item disabled"><i class="fa-solid fa-brain"></i><span>KI-Berichtsheft <span id="nav-lbl-soon" style="font-size:10px;color:var(--primary-red);">(Bald)</span></span></li>
-      <li id="nav-admin-link" class="nav-item" onclick="switchActiveView('admin-panel', this)" style="display:none;border-left:4px solid #f59e0b;background:rgba(245,158,11,0.05);border-radius:12px;"><i class="fa-solid fa-shield-halved" style="color:#d97706;"></i><span style="font-weight:700;color:#d97706;">Admin</span></li>
-      <li class="nav-item" onclick="switchActiveView('settings', this)"><i class="fa-solid fa-sliders"></i><span id="nav-lbl-set">Konfigurationen</span></li>
-      <li class="nav-item" onclick="handleSecureSignOutRequest()" style="margin-top:20px;border-top:1px solid rgba(0,0,0,0.06);padding-top:14px;"><i class="fa-solid fa-right-from-bracket" style="color:var(--primary-red);"></i><span id="nav-lbl-logout" style="color:var(--primary-red);">Abmelden</span></li>
-    </ul>
-    <div style="border-top:1px solid rgba(0,0,0,0.06);padding:12px 0;text-align:center;line-height:1.4;"><div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Version 2.1.0</div></div>
-  </nav>
-
-  <main id="main-content-layout">
-
-    <!-- DASHBOARD -->
-    <div id="view-dashboard" class="content-panel active">
-      <div class="panel-scroll-content">
-        <div class="dash-centered-logo-wrapper">
-          <div style="text-align:center;">
-            <div style="font-weight:900;font-size:24px;letter-spacing:-0.5px;color:#1e293b;line-height:1;">MEINE STUNDEN</div>
-            <div style="font-size:10px;font-weight:800;color:var(--primary-red);letter-spacing:1.2px;margin-top:2px;">ONLINE</div>
-          </div>
-          <span id="dash-backup-indicator" class="backup-status-dot online" title="Cloud Sync Aktiv"></span>
-        </div>
-        <div style="font-size:15px;font-weight:600;color:#64748b;text-align:center;margin-bottom:24px;">
-          <span id="lbl-dash-welcome">Willkommen zurück,</span>
-          <span id="dash-profile-username" style="color:var(--primary-blue);font-weight:800;">User</span>
-        </div>
-        <div id="period-progress-container"></div>
-        <div class="view-title" id="lbl-dash-title">Betriebliche Kennzahlen</div>
-        <div class="metrics-grid">
-          <div class="metric-card" onclick="displayWorkTimeBreakdownSummary()">
-            <label id="lbl-card-gross">Netto-Arbeitszeit</label>
-            <div id="dash-gross-hours" class="value">0.00 hrs</div>
-          </div>
-          <div class="metric-card" onclick="displayOvertimeBreakdownSummary()">
-            <label id="lbl-card-overtime">Überstunden</label>
-            <div id="dash-overtime-hours" class="value" style="color:#10b981;">+0.00 hrs</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- LOG WORK -->
-    <div id="view-log-work" class="content-panel">
-      <div class="panel-scroll-content">
-        <div class="view-title" id="lbl-log-title">Arbeitszeit erfassen</div>
-        <div class="app-card">
-          <form id="shift-submission-form" onsubmit="handleNewRecordSubmission(event)">
-            <div class="form-group"><label id="lbl-form-date">Buchungstag auswählen</label><input type="date" id="log-date-picker" required></div>
-            <div class="form-group">
-              <label id="lbl-form-project">Baustelle/Kunde</label>
-              <div class="autocomplete-wrapper">
-                <input type="text" id="log-project-name" placeholder="Baustelle oder Kundenname eintragen" autocomplete="off" required oninput="showProjectSuggestions(this.value)" onblur="setTimeout(()=>hideProjectSuggestions(),180)">
-                <div class="autocomplete-list" id="project-autocomplete-list"></div>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="form-group"><label id="lbl-form-start">Arbeitsbeginn (Kommen)</label><select id="log-start-time"></select></div>
-              <div class="form-group"><label id="lbl-form-end">Arbeitsende (Gehen)</label><select id="log-end-time"></select></div>
-            </div>
-            <div class="form-group">
-              <label id="lbl-form-break">Pausenregelung (Abzug)</label>
-              <div class="break-options-row">
-                <button type="button" class="break-pill active" onclick="selectBreakOption(0, this)">Keine</button>
-                <button type="button" class="break-pill" onclick="selectBreakOption(15, this)">15m</button>
-                <button type="button" class="break-pill" onclick="selectBreakOption(30, this)">30m</button>
-                <button type="button" class="break-pill" onclick="selectBreakOption(45, this)">45m</button>
-                <button type="button" class="break-pill" onclick="selectBreakOption(60, this)">1h</button>
-              </div>
-            </div>
-            <div class="form-group"><label id="lbl-form-notes">Tätigkeitsbericht / Notizen (Optional)</label><textarea id="log-notes" rows="2" placeholder="Erbrachte Leistungen beschreiben..."></textarea></div>
-            <button type="submit" id="btn-form-save" class="primary-btn">Buchung abschließen</button>
-          </form>
-        </div>
-        <div class="app-card" style="margin-top:16px;border-left:4px solid var(--primary-blue);">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div><h4 style="font-size:15px;font-weight:700;color:var(--text-main);margin:0;">Berufsschule</h4><p style="font-size:12px;color:var(--text-muted);margin:2px 0 0;">Für Auszubildende – Schultag ohne Arbeitszeit</p></div>
-            <i class="fa-solid fa-graduation-cap" style="font-size:22px;color:var(--primary-blue);opacity:0.7;"></i>
-          </div>
-          <div class="form-group"><label>Schultag auswählen</label><input type="date" id="schule-date-picker" style="width:100%;"></div>
-          <button type="button" class="primary-btn" style="background:var(--primary-blue);" onclick="handleSchuleSubmission()"><i class="fa-solid fa-plus" style="margin-right:6px;"></i>Schultag buchen</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- VACATION -->
-    <div id="view-vacation" class="content-panel">
-      <div class="panel-scroll-content">
-        <div class="view-title" id="lbl-vac-title">Urlaubs- &amp; Fehlzeitenmanagement</div>
-        <div class="toggle-switch-row">
-          <button type="button" id="toggle-leave-vacation" class="toggle-switch-btn active" onclick="setLeaveManagementType('vacation')">Erholungsurlaub</button>
-          <button type="button" id="toggle-leave-sick" class="toggle-switch-btn" onclick="setLeaveManagementType('sick')">Arbeitsunfähigkeit (AU)</button>
-        </div>
-        <div class="app-card">
-          <form id="vacation-entry-form" onsubmit="handleVacationDayLogSubmission(event)">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="form-group"><label id="lbl-vac-from-date">Von</label><input type="date" id="vacation-from-date-input" required></div>
-              <div class="form-group"><label id="lbl-vac-to-date">Bis</label><input type="date" id="vacation-to-date-input" required></div>
-            </div>
-            <div class="form-group"><label id="leave-context-label">Art der Freistellung / Urlaubsgrund</label><input type="text" id="vacation-notes-input" placeholder="Erholungsurlaub gesetzlich/vertraglich" required></div>
-            <button type="submit" id="leave-submit-btn" class="primary-btn" style="background:#3b82f6;margin-bottom:14px;">Urlaubszeit einbuchen</button>
-          </form>
-          <hr>
-          <button type="button" id="btn-leave-statement" class="primary-btn" style="background:#475569;" onclick="displayLeaveStatementBalancesSummary()"><i class="fa-solid fa-file-invoice" style="margin-right:8px;"></i>Kontoauszug Resturlaub &amp; AU einsehen</button>
-        </div>
-        <div id="vacation-days-list-container" style="margin-top:12px;"></div>
-      </div>
-    </div>
-
-    <!-- HISTORY -->
-    <div id="view-history" class="content-panel">
-      <div class="panel-scroll-content">
-        <div class="view-title">
-          <span id="lbl-hist-title">Stundenzettel-Archiv</span>
-          <div style="display:flex;gap:8px;">
-            <button class="primary-btn" id="btn-hist-export-default" style="width:auto;padding:8px 14px;font-size:12px;background:#475569;" onclick="triggerPDFExportEngine(false)" title="20. bis 19."><i class="fa-solid fa-calendar" style="margin-right:5px;"></i>20.–19.</button>
-            <button class="primary-btn red-btn" id="btn-hist-export" style="width:auto;padding:8px 16px;font-size:13px;" onclick="triggerPDFExportEngine(true)"><i class="fa-solid fa-file-pdf" style="margin-right:6px;"></i>PDF</button>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;margin:8px 0 16px;padding:12px 14px;background:rgba(255,255,255,0.7);border-radius:12px;flex-wrap:wrap;border:1px solid rgba(0,0,0,0.05);backdrop-filter:blur(8px);">
-          <label style="font-size:12px;font-weight:700;color:#475569;">Von:</label>
-          <input type="date" id="export-start-date" style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;">
-          <label style="font-size:12px;font-weight:700;color:#475569;">Bis:</label>
-          <input type="date" id="export-end-date" style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;">
-          <span style="font-size:11px;color:#94a3b8;margin-left:auto;font-weight:500;">Standard: 20. bis 20.</span>
-        </div>
-        <div id="quick-stats-strip"></div>
-        <div id="period-progress-container-hist"></div>
-        <div id="pdf-render-target">
-          <div id="pdf-custom-header">
-            <h2 style="font-weight:800;text-transform:uppercase;">MEINE STUNDEN ONLINE</h2>
-            <div id="pdf-user-metadata" class="pdf-meta-line">Stundenzettel-Nachweis</div>
-            <div class="pdf-meta-line" id="pdf-lbl-sub" style="font-size:10px;color:#666;">Erstellt am</div>
-          </div>
-          <div id="history-items-container"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- AI SCAN VIEW -->
-    <div id="view-ai-scan" class="content-panel">
-      <div class="panel-scroll-content">
-        <div class="view-title">
-          <span><i class="fa-solid fa-camera-retro" style="color:#E30613;margin-right:8px;"></i>KI-Stundenzettel Scan</span>
-        </div>
-        <div id="ai-step-upload">
-          <div class="app-card" style="border-top:4px solid #E30613;">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-              <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#E30613,#b8000f);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 14px rgba(227,6,19,0.3);">
-                <i class="fa-solid fa-wand-magic-sparkles" style="color:#fff;font-size:16px;"></i>
-              </div>
-              <div>
-                <div style="font-size:14px;font-weight:700;color:var(--text-main);">Fotos aufnehmen oder hochladen</div>
-                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Bis zu 10 Fotos – KI analysiert jeden Stundenzettel einzeln</div>
-              </div>
-            </div>
-            <div class="ai-scan-dropzone" id="ai-dropzone" onclick="triggerAiGallery()"
-              ondragover="event.preventDefault();this.classList.add('dragover')"
-              ondragleave="this.classList.remove('dragover')"
-              ondrop="handleAiDrop(event)">
-              <div id="ai-thumbs-row" class="ai-thumbs-row" style="display:none;"></div>
-              <div id="ai-thumb-counter" class="ai-thumb-counter" style="display:none;"></div>
-              <img id="ai-preview-img" class="ai-scan-preview" src="" alt="Vorschau">
-              <div id="ai-dropzone-placeholder">
-                <i class="fa-solid fa-cloud-arrow-up" style="font-size:36px;color:#cbd5e1;display:block;margin-bottom:12px;"></i>
-                <div style="font-size:14px;font-weight:700;color:var(--text-main);margin-bottom:6px;">Fotos hierher ziehen oder tippen</div>
-                <div style="font-size:12px;color:var(--text-muted);">JPG, PNG, HEIC · max 10 MB pro Foto · bis zu 10 Fotos</div>
-              </div>
-            </div>
-            <input type="file" id="ai-file-input" accept="image/*" multiple style="display:none;" onchange="handleAiFileSelect(event)">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">
-              <button type="button" class="primary-btn" style="background:#1e293b;" onclick="triggerAiGallery()"><i class="fa-solid fa-images" style="margin-right:6px;"></i>Galerie</button>
-              <button type="button" class="primary-btn" onclick="triggerAiCamera()"><i class="fa-solid fa-camera" style="margin-right:6px;"></i>Kamera</button>
-            </div>
-            <button type="button" id="btn-ai-analyze" class="primary-btn" style="margin-top:12px;display:none;" onclick="runAiAnalysis()">
-              <i class="fa-solid fa-wand-magic-sparkles" style="margin-right:8px;"></i>KI-Analyse starten
-            </button>
-          </div>
-          <div class="app-card" style="border-left:4px solid #f59e0b;" id="ai-api-key-card">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-              <i class="fa-solid fa-key" style="color:#f59e0b;font-size:16px;"></i>
-              <div style="font-size:13px;font-weight:700;color:var(--text-main);">Gemini API Key</div>
-            </div>
-            <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Einmalig eingeben – wird nur lokal gespeichert. Kostenlos unter <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--primary-blue);font-weight:600;">aistudio.google.com</a></p>
-            <div style="display:flex;gap:8px;">
-              <input type="password" id="ai-api-key-input" placeholder="AIza..." style="flex:1;font-size:13px;" autocomplete="off">
-              <button type="button" onclick="saveAiApiKey()" style="background:var(--primary-blue);border:none;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 4px 12px rgba(14,165,233,0.25);">Speichern</button>
-            </div>
-            <div id="ai-key-status" style="font-size:11px;margin-top:8px;font-weight:600;"></div>
-          </div>
-        </div>
-        <div id="ai-step-review" style="display:none;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:16px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:14px;">
-            <i class="fa-solid fa-circle-check" style="color:#10b981;font-size:20px;"></i>
-            <div>
-              <div style="font-size:13px;font-weight:700;color:var(--text-main);">KI-Analyse abgeschlossen</div>
-              <div style="font-size:12px;color:var(--text-muted);" id="ai-review-summary">0 Einträge erkannt</div>
-            </div>
-            <button type="button" onclick="resetAiScan()" style="margin-left:auto;background:none;border:1px solid rgba(0,0,0,0.1);padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer;transition:all 0.15s;">
-              <i class="fa-solid fa-rotate-left" style="margin-right:4px;"></i>Neu
-            </button>
-          </div>
-          <div id="ai-review-entries"></div>
-          <div style="display:flex;gap:10px;margin-top:16px;">
-            <button type="button" onclick="resetAiScan()" style="flex:1;background:rgba(0,0,0,0.06);border:none;color:#475569;padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">
-              <i class="fa-solid fa-xmark" style="margin-right:6px;"></i>Abbrechen
-            </button>
-            <button type="button" onclick="confirmAiEntries()" class="primary-btn" style="flex:2;">
-              <i class="fa-solid fa-check" style="margin-right:8px;"></i>Alle bestätigten Einträge hinzufügen
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ADMIN PANEL (user view) -->
-    <div id="view-admin-panel" class="content-panel">
-      <div class="panel-scroll-content">
-        <div class="premium-admin-wrapper">
-          <div class="admin-gold-badge"><i class="fa-solid fa-crown"></i> Admin</div>
-          <h2 style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px;letter-spacing:-0.5px;">Verwaltung</h2>
-          <p style="font-size:13px;color:var(--admin-text-muted);margin-bottom:24px;">Übersicht aller Mitarbeiterstunden.</p>
-          <div class="admin-metrics-row">
-            <div class="admin-metric-tile"><label>Gesamteinträge</label><div class="number-callout" id="admin-stat-total">0</div></div>
-            <div class="admin-metric-tile"><label>Aktive Mitarbeiter</label><div class="number-callout" id="admin-stat-users">0</div></div>
-            <div class="admin-metric-tile"><label>Gesamtstunden (Netto)</label><div class="number-callout" id="admin-stat-hours">0.00</div></div>
-          </div>
-          <div style="display:flex;gap:8px;margin-bottom:16px;">
-            <button type="button" id="admin-tab-overview" onclick="switchAdminView('overview')" style="flex:1;background:var(--admin-gold);border:none;color:#0f172a;padding:12px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-table-list" style="margin-right:6px;"></i>Übersicht</button>
-            <button type="button" id="admin-tab-employees" onclick="switchAdminView('employees')" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);color:var(--admin-text-main);padding:12px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-users" style="margin-right:6px;"></i>Mitarbeiter</button>
-          </div>
-          <div id="admin-view-overview">
-            <div class="admin-controls-bar">
-              <div style="color:#fff;font-size:12px;font-weight:700;white-space:nowrap;"><i class="fa-solid fa-filter" style="color:var(--admin-gold);margin-right:6px;"></i>FILTER:</div>
-              <select id="admin-user-filter-dropdown" onchange="runAdminTableRender()"><option value="ALL">Alle Mitarbeiter</option></select>
-              <select id="admin-type-filter" onchange="runAdminTableRender()"><option value="ALL">Alle Typen</option><option value="WORK">Arbeitsstunden</option><option value="VACATION">Urlaub</option><option value="SICK">Krankmeldungen</option></select>
-              <button type="button" onclick="refreshAdminData()" style="background:rgba(227,6,19,0.12);border:1px solid rgba(227,6,19,0.2);color:var(--admin-gold);padding:10px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;"><i class="fa-solid fa-rotate-right" style="margin-right:6px;"></i>Aktualisieren</button>
-            </div>
-            <div class="admin-table-scroll-shield">
-              <table class="admin-enterprise-table">
-                <thead><tr><th>Mitarbeiter</th><th>Datum</th><th>Typ</th><th>Baustelle/Kunde</th><th style="text-align:right;">Dauer</th></tr></thead>
-                <tbody id="admin-global-table-body"><tr><td colspan="5" style="text-align:center;padding:40px;color:var(--admin-text-muted);"><i class="fa-solid fa-circle-notch fa-spin" style="margin-right:8px;"></i>Laden...</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-          <div id="admin-view-employees" style="display:none;">
-            <div class="admin-controls-bar">
-              <div style="color:#fff;font-size:12px;font-weight:700;white-space:nowrap;"><i class="fa-solid fa-user-tie" style="color:var(--admin-gold);margin-right:6px;"></i>MITARBEITER:</div>
-              <select id="admin-employee-select" onchange="renderEmployeeDetail()"><option value="">-- Mitarbeiter auswählen --</option></select>
-              <button type="button" onclick="exportEmployeePDF()" id="btn-export-employee-pdf" style="background:var(--admin-gold);border:none;color:#0f172a;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;opacity:0.5;" disabled><i class="fa-solid fa-file-pdf" style="margin-right:6px;"></i>PDF</button>
-              <button type="button" onclick="exportAllEmployeesPDF()" style="background:rgba(192,57,43,0.9);border:none;color:#fff;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;"><i class="fa-solid fa-file-zipper" style="margin-right:6px;"></i>Alle PDFs</button>
-            </div>
-            <div id="employee-stats-cards" style="display:none;gap:12px;margin-bottom:20px;">
-              <div style="flex:1;background:linear-gradient(135deg,rgba(227,6,19,0.12),rgba(227,6,19,0.04));border:1px solid rgba(227,6,19,0.2);border-radius:12px;padding:16px;"><div style="font-size:10px;color:var(--admin-gold);font-weight:700;letter-spacing:1px;margin-bottom:4px;">MITARBEITER</div><div id="emp-stat-name" style="font-size:18px;color:#fff;font-weight:800;">-</div></div>
-              <div style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;"><div style="font-size:10px;color:var(--admin-text-muted);font-weight:700;letter-spacing:1px;margin-bottom:4px;">ARBEITSSTUNDEN</div><div id="emp-stat-hours" style="font-size:18px;color:var(--admin-gold);font-weight:800;">0.00 h</div></div>
-              <div style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;"><div style="font-size:10px;color:var(--admin-text-muted);font-weight:700;letter-spacing:1px;margin-bottom:4px;">URLAUBSTAGE</div><div id="emp-stat-vacation" style="font-size:18px;color:#3b82f6;font-weight:800;">0</div></div>
-              <div style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;"><div style="font-size:10px;color:var(--admin-text-muted);font-weight:700;letter-spacing:1px;margin-bottom:4px;">KRANKTAGE</div><div id="emp-stat-sick" style="font-size:18px;color:#ef4444;font-weight:800;">0</div></div>
-            </div>
-            <div class="admin-table-scroll-shield">
-              <table class="admin-enterprise-table">
-                <thead><tr><th>Datum</th><th>Typ</th><th>Projekt/Beschreibung</th><th>Startzeit</th><th>Endzeit</th><th style="text-align:right;">Dauer</th></tr></thead>
-                <tbody id="admin-employee-table-body"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--admin-text-muted);"><i class="fa-solid fa-user-clock" style="margin-right:8px;font-size:16px;"></i>Bitte Mitarbeiter auswählen.</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-          <div id="admin-pdf-header" style="display:none;padding-bottom:15px;border-bottom:2px dashed #000;margin-bottom:20px;margin-top:20px;">
-            <h2 style="color:#1e293b;font-weight:800;">MEINE STUNDEN ONLINE</h2>
-            <div class="pdf-meta-line"><strong>Filter:</strong> <span id="admin-pdf-filter-label"></span></div>
-            <div class="pdf-meta-line"><strong>Erstellt am:</strong> <span id="admin-pdf-date"></span></div>
-          </div>
-        </div>
-      </div>
-      <div class="developer-signature" style="color:#94a3b8;">Admin</div>
-    </div>
-
-    <!-- SETTINGS -->
-    <div id="view-settings" class="content-panel">
-      <div class="panel-scroll-content">
-        <div class="view-title" id="lbl-set-title" style="margin-top:0;padding-top:0;">Einstellungen</div>
-        <div class="app-card">
-          <div class="form-group">
-            <label id="lbl-set-allowed">Urlaubsanspruch (Tage/Jahr)</label>
-            <input type="number" id="vacation-allowed-bank" value="30" oninput="runGlobalApplicationMetricsEngine()">
-            <input type="hidden" id="shift-target-constraint" value="8.5">
-            <input type="hidden" id="break-rule-threshold" value="6.0">
-          </div>
-          <hr>
-          <div>
-            <h3 style="font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-key" style="color:var(--primary-red);"></i><span>Kennwort ändern</span></h3>
-            <div class="form-group"><label>Aktuelles Kennwort</label><input type="password" id="pin-current" placeholder="••••••"></div>
-            <div class="form-group"><label>Neues Kennwort</label><input type="password" id="pin-new" placeholder="••••••"></div>
-            <div class="form-group"><label>Neues Kennwort bestätigen</label><input type="password" id="pin-confirm" placeholder="••••••"></div>
-            <button type="button" class="primary-btn" style="width:auto;padding:10px 18px;font-size:13px;" onclick="handlePasswordChange()"><i class="fa-solid fa-lock" style="margin-right:6px;"></i>Kennwort aktualisieren</button>
-            <div id="pin-change-msg" style="font-size:12px;margin-top:8px;font-weight:600;"></div>
-          </div>
-          <hr>
-          <div>
-            <h3 style="font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-shield-halved" style="color:var(--primary-blue);"></i><span id="lbl-security-title">Aktive Geräte</span></h3>
-            <div id="active-devices-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
-            <button class="primary-btn" style="width:auto;padding:8px 14px;font-size:12px;background:#dc2626;" onclick="logoutOtherDevicesEngine()"><i class="fa-solid fa-right-from-bracket" style="margin-right:6px;"></i><span id="lbl-logout-others">Alle anderen Geräte abmelden</span></button>
-            <p style="font-size:11px;color:var(--text-muted);margin-top:8px;" id="lbl-security-note">Nur du siehst deine Geräte.</p>
-          </div>
-          <p id="lbl-set-disclaimer" style="font-size:12px;color:#64748b;line-height:1.6;margin-top:8px;margin-bottom:20px;">Systemparameter können nur von autorisierten Nutzern geändert werden.</p>
-          <hr>
-          <label id="lbl-set-admin" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:8px;letter-spacing:0.6px;">Administration</label>
-          <button type="button" id="btn-set-trash" class="primary-btn" style="background:#475569;" onclick="openHiddenTrashView()"><i class="fa-solid fa-trash-can" style="margin-right:8px;"></i>Papierkorb öffnen</button>
-        </div>
-
-        <div class="view-title" id="lbl-feedback-title" style="margin-top:28px;">Feedback</div>
-        <div class="app-card" style="border-top:4px solid var(--primary-blue);">
-          <form id="developer-feedback-form" onsubmit="handleFeedbackSubmissionEngine(event)">
-            <div class="form-group">
-              <label id="lbl-feedback-input-desc" for="feedback-message">Nachricht an den Entwickler</label>
-              <textarea id="feedback-message" rows="3" placeholder="Vorschläge, Fehler oder Änderungswünsche..." required></textarea>
-              <span id="lbl-feedback-routing-note" style="font-size:11px;color:var(--text-muted);display:block;margin-top:6px;"><i class="fa-solid fa-circle-info" style="margin-right:4px;color:#94a3b8;"></i> Ihre Nachricht wird direkt an den Entwickler weitergeleitet.</span>
-            </div>
-            <button type="submit" id="btn-feedback-submit" class="primary-btn">Feedback senden</button>
-          </form>
-          <div id="feedback-status-box" class="message"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- DELETED / TRASH -->
-    <div id="view-deleted" class="content-panel">
-      <div class="panel-scroll-content">
-        <div class="view-title" id="lbl-trash-title">Papierkorb</div>
-        <p id="lbl-trash-disclaimer" style="color:#64748b;font-size:13px;margin-bottom:18px;line-height:1.6;">Gelöschte Einträge werden nach 12 Stunden endgültig entfernt.</p>
-        <div id="deleted-items-bin-container"></div>
-      </div>
-    </div>
-
-  </main>
-</div>
-
-<!-- REPORT MODAL -->
 <div id="custom-report-modal-backdrop" class="custom-modal-backdrop" onclick="closeCustomReportModal()">
   <div class="custom-report-modal" onclick="event.stopPropagation()">
     <div class="modal-report-header"><h4 id="custom-modal-title-header">Auswertung</h4><i id="custom-modal-icon-header" class="fa-solid fa-clock" style="color:#64748b;"></i></div>
@@ -876,10 +880,7 @@ body.dark-mode .cmd-k-hint kbd { background: rgba(255,255,255,0.08); border-colo
 <script src="js/features.js"></script>
 <script src="js/ai-scan.js"></script>
 <script src="js/premium-features.js"></script>
+<script src="js/landing.js"></script>
 
-<div style="display:flex;justify-content:space-between;align-items:center;padding:20px 30px 40px;font-size:11px;color:#94a3b8;width:100%;box-sizing:border-box;position:relative;z-index:1;">
-  <div style="font-weight:500;"></div>
-  <div style="font-weight:600;letter-spacing:0.4px;">Meine Stunden Online</div>
-</div>
 </body>
 </html>
