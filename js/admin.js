@@ -30,6 +30,8 @@ function switchAdminSection(section) {
   document.getElementById('admin-page-title').textContent = titles[section] || 'Admin';
   if (section === 'employees') populateEmployeeDropdown();
   if (section === 'reports')   populateReportEmployeeDropdown();
+  // Bug 3 Fix: populate absence-employee dropdown when absences section is opened
+  if (section === 'absences')  populateAbsenceDropdown();
   const sidebar  = document.getElementById('admin-sidebar');
   const backdrop = document.getElementById('admin-sidebar-backdrop');
   if (sidebar)  sidebar.classList.remove('open');
@@ -53,13 +55,18 @@ function handleAdminSignOut() {
     recentlyDeletedItemsBinCache = []; adminAllEntriesCache = [];
     document.getElementById('admin-full-view').style.display = 'none';
     document.getElementById('app-view').style.display        = 'none';
-    document.getElementById('login-view').style.display      = 'flex';
+    document.getElementById('login-view').style.display      = 'none';
     document.body.classList.remove('admin-mode');
+    const lp = document.getElementById('landing-page');
+    if (lp) lp.style.display = 'block';
   });
 }
 
 async function refreshAdminData() {
-  const tbody = document.getElementById('admin-global-table-body'); if (!tbody) return;
+  const tbody = document.getElementById('admin-full-view')
+    ? document.querySelector('#admin-full-view #admin-global-table-body')
+    : document.getElementById('admin-global-table-body');
+  if (!tbody) return;
   tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--admin-text-muted);"><i class="fa-solid fa-circle-notch fa-spin" style="margin-right:8px;"></i>Laden...</td></tr>`;
   try {
     const allSnap  = await db.collection('userProfiles').get();
@@ -94,15 +101,23 @@ async function refreshAdminData() {
       return parse(b.rawDate) - parse(a.rawDate);
     });
 
-    document.getElementById('admin-stat-total').textContent = totalLogs;
-    document.getElementById('admin-stat-users').textContent = allUsers.size;
-    document.getElementById('admin-stat-hours').textContent = totalHrs.toFixed(2);
+    const fullView = document.getElementById('admin-full-view');
+    const scopedEl = id => fullView ? fullView.querySelector('#' + id) : document.getElementById(id);
 
-    const dropdown = document.getElementById('admin-user-filter-dropdown');
-    const curVal   = dropdown.value;
-    dropdown.innerHTML = '<option value="ALL">Alle Mitarbeiter</option>';
-    [...allUsers].sort().forEach(u => { const opt = document.createElement('option'); opt.value = u; opt.textContent = u; dropdown.appendChild(opt); });
-    if ([...allUsers].includes(curVal)) dropdown.value = curVal;
+    const statTotal = scopedEl('admin-stat-total');
+    const statUsers = scopedEl('admin-stat-users');
+    const statHours = scopedEl('admin-stat-hours');
+    if (statTotal) statTotal.textContent = totalLogs;
+    if (statUsers) statUsers.textContent = allUsers.size;
+    if (statHours) statHours.textContent = totalHrs.toFixed(2);
+
+    const dropdown = scopedEl('admin-user-filter-dropdown');
+    if (dropdown) {
+      const curVal = dropdown.value;
+      dropdown.innerHTML = '<option value="ALL">Alle Mitarbeiter</option>';
+      [...allUsers].sort().forEach(u => { const opt = document.createElement('option'); opt.value = u; opt.textContent = u; dropdown.appendChild(opt); });
+      if ([...allUsers].includes(curVal)) dropdown.value = curVal;
+    }
 
     runAdminTableRender();
     document.getElementById('admin-last-update').textContent =
@@ -114,9 +129,12 @@ async function refreshAdminData() {
 }
 
 function runAdminTableRender() {
-  const tbody      = document.getElementById('admin-global-table-body');
-  const filterUser = document.getElementById('admin-user-filter-dropdown').value;
-  const filterType = document.getElementById('admin-type-filter').value;
+  const fullView = document.getElementById('admin-full-view');
+  const scopedEl = id => fullView ? fullView.querySelector('#' + id) : document.getElementById(id);
+
+  const tbody      = scopedEl('admin-global-table-body');
+  const filterUser = scopedEl('admin-user-filter-dropdown')?.value || 'ALL';
+  const filterType = scopedEl('admin-type-filter')?.value || 'ALL';
   if (!tbody) return;
   tbody.innerHTML = '';
   const filtered = adminAllEntriesCache.filter(row => {
@@ -156,7 +174,9 @@ function switchAdminView(view) {
 }
 
 function populateEmployeeDropdown() {
-  const dropdown = document.getElementById('admin-employee-select');
+  const fullView = document.getElementById('admin-full-view');
+  const dropdown = fullView ? fullView.querySelector('#admin-employee-select') : document.getElementById('admin-employee-select');
+  if (!dropdown) return;
   const allUsers = new Set(adminAllEntriesCache.map(r => r.user));
   const curVal   = dropdown.value;
   dropdown.innerHTML = '<option value="">-- Mitarbeiter auswählen --</option>';
@@ -164,11 +184,28 @@ function populateEmployeeDropdown() {
   if ([...allUsers].includes(curVal)) dropdown.value = curVal;
 }
 
+// Bug 3 Fix: populate the absence-employee dropdown (was never filled before)
+function populateAbsenceDropdown() {
+  const fullView = document.getElementById('admin-full-view');
+  const dropdown = fullView ? fullView.querySelector('#absence-employee') : document.getElementById('absence-employee');
+  if (!dropdown) return;
+  const allUsers = new Set(adminAllEntriesCache.map(r => r.user));
+  const curVal   = dropdown.value;
+  dropdown.innerHTML = '<option value="">-- auswählen --</option>';
+  [...allUsers].sort().forEach(u => {
+    const opt = document.createElement('option'); opt.value = u; opt.textContent = u;
+    dropdown.appendChild(opt);
+  });
+  if ([...allUsers].includes(curVal)) dropdown.value = curVal;
+}
+
 function renderEmployeeDetail() {
-  const selectedUser = document.getElementById('admin-employee-select').value;
-  const tbody        = document.getElementById('admin-employee-table-body');
-  const statsCards   = document.getElementById('employee-stats-cards');
-  const pdfBtn       = document.getElementById('btn-export-employee-pdf');
+  const fullView   = document.getElementById('admin-full-view');
+  const scopedEl   = id => fullView ? fullView.querySelector('#' + id) : document.getElementById(id);
+  const selectedUser = scopedEl('admin-employee-select')?.value;
+  const tbody        = scopedEl('admin-employee-table-body');
+  const statsCards   = scopedEl('employee-stats-cards');
+  const pdfBtn       = scopedEl('btn-export-employee-pdf');
 
   if (!selectedUser) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--admin-text-muted);"><i class="fa-solid fa-user-clock" style="margin-right:8px;font-size:16px;"></i>Bitte Mitarbeiter auswählen.</td></tr>`;
@@ -184,12 +221,15 @@ function renderEmployeeDetail() {
   const vacationDays = empData.filter(r => r.category === 'VACATION').length;
   const sickDays     = empData.filter(r => r.category === 'SICK').length;
 
-  document.getElementById('emp-stat-name').textContent     = selectedUser;
-  document.getElementById('emp-stat-hours').textContent    = totalHours.toFixed(2) + ' h';
-  document.getElementById('emp-stat-vacation').textContent = vacationDays;
-  document.getElementById('emp-stat-sick').textContent     = sickDays;
+  scopedEl('emp-stat-name').textContent     = selectedUser;
+  scopedEl('emp-stat-hours').textContent    = totalHours.toFixed(2) + ' h';
+  scopedEl('emp-stat-vacation').textContent = vacationDays;
+  scopedEl('emp-stat-sick').textContent     = sickDays;
 
-  const baseTarget = parseFloat(document.getElementById('shift-target-constraint')?.value) || 8.5;
+  // Bug 2 Fix: read shift-target from the hidden input in app-view (correct element)
+  const targetEl = document.getElementById('shift-target-constraint');
+  const baseTarget = parseFloat(targetEl?.value) || 8.5;
+
   const daily = {};
   workEntries.forEach(r => {
     if (!r.hrs || r.hrs <= 0) return;
@@ -203,7 +243,7 @@ function renderEmployeeDetail() {
     const soll = wd===5 ? 6 : (wd===0||wd===6 ? 0 : baseTarget);
     if (soll > 0) overtimeTotal += (hrs - soll);
   }
-  const otEl = document.getElementById('emp-stat-overtime');
+  const otEl = scopedEl('emp-stat-overtime');
   if (otEl) { const sign = overtimeTotal >= 0 ? '+' : ''; otEl.textContent = sign + overtimeTotal.toFixed(2) + ' h'; otEl.style.color = overtimeTotal >= 0 ? '#10b981' : '#ef4444'; }
   statsCards.style.display = 'grid';
 
@@ -218,7 +258,11 @@ function renderEmployeeDetail() {
 }
 
 function exportEmployeePDF() {
-  const selectedUser = document.getElementById('admin-employee-select').value; if (!selectedUser) return;
+  const fullView = document.getElementById('admin-full-view');
+  const selectedUser = fullView
+    ? fullView.querySelector('#admin-employee-select')?.value
+    : document.getElementById('admin-employee-select')?.value;
+  if (!selectedUser) return;
   generateEmployeePDFDocument(selectedUser);
 }
 
@@ -232,8 +276,10 @@ function exportAllEmployeesPDF() {
 
 function exportAdminCSV() {
   if (!adminAllEntriesCache.length) { showToast(activeLanguageGlobal==='de'?'Keine Daten.':'No data.'); return; }
-  const filterUser = document.getElementById('admin-user-filter-dropdown')?.value || 'ALL';
-  const filterType = document.getElementById('admin-type-filter')?.value           || 'ALL';
+  const fullView = document.getElementById('admin-full-view');
+  const scopedEl = id => fullView ? fullView.querySelector('#' + id) : document.getElementById(id);
+  const filterUser = scopedEl('admin-user-filter-dropdown')?.value || 'ALL';
+  const filterType = scopedEl('admin-type-filter')?.value           || 'ALL';
   const rows   = adminAllEntriesCache.filter(r => { if (filterUser!=='ALL'&&r.user!==filterUser) return false; if (filterType!=='ALL'&&r.category!==filterType) return false; return true; });
   const escape = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
   const header = ['Mitarbeiter','Datum','Typ','Baustelle/Kunde','Stunden','Start','Ende','Pause (h)'];
@@ -295,11 +341,13 @@ async function saveAdminEmployeeNote() {
 }
 
 function registerAbsence() {
-  const emp    = document.getElementById('absence-employee').value;
-  const start  = document.getElementById('absence-start').value;
-  const end    = document.getElementById('absence-end').value;
-  const status = document.getElementById('absence-status');
-  if (!emp || !start || !end) { status.style.color='#f87171'; status.textContent='Bitte alle Pflichtfelder ausfüllen.'; return; }
-  status.style.color='#34d399'; status.textContent='✓ Gespeichert.';
-  setTimeout(() => { status.textContent=''; }, 3000);
+  const fullView = document.getElementById('admin-full-view');
+  // Bug 3 Fix: scope lookup to admin-full-view to get correct elements
+  const emp    = (fullView ? fullView.querySelector('#absence-employee') : document.getElementById('absence-employee'))?.value;
+  const start  = (fullView ? fullView.querySelector('#absence-start')    : document.getElementById('absence-start'))?.value;
+  const end    = (fullView ? fullView.querySelector('#absence-end')      : document.getElementById('absence-end'))?.value;
+  const status = fullView ? fullView.querySelector('#absence-status') : document.getElementById('absence-status');
+  if (!emp || !start || !end) { if(status){status.style.color='#f87171'; status.textContent='Bitte alle Pflichtfelder ausfüllen.';} return; }
+  if(status){status.style.color='#34d399'; status.textContent='✓ Gespeichert.';}
+  setTimeout(() => { if(status) status.textContent=''; }, 3000);
 }
