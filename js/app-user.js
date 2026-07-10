@@ -1,29 +1,32 @@
 let _trashPurgeInterval = null;
 
-// ── Show a full-screen loader while Firebase auth settles ──────────────
 function _showLoadingScreen() {
   var existing = document.getElementById('_auth_loader');
   if (existing) return;
   var el = document.createElement('div');
   el.id = '_auth_loader';
-  el.style.cssText = [
-    'position:fixed', 'inset:0', 'z-index:9999',
-    'background:#03060f',
-    'display:flex', 'flex-direction:column',
-    'align-items:center', 'justify-content:center', 'gap:20px'
-  ].join(';');
-  el.innerHTML = [
-    '<div style="width:52px;height:52px;border:3px solid rgba(227,6,19,0.2);',
-    'border-top-color:#E30613;border-radius:50%;',
-    'animation:_authSpin 0.75s linear infinite;"></div>',
-    '<div style="font-size:13px;font-weight:700;color:#475569;">Wird geladen…</div>',
-    '<style>@keyframes _authSpin{to{transform:rotate(360deg)}}</style>'
-  ].join('');
+  el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#03060f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;';
+  el.innerHTML = '<div style="width:52px;height:52px;border:3px solid rgba(227,6,19,0.2);border-top-color:#E30613;border-radius:50%;animation:_authSpin 0.75s linear infinite;"></div>'
+    + '<div style="font-size:13px;font-weight:700;color:#475569;">Wird geladen…</div>'
+    + '<style>@keyframes _authSpin{to{transform:rotate(360deg)}}</style>';
   document.body.appendChild(el);
 }
 function _hideLoadingScreen() {
   var el = document.getElementById('_auth_loader');
   if (el) el.remove();
+}
+
+// Show a view by removing the inline display:none set by the head script
+// Using removeProperty allows the element's own CSS (or no CSS) to take over
+function _showEl(id, displayVal) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.style.removeProperty('display');
+  el.style.display = displayVal || 'block';
+}
+function _hideEl(id) {
+  var el = document.getElementById(id);
+  if (el) el.style.display = 'none';
 }
 
 window.addEventListener('DOMContentLoaded', function() {
@@ -32,10 +35,10 @@ window.addEventListener('DOMContentLoaded', function() {
   document.getElementById('login-form').addEventListener('submit', handleLoginSubmit);
 
   var today = new Date().toISOString().split('T')[0];
-  document.getElementById('log-date-picker').value            = today;
-  document.getElementById('vacation-from-date-input').value   = today;
-  document.getElementById('vacation-to-date-input').value     = today;
-  document.getElementById('schule-date-picker').value         = today;
+  document.getElementById('log-date-picker').value          = today;
+  document.getElementById('vacation-from-date-input').value = today;
+  document.getElementById('vacation-to-date-input').value   = today;
+  document.getElementById('schule-date-picker').value       = today;
 
   var def = getDefault20to20Period();
   var startInput = document.getElementById('export-start-date');
@@ -61,13 +64,13 @@ window.addEventListener('DOMContentLoaded', function() {
       document.querySelector('.break-pill').classList.add('active');
       activeSelectedFormBreakDuration=0; saveDraftWorkEntry();
     }}));
-    flatpickr('#schule-date-picker',          Object.assign({}, commonOpts, {defaultDate:today}));
-    flatpickr('#vacation-from-date-input',    Object.assign({}, commonOpts, {defaultDate:today}));
-    flatpickr('#vacation-to-date-input',      Object.assign({}, commonOpts, {defaultDate:today}));
-    flatpickr('#export-start-date',           Object.assign({}, commonOpts));
-    flatpickr('#export-end-date',             Object.assign({}, commonOpts));
-    flatpickr('#absence-start',               Object.assign({}, commonOpts, {dateFormat:'Y-m-d'}));
-    flatpickr('#absence-end',                 Object.assign({}, commonOpts, {dateFormat:'Y-m-d'}));
+    flatpickr('#schule-date-picker',       Object.assign({}, commonOpts, {defaultDate:today}));
+    flatpickr('#vacation-from-date-input', Object.assign({}, commonOpts, {defaultDate:today}));
+    flatpickr('#vacation-to-date-input',   Object.assign({}, commonOpts, {defaultDate:today}));
+    flatpickr('#export-start-date',        Object.assign({}, commonOpts));
+    flatpickr('#export-end-date',          Object.assign({}, commonOpts));
+    flatpickr('#absence-start',            Object.assign({}, commonOpts, {dateFormat:'Y-m-d'}));
+    flatpickr('#absence-end',              Object.assign({}, commonOpts, {dateFormat:'Y-m-d'}));
   }
 
   document.getElementById('log-date-picker').addEventListener('change', saveDraftWorkEntry);
@@ -84,35 +87,25 @@ window.addEventListener('DOMContentLoaded', function() {
   window.addEventListener('offline', updateOfflineBadge);
   updateOfflineBadge();
 
-  var lp     = document.getElementById('landing-page');
   var cached = localStorage.getItem('schuermann_auth_user');
-
   if (!cached) {
-    // No session — show landing normally
-    if (lp) lp.style.display = 'block';
+    // No session — landing already visible from head script
     return;
   }
 
-  // We have a cached UID.
-  // Hide landing immediately (no flash), show spinner, wait for Firebase.
-  if (lp) lp.style.display = 'none';
+  // Hide landing, show loader, wait for Firebase
+  _hideEl('landing-page');
   _showLoadingScreen();
   authenticatedUserGlobal = cached;
   _waitForFirebaseAuth(cached);
 });
 
-// ── Wait for Firebase auth (mobile-safe, handles slow/offline) ────────────
 function _waitForFirebaseAuth(cachedUid) {
-
-  // Fast path — Firebase already has a current user
   if (auth.currentUser) {
     _restoreSessionFromFirebase(auth.currentUser, cachedUid);
     return;
   }
-
   var settled = false;
-
-  // onAuthStateChanged fires once Firebase has checked the persisted token
   var unsubscribe = auth.onAuthStateChanged(function(user) {
     if (settled) return;
     settled = true;
@@ -120,34 +113,25 @@ function _waitForFirebaseAuth(cachedUid) {
     if (user) {
       _restoreSessionFromFirebase(user, cachedUid);
     } else {
-      // Firebase explicitly says "no session" — clear and show landing
       _clearSessionAndShowLanding();
     }
   });
-
-  // Safety net: if the callback never fires (total offline + cold start)
-  // wait 8 s then fall back to cached role so the user isn't stuck
   setTimeout(function() {
     if (settled) return;
     settled = true;
     unsubscribe();
     if (!navigator.onLine) {
-      // Offline — trust the cache
       authenticatedUserRoleGlobal = localStorage.getItem('schuermann_auth_role') || 'user';
       _hideLoadingScreen();
       launchSessionUI();
     } else {
-      // Online but Firebase didn't respond in 8 s — give up, show landing
       _clearSessionAndShowLanding();
     }
   }, 8000);
 }
 
 async function _restoreSessionFromFirebase(user, cachedUid) {
-  if (user.uid !== cachedUid) {
-    _clearSessionAndShowLanding();
-    return;
-  }
+  if (user.uid !== cachedUid) { _clearSessionAndShowLanding(); return; }
   try {
     var snap = await db.collection('userProfiles').doc(cachedUid).get();
     var data = snap.exists ? snap.data() : {};
@@ -169,11 +153,9 @@ function _clearSessionAndShowLanding() {
   authenticatedUserGlobal     = '';
   authenticatedUserRoleGlobal = 'user';
   _hideLoadingScreen();
-  var lp = document.getElementById('landing-page');
-  if (lp) lp.style.display = 'block';
+  _showEl('landing-page', 'block');
 }
 
-// ── reinitDatePickers ─────────────────────────────────────────────────────
 function reinitDatePickers() {
   if (!window.flatpickr) return;
   var commonOpts = {
@@ -204,7 +186,6 @@ function reinitDatePickers() {
   }, 300);
 }
 
-// ── showToast ─────────────────────────────────────────────────────────────
 function showToast(msg, type) {
   type = type || 'success';
   var toast  = document.getElementById('toast-notification');
@@ -215,7 +196,6 @@ function showToast(msg, type) {
   setTimeout(function(){ toast.classList.remove('show'); }, 3200);
 }
 
-// ── handleLoginSubmit (legacy hidden form) ────────────────────────────────
 async function handleLoginSubmit(e) {
   e.preventDefault();
   var rawName   = document.getElementById('username').value.trim().replace(/\s+/g,' ');
@@ -256,27 +236,25 @@ async function handleLoginSubmit(e) {
   }
 }
 
-// ── launchSessionUI ───────────────────────────────────────────────────────
 async function launchSessionUI() {
-  // Always hide loader & landing
   _hideLoadingScreen();
-  var lp = document.getElementById('landing-page');
-  if (lp) lp.style.display = 'none';
-
-  document.getElementById('login-view').style.display = 'none';
+  // Hide landing using _hideEl so we don't fight CSS specificity
+  _hideEl('landing-page');
+  _hideEl('login-view');
 
   if (authenticatedUserRoleGlobal === 'admin') {
-    document.getElementById('app-view').style.display        = 'none';
-    document.getElementById('admin-full-view').style.display = 'block';
+    _hideEl('app-view');
+    _showEl('admin-full-view', 'block');
     document.getElementById('admin-user-display').textContent = localStorage.getItem('schuermann_current_user') || 'Admin';
     document.body.classList.add('admin-mode');
     launchAdminDashboard();
     return;
   }
 
-  document.getElementById('admin-full-view').style.display = 'none';
+  _hideEl('admin-full-view');
   document.body.classList.remove('admin-mode');
-  document.getElementById('app-view').style.display = 'block';
+  // Use _showEl so the inline style is set cleanly
+  _showEl('app-view', 'block');
 
   var displayName = localStorage.getItem('schuermann_current_user') || authenticatedUserGlobal;
   document.getElementById('user-profile-title').textContent    = displayName;
@@ -296,7 +274,6 @@ async function launchSessionUI() {
   initializeDeviceTrackingEngine(displayName);
 }
 
-// ── UI helpers ────────────────────────────────────────────────────────────
 function toggleSidebarDrawer(open) {
   document.getElementById('sidebar-drawer').classList.toggle('open', open);
   document.getElementById('menu-backdrop').classList.toggle('show', open);
@@ -327,12 +304,11 @@ function handleSecureSignOutRequest() {
     authenticatedUserGlobal=''; authenticatedUserRoleGlobal='user';
     globalLoggedSessionsDatabaseMock=[]; vacationLoggedDaysArrayCache=[];
     recentlyDeletedItemsBinCache=[]; adminAllEntriesCache=[];
-    document.getElementById('app-view').style.display        = 'none';
-    document.getElementById('admin-full-view').style.display = 'none';
-    document.getElementById('login-view').style.display      = 'none';
+    _hideEl('app-view');
+    _hideEl('admin-full-view');
+    _hideEl('login-view');
     document.body.classList.remove('admin-mode');
-    var lp = document.getElementById('landing-page');
-    if (lp) lp.style.display = 'block';
+    _showEl('landing-page', 'block');
   });
 }
 
@@ -501,7 +477,7 @@ function renderRecentlyDeletedBinSheet() {
   recentlyDeletedItemsBinCache.forEach(function(item){
     var typeLabel=item.type==='work'?(activeLanguageGlobal==='de'?'Arbeitszeit':'Work Record'):item.type==='sick'?(activeLanguageGlobal==='de'?'Krankmeldung':'Sick Leave'):(activeLanguageGlobal==='de'?'Urlaubstag':'Vacation Day');
     var row=document.createElement('div'); row.className='history-item'; row.style.borderLeftColor='#94a3b8';
-    row.innerHTML='<div class="item-main-row"><div class="hist-left"><h5 style="color:#94a3b8;">['+( activeLanguageGlobal==='de'?'Gelöscht':'Deleted')+'] '+(item.project||item.notes||'–')+'</h5><p>'+(item.date||'')+' ('+typeLabel+')</p></div>'
+    row.innerHTML='<div class="item-main-row"><div class="hist-left"><h5 style="color:#94a3b8;">['+(activeLanguageGlobal==='de'?'Gelöscht':'Deleted')+'] '+(item.project||item.notes||'–')+'</h5><p>'+(item.date||'')+' ('+typeLabel+')</p></div>'
       +'<button class="restore-btn" onclick="restoreItemFromTrashBin(\''+item.id+'\')">'+(activeLanguageGlobal==='de'?'Reaktivieren':'Restore')+'</button></div>';
     mount.appendChild(row);
   });
