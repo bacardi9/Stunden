@@ -87,8 +87,7 @@ async function handleRegisterAndPay() {
     msg.className = 'modal-msg success';
     setTimeout(function() {
       closeRegisterModal();
-      hideLandingShowApp();
-      launchSessionUI();
+      _showApp();
     }, 1000);
   } catch(err) {
     console.error(err);
@@ -101,6 +100,26 @@ async function handleRegisterAndPay() {
   }
 }
 
+// ── Core: hide landing & launch app ─────────────────────────────────
+// Single place that hides landing + calls launchSessionUI.
+// All login paths call this instead of duplicating the logic.
+function _showApp() {
+  // 1. Hide landing
+  var lp = document.getElementById('landing-page');
+  if (lp) lp.style.display = 'none';
+
+  // 2. Make sure all three shell views start hidden — launchSessionUI picks the right one
+  var appView   = document.getElementById('app-view');
+  var adminView = document.getElementById('admin-full-view');
+  var loginView = document.getElementById('login-view');
+  if (appView)   appView.style.display   = 'none';
+  if (adminView) adminView.style.display = 'none';
+  if (loginView) loginView.style.display = 'none';
+
+  // 3. Launch — this sets the correct view to block
+  launchSessionUI();
+}
+
 // ── Login via modal ──────────────────────────────────────────────────
 async function handleModalLogin(e) {
   e.preventDefault();
@@ -108,19 +127,27 @@ async function handleModalLogin(e) {
   var code    = document.getElementById('modal-passcode').value.trim();
   var msg     = document.getElementById('modal-login-msg');
   var btn     = document.getElementById('modal-login-btn');
-  msg.textContent = 'Verbindung wird hergestellt…'; msg.className = 'modal-msg success';
-  btn.disabled = true; btn.textContent = 'Anmelden…';
+
+  msg.textContent = 'Verbindung wird hergestellt…';
+  msg.className   = 'modal-msg success';
+  btn.disabled    = true;
+  btn.textContent = 'Anmelden…';
+
   try {
     var loginKey = rawName.toLowerCase()
       .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
       .replace(/[^a-z0-9]/gi,'');
     if (!loginKey) throw new Error('empty-name');
+
     var email = loginKey + '@sch.local';
     var cred  = await auth.signInWithEmailAndPassword(email, code);
+
     authenticatedUserGlobal = cred.user.uid;
+
     var displayName = rawName.split(' ').map(function(w) {
       return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
     }).join(' ');
+
     var isAdminFlag = false, companyName = '';
     try {
       var snap = await db.collection('userProfiles').doc(cred.user.uid).get();
@@ -129,56 +156,43 @@ async function handleModalLogin(e) {
         companyName = snap.data().companyName || '';
       }
     } catch(e) {}
+
     authenticatedUserRoleGlobal = isAdminFlag ? 'admin' : 'user';
     localStorage.setItem('schuermann_auth_user',    cred.user.uid);
     localStorage.setItem('schuermann_auth_role',    authenticatedUserRoleGlobal);
     localStorage.setItem('schuermann_current_user', displayName);
     if (companyName) localStorage.setItem('schuermann_company_name', companyName);
+
     await db.collection('userProfiles').doc(cred.user.uid).set({
       name: displayName, uid: cred.user.uid,
       lastLogin: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
+
     msg.textContent = 'Willkommen, ' + displayName + '!';
-    msg.className = 'modal-msg success';
-    setTimeout(function() {
-      closeLoginModal();
-      hideLandingShowApp();
-      launchSessionUI();
-    }, 500);
+    msg.className   = 'modal-msg success';
+
+    // Close modal first, THEN show the app after a short tick
+    closeLoginModal();
+    setTimeout(function() { _showApp(); }, 300);
+
   } catch(err) {
     console.error(err);
     msg.textContent = 'Mitarbeiter nicht gefunden oder falsches Kennwort.';
-    msg.className = 'modal-msg error';
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket" style="margin-right:8px;"></i>Anmelden';
+    msg.className   = 'modal-msg error';
+    btn.disabled    = false;
+    btn.innerHTML   = '<i class="fa-solid fa-right-to-bracket" style="margin-right:8px;"></i>Anmelden';
   }
 }
 
-// ── Hide landing, reveal app shell ────────────────────────────────────
+// ── Hide landing, reveal app shell (kept for backwards-compat) ────────
 function hideLandingShowApp() {
   var lp = document.getElementById('landing-page');
   if (lp) lp.style.display = 'none';
-
-  var appView   = document.getElementById('app-view');
-  var adminView = document.getElementById('admin-full-view');
-  var loginView = document.getElementById('login-view');
-
-  if (appView)   { appView.removeAttribute('style');   appView.style.display   = 'none'; }
-  if (adminView) { adminView.removeAttribute('style');  adminView.style.display = 'none'; }
-  if (loginView) { loginView.removeAttribute('style');  loginView.style.display = 'none'; }
 }
 
-// ── Auto-restore session: skip landing if already logged in ─────────────
-// BUG 1 FIX: Don't hide the landing here — let app-user.js DOMContentLoaded
-// handler do it ONLY after the Firebase token is confirmed valid.
-// If we hide landing here and the token check fails, the user sees a blank screen.
-(function checkCachedSession() {
-  // intentionally left empty — app-user.js handles session restore in DOMContentLoaded
-})();
-
-// ── Patch sign-out to return to landing (runs after app-user.js is ready) ──
+// ── Patch sign-out to return to landing ──────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
-  // Patch handleSecureSignOutRequest
+
   var _origSignOut = window.handleSecureSignOutRequest;
   window.handleSecureSignOutRequest = function() {
     if (typeof toggleSidebarDrawer === 'function') toggleSidebarDrawer(false);
@@ -190,8 +204,8 @@ document.addEventListener('DOMContentLoaded', function() {
           auth.signOut().catch(function(){});
           localStorage.removeItem('schuermann_auth_user');
           localStorage.removeItem('schuermann_auth_role');
-          authenticatedUserGlobal     = '';
-          authenticatedUserRoleGlobal = 'user';
+          authenticatedUserGlobal      = '';
+          authenticatedUserRoleGlobal  = 'user';
           globalLoggedSessionsDatabaseMock = [];
           vacationLoggedDaysArrayCache     = [];
           recentlyDeletedItemsBinCache     = [];
@@ -200,8 +214,8 @@ document.addEventListener('DOMContentLoaded', function() {
           var adminView = document.getElementById('admin-full-view');
           var loginView = document.getElementById('login-view');
           if (appView)   appView.style.display   = 'none';
-          if (adminView) adminView.style.display = 'none';
-          if (loginView) loginView.style.display = 'none';
+          if (adminView) adminView.style.display  = 'none';
+          if (loginView) loginView.style.display  = 'none';
           document.body.classList.remove('admin-mode');
           var lp = document.getElementById('landing-page');
           if (lp) lp.style.display = 'block';
@@ -212,7 +226,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   };
 
-  // Patch admin sign-out too
   var _origAdminSignOut = window.handleAdminSignOut;
   if (typeof _origAdminSignOut === 'function') {
     window.handleAdminSignOut = function() {
@@ -223,8 +236,10 @@ document.addEventListener('DOMContentLoaded', function() {
           localStorage.removeItem('schuermann_auth_role');
           authenticatedUserGlobal     = '';
           authenticatedUserRoleGlobal = 'user';
-          document.getElementById('admin-full-view').style.display = 'none';
-          document.getElementById('app-view').style.display        = 'none';
+          var appView   = document.getElementById('app-view');
+          var adminView = document.getElementById('admin-full-view');
+          if (appView)   appView.style.display   = 'none';
+          if (adminView) adminView.style.display  = 'none';
           document.body.classList.remove('admin-mode');
           var lp = document.getElementById('landing-page');
           if (lp) lp.style.display = 'block';
@@ -234,7 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// ── ESC closes modals ────────────────────────────────────────────────
+// ── ESC closes modals ─────────────────────────────────────────────────
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') { closeLoginModal(); closeRegisterModal(); }
 });
