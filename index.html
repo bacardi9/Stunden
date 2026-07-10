@@ -69,15 +69,26 @@
 </script>
 <script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
 
-<!-- !! CRITICAL: Hide app shells before ANY css loads.
-     JS will set display:block on whichever view is needed.
-     Using !important + inline style to beat any CSS specificity on mobile. !! -->
-<style>
-  #app-view        { display: none !important; }
-  #admin-full-view { display: none !important; }
-  #login-view      { display: none !important; }
-  #landing-page    { display: block; }
-</style>
+<!-- CRITICAL: Set initial visibility via JS before DOM loads.
+     Do NOT use CSS !important here — it blocks JS from overriding on mobile. -->
+<script>
+// Run immediately — hides shells, shows landing if no cached session
+(function() {
+  // Mark shells as initially hidden using a data attribute + inline style
+  // JS will remove the inline style when showing a view (overrides cleanly)
+  document.addEventListener('DOMContentLoaded', function() {
+    var cached = localStorage.getItem('schuermann_auth_user');
+    var lp = document.getElementById('landing-page');
+    var av = document.getElementById('app-view');
+    var adv = document.getElementById('admin-full-view');
+    var lv = document.getElementById('login-view');
+    if (av)  av.style.setProperty('display','none');
+    if (adv) adv.style.setProperty('display','none');
+    if (lv)  lv.style.setProperty('display','none');
+    if (lp)  lp.style.setProperty('display', cached ? 'none' : 'block');
+  });
+})();
+</script>
 
 <meta name="color-scheme" content="dark light">
 <meta charset="UTF-8">
@@ -313,7 +324,7 @@
               <div class="mock-period-label"><span>KW 24 · 20. Mai – 19. Jun</span><span style="color:#0ea5e9;">68%</span></div>
               <div class="mock-progress-track"><div class="mock-progress-fill" style="width:68%;"></div></div>
               <div style="display:flex;justify-content:space-between;align-items:center;">
-                <span style="font-size:9px;color:#475569;"><i class="fa-solid fa-calendar-day" style="color:#0ea5e9;margin-right:3px;"></i>6 Arbeitstage verbleibend</span>
+                <span style="font-size:9px;color:#475569;"><i class="fa-solid fa-calendar-day" style="color:#0ea5e9;margin-right:3px;"></i>6 Arbeitstage</span>
                 <div class="mock-missing-btn"><i class="fa-solid fa-triangle-exclamation" style="font-size:9px;"></i>3 fehlende<i class="fa-solid fa-chevron-down" style="font-size:8px;"></i></div>
               </div>
               <div class="mock-missing-panel">
@@ -360,7 +371,7 @@
           <div class="lp-phone-body">
             <div style="font-size:9px;color:#475569;font-weight:700;margin-bottom:2px;">KW 24 · 10. Jun – 16. Jun</div>
             <div class="mock-chart-bars">
-              <div class="mock-chart-col"><div style="font-size:8px;font-weight:700;color:#94a3b8;">8.8</div><div class="mock-chart-bar" style="height:72%;background:#E30613;box-shadow:0 3px 10px rgba(227,6,19,0.3);"></div><div class="mock-chart-lbl" style="color:#E30613;font-weight:800;">Mo</div></div>
+              <div class="mock-chart-col"><div style="font-size:8px;font-weight:700;color:#94a3b8;">8.8</div><div class="mock-chart-bar" style="height:72%;background:#E30613;"></div><div class="mock-chart-lbl" style="color:#E30613;font-weight:800;">Mo</div></div>
               <div class="mock-chart-col"><div style="font-size:8px;font-weight:700;color:#94a3b8;">9.3</div><div class="mock-chart-bar" style="height:86%;background:#0ea5e9;"></div><div class="mock-chart-lbl">Di</div></div>
               <div class="mock-chart-col" style="background:rgba(14,165,233,0.08);border-radius:6px;"><div style="font-size:8px;font-weight:700;color:#0ea5e9;">8.5</div><div class="mock-chart-bar" style="height:78%;background:#0ea5e9;"></div><div class="mock-chart-lbl" style="color:#0ea5e9;font-weight:800;">Mi ▾</div></div>
               <div class="mock-chart-col"><div style="font-size:8px;font-weight:700;color:#94a3b8;">9.0</div><div class="mock-chart-bar" style="height:82%;background:#f59e0b;"></div><div class="mock-chart-lbl">Do</div></div>
@@ -445,7 +456,7 @@
         </ul>
       </div>
       <div class="lp-feature-row-mock">
-        <div class="lp-phone" style="border-radius:16px;">
+        <div class="lp-phone">
           <div class="lp-phone-bar"><div class="lp-phone-bar-title"><i class="fa-solid fa-file-pdf" style="color:#E30613;margin-right:6px;font-size:10px;"></i>PDF Vorschau</div><span style="font-size:9px;color:#10b981;font-weight:800;"><i class="fa-solid fa-download" style="margin-right:3px;"></i>Export</span></div>
           <div class="lp-phone-body">
             <div class="mock-pdf-frame">
@@ -481,9 +492,9 @@
           <div class="lp-phone-bar"><div class="lp-phone-bar-title"><i class="fa-solid fa-chart-simple" style="color:#f59e0b;margin-right:6px;font-size:10px;"></i>Dashboard</div><div style="display:flex;gap:4px;align-items:center;"><div style="width:6px;height:6px;background:#10b981;border-radius:50%;box-shadow:0 0 5px #10b981;"></div><span style="font-size:9px;color:#475569;font-weight:700;">Cloud Sync</span></div></div>
           <div class="lp-phone-body">
             <div class="mock-streak-card"><div class="mock-streak-flame">🔥</div><div><div class="mock-streak-num">12 Tage</div><div class="mock-streak-lbl">Aktuelle Serie</div></div><div class="mock-streak-best"><div class="mock-streak-best-num">18 Tage</div><div class="mock-streak-best-lbl">Bestleistung</div></div></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-              <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-top:3px solid #0ea5e9;border-radius:10px;padding:12px;"><div style="font-size:8px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Netto-Arbeitszeit</div><div style="font-size:18px;font-weight:800;color:#f1f5f9;letter-spacing:-0.8px;">162.50 <span style="font-size:10px;color:#64748b;">hrs</span></div></div>
-              <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);border-top:3px solid #10b981;border-radius:10px;padding:12px;"><div style="font-size:8px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Überstunden</div><div style="font-size:18px;font-weight:800;color:#10b981;letter-spacing:-0.8px;">+14.25 <span style="font-size:10px;">hrs</span></div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-top:3px solid #0ea5e9;border-radius:10px;padding:12px;"><div style="font-size:8px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:5px;">Netto-Arbeitszeit</div><div style="font-size:18px;font-weight:800;color:#f1f5f9;letter-spacing:-0.8px;">162.50 <span style="font-size:10px;color:#64748b;">hrs</span></div></div>
+              <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);border-top:3px solid #10b981;border-radius:10px;padding:12px;"><div style="font-size:8px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:5px;">Überstunden</div><div style="font-size:18px;font-weight:800;color:#10b981;letter-spacing:-0.8px;">+14.25 <span style="font-size:10px;">hrs</span></div></div>
             </div>
           </div>
         </div>
@@ -527,14 +538,14 @@
     <h2 class="lp-section-title">Alles was ein Handwerksbetrieb braucht</h2>
     <p class="lp-section-sub">Einmalig kaufen — alle Features, kein Abo, lebenslanger Zugang.</p>
     <div class="lp-features-grid">
-      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-file-pdf" style="color:#E30613;"></i></div><div class="lp-feature-title">PDF Export mit deinem Firmennamen</div><div class="lp-feature-desc">Dein Firmenname erscheint automatisch auf jedem exportierten Stundenzettel — professionell und sofort einsatzbereit.</div></div>
-      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(16,185,129,0.1);"><i class="fa-solid fa-clock" style="color:#10b981;"></i></div><div class="lp-feature-title">Automatische Überstundenberechnung</div><div class="lp-feature-desc">Überstunden werden täglich automatisch berechnet und summiert — kein manuelles Rechnen.</div></div>
-      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(239,68,68,0.1);"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i></div><div class="lp-feature-title">Fehlende Tage erkennen & nachtragen</div><div class="lp-feature-desc">Die App erkennt automatisch welche Arbeitstage noch fehlen — mit einem Klick direkt nachbuchen.</div></div>
-      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(14,165,233,0.1);"><i class="fa-solid fa-chart-column" style="color:#0ea5e9;"></i></div><div class="lp-feature-title">Interaktive Wochenübersicht</div><div class="lp-feature-desc">Alle Arbeitsstunden der aktuellen Woche als anklickbares Balkendiagramm — jeden Tag antippen für volle Details.</div></div>
-      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(227,6,19,0.1);"><i class="fa-solid fa-wand-magic-sparkles" style="color:#E30613;"></i></div><div class="lp-feature-title">KI-Stundenzettel Scan</div><div class="lp-feature-desc">Foto aufnehmen — die KI liest Datum, Zeiten, Baustelle und Pausen automatisch aus und trägt alles ein.</div></div>
-      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(139,92,246,0.1);"><i class="fa-solid fa-cloud-arrow-up" style="color:#8b5cf6;"></i></div><div class="lp-feature-title">Cloud-Sync & Datensicherheit</div><div class="lp-feature-desc">Deine Daten sicher in der Cloud — auf jedem Gerät verfügbar. Auch offline erfassen, automatisch synchronisieren.</div></div>
-      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(245,158,11,0.1);"><i class="fa-solid fa-umbrella-beach" style="color:#f59e0b;"></i></div><div class="lp-feature-title">Urlaub & Krankmeldungen</div><div class="lp-feature-desc">Urlaubstage und Krankmeldungen erfassen, Resturlaub automatisch berechnen — alles an einem Ort.</div></div>
-      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(14,165,233,0.1);"><i class="fa-solid fa-moon" style="color:#0ea5e9;"></i></div><div class="lp-feature-title">Dark Mode & mehrsprachig</div><div class="lp-feature-desc">Augenschonendes dunkles Design für frühe Morgenstunden. Verfügbar auf Deutsch und Englisch.</div></div>
+      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-file-pdf" style="color:#E30613;"></i></div><div class="lp-feature-title">PDF Export mit deinem Firmennamen</div><div class="lp-feature-desc">Dein Firmenname erscheint automatisch auf jedem exportierten Stundenzettel.</div></div>
+      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(16,185,129,0.1);"><i class="fa-solid fa-clock" style="color:#10b981;"></i></div><div class="lp-feature-title">Automatische Überstundenberechnung</div><div class="lp-feature-desc">Überstunden werden täglich automatisch berechnet und summiert.</div></div>
+      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(239,68,68,0.1);"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i></div><div class="lp-feature-title">Fehlende Tage erkennen & nachtragen</div><div class="lp-feature-desc">Die App erkennt automatisch welche Arbeitstage noch fehlen.</div></div>
+      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(14,165,233,0.1);"><i class="fa-solid fa-chart-column" style="color:#0ea5e9;"></i></div><div class="lp-feature-title">Interaktive Wochenübersicht</div><div class="lp-feature-desc">Alle Arbeitsstunden der Woche als anklickbares Balkendiagramm.</div></div>
+      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(227,6,19,0.1);"><i class="fa-solid fa-wand-magic-sparkles" style="color:#E30613;"></i></div><div class="lp-feature-title">KI-Stundenzettel Scan</div><div class="lp-feature-desc">Foto aufnehmen — die KI liest alles automatisch aus und trägt ein.</div></div>
+      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(139,92,246,0.1);"><i class="fa-solid fa-cloud-arrow-up" style="color:#8b5cf6;"></i></div><div class="lp-feature-title">Cloud-Sync & Datensicherheit</div><div class="lp-feature-desc">Deine Daten sicher in der Cloud — auf jedem Gerät verfügbar.</div></div>
+      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(245,158,11,0.1);"><i class="fa-solid fa-umbrella-beach" style="color:#f59e0b;"></i></div><div class="lp-feature-title">Urlaub & Krankmeldungen</div><div class="lp-feature-desc">Urlaubstage und Krankmeldungen erfassen, Resturlaub automatisch berechnen.</div></div>
+      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(14,165,233,0.1);"><i class="fa-solid fa-moon" style="color:#0ea5e9;"></i></div><div class="lp-feature-title">Dark Mode & mehrsprachig</div><div class="lp-feature-desc">Augenschonendes dunkles Design. Verfügbar auf Deutsch und Englisch.</div></div>
     </div>
   </section>
 
