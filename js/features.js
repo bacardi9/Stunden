@@ -48,7 +48,6 @@ function removeLogo() {
 }
 (function(){ const saved=localStorage.getItem(LOGO_KEY); if(saved) applyLogo(saved); })();
 
-// ── Feature 8: Live Clock ──────────────────────────────────────────────────
 function startLiveClock() {
   const el = document.getElementById('live-clock-display');
   if (!el) return;
@@ -60,7 +59,6 @@ function startLiveClock() {
   setInterval(tick, 1000);
 }
 
-// ── Feature 10: Smart Greeting ────────────────────────────────────────────
 function getSmartGreeting(name) {
   const h = new Date().getHours();
   if (h < 12) return (activeLanguageGlobal==='en' ? `Good morning, ${name} ☀️` : `Guten Morgen, ${name} ☀️`);
@@ -68,7 +66,6 @@ function getSmartGreeting(name) {
   return          (activeLanguageGlobal==='en' ? `Good evening, ${name} 🌙`  : `Guten Abend, ${name} 🌙`);
 }
 
-// ── Feature 3: Welcome Splash ─────────────────────────────────────────────
 function showWelcomeSplash(name) {
   const existing = document.getElementById('welcome-splash');
   if (existing) existing.remove();
@@ -91,7 +88,6 @@ function showWelcomeSplash(name) {
   }, 1800);
 }
 
-// ── Feature 9: Period Progress Bar ───────────────────────────────────────
 function renderPeriodProgressBar() {
   const el = document.getElementById('period-progress-container');
   if (!el) return;
@@ -137,13 +133,16 @@ function renderPeriodProgressBar() {
       <div id="missing-days-panel" style="display:none;margin-top:12px;border-top:1px solid rgba(0,0,0,0.06);padding-top:12px;"></div>
     </div>`;
 
+  // Bug 2 Fix: Use unique IDs for the hist clone to avoid duplicate DOM IDs
   const elHist = document.getElementById('period-progress-container-hist');
-  if (elHist) elHist.innerHTML = el.innerHTML
-    .replace('period-progress-bar-card','period-progress-bar-card-hist')
-    .replace('missing-days-panel','missing-days-panel-hist')
-    .replace('missing-days-toggle-btn','missing-days-toggle-btn-hist')
-    .replace('missing-chevron','missing-chevron-hist')
-    .replace('toggleMissingDaysPanel()','toggleMissingDaysPanel(true)');
+  if (elHist) {
+    elHist.innerHTML = el.innerHTML
+      .replace(/id="period-progress-bar-card"/g,  'id="period-progress-bar-card-hist"')
+      .replace(/id="missing-days-panel"/g,         'id="missing-days-panel-hist"')
+      .replace(/id="missing-days-toggle-btn"/g,    'id="missing-days-toggle-btn-hist"')
+      .replace(/id="missing-chevron"/g,            'id="missing-chevron-hist"')
+      .replace(/onclick="toggleMissingDaysPanel\(\)"/g, 'onclick="toggleMissingDaysPanel(true)"');
+  }
 }
 
 function getMissingDays(def) {
@@ -349,6 +348,19 @@ function saveMissingDayEntry(dateKey, isoDate, isHist) {
   const [eh,em] = endVal.split(':').map(Number);
   const gross   = (eh*60+em) - (sh*60+sm);
   if (gross <= 0) { showToast('⚠ Endzeit muss nach Startzeit liegen', 'error'); return; }
+
+  const startMins = sh * 60 + sm;
+  const endMins   = eh * 60 + em;
+  const existing  = globalLoggedSessionsDatabaseMock.filter(r => r.type === 'work' && r.date === dateKey);
+  for (const rec of existing) {
+    const rStart = parseInt(rec.startTime.split(':')[0])*60 + parseInt(rec.startTime.split(':')[1]);
+    const rEnd   = parseInt(rec.endTime.split(':')[0])*60   + parseInt(rec.endTime.split(':')[1]);
+    if (startMins < rEnd && endMins > rStart) {
+      showToast(`⚠ Überschneidung mit ${rec.startTime}–${rec.endTime}`, 'error');
+      return;
+    }
+  }
+
   const record = { id:'work-'+Date.now(), type:'work', date:dateKey, startTime:startVal, endTime:endVal, project, duration:gross/60, breakTime:brk, notes:'' };
   globalLoggedSessionsDatabaseMock.unshift(record);
   persistUserData(); renderHistoricalRecordsSheet(); runGlobalApplicationMetricsEngine(); renderPeriodProgressBar();
@@ -388,7 +400,6 @@ function closeMissingDayForm(isHist) {
   });
 }
 
-// ── Feature 5: Quick Stats Strip ─────────────────────────────────────────
 function renderQuickStatsStrip() {
   const el = document.getElementById('quick-stats-strip');
   if (!el) return;
@@ -405,7 +416,6 @@ function renderQuickStatsStrip() {
     </div>`;
 }
 
-// ── Feature 14: Nav Badge ─────────────────────────────────────────────────
 function updateNavBadge() {
   const existing = document.getElementById('hist-nav-badge');
   if (existing) existing.remove();
@@ -420,7 +430,6 @@ function updateNavBadge() {
   navItem.appendChild(badge);
 }
 
-// ── Feature 12: Login Attempt Limiter ────────────────────────────────────
 const LOGIN_ATTEMPTS_KEY = 'sch_login_attempts';
 const LOGIN_LOCKOUT_KEY  = 'sch_login_lockout';
 const MAX_ATTEMPTS = 3;
@@ -439,7 +448,6 @@ function recordFailedLoginAttempt() {
 }
 function clearLoginAttempts() { localStorage.removeItem(LOGIN_ATTEMPTS_KEY); localStorage.removeItem(LOGIN_LOCKOUT_KEY); }
 
-// ── Feature 13: Last Login Info ────────────────────────────────────────────
 async function renderLastLoginInfo() {
   const el = document.getElementById('last-login-info');
   if (!el || !authenticatedUserGlobal) return;
@@ -456,7 +464,6 @@ async function renderLastLoginInfo() {
   } catch(e) {}
 }
 
-// ── Feature 6: Entry Save Haptic + Sound ─────────────────────────────────
 function triggerSaveHaptic() {
   if (navigator.vibrate) navigator.vibrate(40);
   try {
@@ -467,7 +474,6 @@ function triggerSaveHaptic() {
   } catch(e) {}
 }
 
-// ── CSS ───────────────────────────────────────────────────────────────────
 (function injectFeatureCSS() {
   const style = document.createElement('style');
   style.textContent = `
@@ -488,7 +494,6 @@ function triggerSaveHaptic() {
   document.head.appendChild(style);
 })();
 
-// ── Device tracking ────────────────────────────────────────────────────────
 let currentDeviceIdGlobal = null;
 let deviceListenerUnsub   = null;
 
@@ -496,7 +501,6 @@ async function initializeDeviceTrackingEngine(displayName) {
   const uid = authenticatedUserGlobal;
   if (!uid || typeof db === 'undefined') return;
 
-  // ✅ Wait for Firebase Auth to be fully ready before attaching listener
   await new Promise(resolve => {
     const unsubAuth = auth.onAuthStateChanged(user => {
       unsubAuth();
@@ -504,7 +508,6 @@ async function initializeDeviceTrackingEngine(displayName) {
     });
   });
 
-  // If not authenticated after waiting, bail out silently
   if (!auth.currentUser) return;
 
   try {
@@ -520,7 +523,6 @@ async function initializeDeviceTrackingEngine(displayName) {
       loginTime:firebase.firestore.FieldValue.serverTimestamp()
     }, { merge:true });
 
-    // ✅ Only attach snapshot listener once auth is confirmed
     if (deviceListenerUnsub) deviceListenerUnsub();
     deviceListenerUnsub = db.collection('userProfiles').doc(uid).onSnapshot(
       doc => {
@@ -537,7 +539,6 @@ async function initializeDeviceTrackingEngine(displayName) {
           }
         }
       },
-      // ✅ Silently ignore permission errors on the listener — don't crash the app
       err => { console.warn('Profile listener:', err.code); }
     );
 
