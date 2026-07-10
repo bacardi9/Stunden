@@ -84,7 +84,7 @@ async function handleRegisterAndPay() {
     msg.className = 'modal-msg success';
     setTimeout(function() {
       closeRegisterModal();
-      _showApp();
+      launchSessionUI();
     }, 800);
   } catch(err) {
     console.error(err);
@@ -95,52 +95,6 @@ async function handleRegisterAndPay() {
     btn.disabled = false;
     btn.innerHTML = '<i class="fa-solid fa-lock"></i> Jetzt kaufen & Konto aktivieren — 9,99 €';
   }
-}
-
-// ── Core show-app helper ──────────────────────────────────────────
-// Hides landing, ensures all views are hidden, then calls launchSessionUI.
-// Uses a small retry loop so mobile Firebase auth state settles first.
-function _showApp() {
-  // Hide landing page immediately
-  var lp = document.getElementById('landing-page');
-  if (lp) lp.style.display = 'none';
-
-  // Hide all shell views — launchSessionUI will show the correct one
-  var appView   = document.getElementById('app-view');
-  var adminView = document.getElementById('admin-full-view');
-  var loginView = document.getElementById('login-view');
-  if (appView)   appView.style.display   = 'none';
-  if (adminView) adminView.style.display = 'none';
-  if (loginView) loginView.style.display = 'none';
-
-  // On mobile Firebase sometimes needs a tick to stabilise auth state.
-  // Wait for auth.currentUser to be available, then launch (max 3s).
-  var attempts = 0;
-  var maxAttempts = 30; // 30 × 100ms = 3s
-  var tryLaunch = function() {
-    attempts++;
-    // If we have our global uid set, go straight away
-    if (authenticatedUserGlobal) {
-      launchSessionUI();
-      return;
-    }
-    // Fallback: check Firebase current user
-    var firebaseUser = (typeof auth !== 'undefined') ? auth.currentUser : null;
-    if (firebaseUser) {
-      authenticatedUserGlobal = firebaseUser.uid;
-      launchSessionUI();
-      return;
-    }
-    // Still waiting — retry
-    if (attempts < maxAttempts) {
-      setTimeout(tryLaunch, 100);
-    } else {
-      // Give up waiting and try anyway
-      console.warn('_showApp: auth not ready after 3s, launching anyway');
-      launchSessionUI();
-    }
-  };
-  setTimeout(tryLaunch, 80);
 }
 
 // ── Login via modal ───────────────────────────────────────────────
@@ -165,21 +119,18 @@ async function handleModalLogin(e) {
     var email = loginKey + '@sch.local';
     var cred  = await auth.signInWithEmailAndPassword(email, code);
 
-    // Set globals immediately so _showApp can find them
     authenticatedUserGlobal = cred.user.uid;
 
     var displayName = rawName.split(' ').map(function(w) {
       return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
     }).join(' ');
 
-    // Load profile in parallel — don't block the login on slow mobile connections
     var isAdminFlag = false, companyName = '';
     try {
       var snap = await db.collection('userProfiles').doc(cred.user.uid).get();
       if (snap.exists) {
         isAdminFlag = snap.data().isAdmin === true;
         companyName = snap.data().companyName || '';
-        // Pick up the stored display name if available
         if (snap.data().name) displayName = snap.data().name;
       }
     } catch(profileErr) {
@@ -192,7 +143,6 @@ async function handleModalLogin(e) {
     localStorage.setItem('schuermann_current_user', displayName);
     if (companyName) localStorage.setItem('schuermann_company_name', companyName);
 
-    // Fire-and-forget lastLogin update — don't await, keeps mobile fast
     db.collection('userProfiles').doc(cred.user.uid).set({
       name: displayName, uid: cred.user.uid,
       lastLogin: firebase.firestore.FieldValue.serverTimestamp()
@@ -201,10 +151,10 @@ async function handleModalLogin(e) {
     msg.textContent = 'Willkommen, ' + displayName + '!';
     msg.className   = 'modal-msg success';
 
-    // Close modal, tiny pause so the success message is visible, then show app
+    // Close modal then go straight to launchSessionUI — no intermediate _showApp()
     setTimeout(function() {
       closeLoginModal();
-      _showApp();
+      launchSessionUI();
     }, 400);
 
   } catch(err) {
@@ -219,16 +169,18 @@ async function handleModalLogin(e) {
   }
 }
 
-// ── Backwards-compat stub ─────────────────────────────────────────
+// ── Backwards-compat stubs ────────────────────────────────────────
 function hideLandingShowApp() {
   var lp = document.getElementById('landing-page');
   if (lp) lp.style.display = 'none';
+}
+function _showApp() {
+  launchSessionUI();
 }
 
 // ── Sign-out patches ──────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
 
-  // Patch user sign-out
   var _origSignOut = window.handleSecureSignOutRequest;
   window.handleSecureSignOutRequest = function() {
     if (typeof toggleSidebarDrawer === 'function') toggleSidebarDrawer(false);
@@ -246,15 +198,12 @@ document.addEventListener('DOMContentLoaded', function() {
           vacationLoggedDaysArrayCache     = [];
           recentlyDeletedItemsBinCache     = [];
           adminAllEntriesCache             = [];
-          var appView   = document.getElementById('app-view');
-          var adminView = document.getElementById('admin-full-view');
-          var loginView = document.getElementById('login-view');
-          if (appView)   appView.style.display   = 'none';
-          if (adminView) adminView.style.display  = 'none';
-          if (loginView) loginView.style.display  = 'none';
+          _hideEl('app-view');
+          _hideEl('admin-full-view');
+          _hideEl('login-view');
           document.body.classList.remove('admin-mode');
           var lp = document.getElementById('landing-page');
-          if (lp) lp.style.display = 'block';
+          if (lp) { lp.classList.remove('app-shell-hidden'); lp.style.display = 'block'; }
         }
       );
     } else if (typeof _origSignOut === 'function') {
@@ -262,7 +211,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   };
 
-  // Patch admin sign-out
   var _origAdminSignOut = window.handleAdminSignOut;
   if (typeof _origAdminSignOut === 'function') {
     window.handleAdminSignOut = function() {
@@ -273,13 +221,11 @@ document.addEventListener('DOMContentLoaded', function() {
           localStorage.removeItem('schuermann_auth_role');
           authenticatedUserGlobal     = '';
           authenticatedUserRoleGlobal = 'user';
-          var appView   = document.getElementById('app-view');
-          var adminView = document.getElementById('admin-full-view');
-          if (appView)   appView.style.display   = 'none';
-          if (adminView) adminView.style.display  = 'none';
+          _hideEl('app-view');
+          _hideEl('admin-full-view');
           document.body.classList.remove('admin-mode');
           var lp = document.getElementById('landing-page');
-          if (lp) lp.style.display = 'block';
+          if (lp) { lp.classList.remove('app-shell-hidden'); lp.style.display = 'block'; }
         });
       }
     };
