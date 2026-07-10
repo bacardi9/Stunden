@@ -318,6 +318,7 @@ function injectStreakCard() {
   const grid=dash.querySelector('.metrics-grid'); if(!grid) return;
   const card=document.createElement('div'); card.id='streak-card';
   card.onclick=function(){showEnhancedToast('Streak = aufeinanderfolgende Arbeitstage!','info');};
+  // Safe insert: append after metrics-grid using parentNode.appendChild relative approach
   grid.parentNode.insertBefore(card, grid.nextSibling);
   updateStreakCard();
 }
@@ -449,7 +450,6 @@ function injectWeeklyChart(){
   const dash=document.getElementById('view-dashboard');
   if(!dash||document.getElementById('weekly-chart-card')) return;
 
-  const metricsGrid = dash.querySelector('.metrics-grid');
   const card=document.createElement('div'); card.id='weekly-chart-card';
   card.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">'
     +'<div style="display:flex;align-items:center;gap:10px;"><i class="fa-solid fa-chart-column" style="color:var(--primary-blue);font-size:16px;"></i>'
@@ -459,14 +459,28 @@ function injectWeeklyChart(){
     +'</div><div class="chart-bars-wrapper" id="weekly-bars"></div>'
     +'<div id="weekly-day-detail" style="display:none;"></div>';
 
-  if (metricsGrid && metricsGrid.nextSibling) {
-    metricsGrid.parentNode.insertBefore(card, metricsGrid.nextSibling);
-  } else if (metricsGrid) {
-    metricsGrid.parentNode.appendChild(card);
+  // ── FIXED: safe DOM insertion ──
+  // Find the metrics grid and insert the chart card right after it.
+  // Use appendChild on the scroll container as fallback — avoids the
+  // insertBefore(node, non-child) error that crashes on mobile.
+  const scrollContainer = dash.querySelector('.panel-scroll-content');
+  const metricsGrid = dash.querySelector('.metrics-grid');
+
+  if (metricsGrid && metricsGrid.parentNode === scrollContainer) {
+    // metricsGrid is a direct child of scrollContainer — safe to insertBefore its nextSibling
+    const sibling = metricsGrid.nextSibling;
+    if (sibling) {
+      scrollContainer.insertBefore(card, sibling);
+    } else {
+      scrollContainer.appendChild(card);
+    }
+  } else if (scrollContainer) {
+    // Fallback: just append inside the scroll container
+    scrollContainer.appendChild(card);
   } else {
-    const container = dash.querySelector('.panel-scroll-content');
-    if (container) container.appendChild(card);
+    dash.appendChild(card);
   }
+
   renderWeeklyChart();
 }
 
@@ -610,12 +624,9 @@ function getSortedSessions(){
   const pd=function(dmy){const p=dmy.split('/').map(Number);return new Date(p[2],p[1]-1,p[0]);};
   if(_historySortMode==='date-asc') return sessions.sort(function(a,b){return pd(a.date)-pd(b.date);});
   if(_historySortMode==='date-desc') return sessions.sort(function(a,b){return pd(b.date)-pd(a.date);});
-  // Bug 5 Fix: ID format is "work-1718000000000" or "work-ai-1718000000000-abc"
-  // Old regex /\D.*$/ wiped from first non-digit ('w'), making all timestamps 0.
-  // Fix: strip everything up to and including the last '-' before the timestamp digits.
   return sessions.sort(function(a,b){
     const extractTs = id => {
-      const m = (id || '').match(/(\d{10,})/); // find the first long numeric sequence (timestamp)
+      const m = (id || '').match(/(\d{10,})/);
       return m ? parseInt(m[1]) : 0;
     };
     return extractTs(b.id) - extractTs(a.id);
@@ -708,7 +719,6 @@ function showInactivityWarning(){
 }
 function hideInactivityWarning(){const el=document.getElementById('inactivity-warning');if(el)el.classList.remove('visible');clearInterval(inactivityCountdown);}
 function handleSecureAutoLogoutPremium(){
-  // Bug 4 Fix: clear the trash purge interval on auto-logout too
   if (typeof _trashPurgeInterval !== 'undefined' && _trashPurgeInterval) {
     clearInterval(_trashPurgeInterval);
   }
@@ -716,11 +726,11 @@ function handleSecureAutoLogoutPremium(){
   ['schuermann_auth_user','schuermann_auth_role'].forEach(function(k){localStorage.removeItem(k);});
   authenticatedUserGlobal='';authenticatedUserRoleGlobal='user';
   globalLoggedSessionsDatabaseMock=[];vacationLoggedDaysArrayCache=[];recentlyDeletedItemsBinCache=[];adminAllEntriesCache=[];
-  document.getElementById('app-view').style.display='none';
-  document.getElementById('admin-full-view').style.display='none';
+  _hideEl('app-view');
+  _hideEl('admin-full-view');
   document.body.classList.remove('admin-mode');
   const lp=document.getElementById('landing-page');
-  if(lp) lp.style.display='block';
+  if(lp){ lp.classList.remove('app-shell-hidden'); lp.style.display='block'; }
 }
 ['mousemove','keydown','touchstart','click','scroll'].forEach(function(ev){document.addEventListener(ev,resetInactivityTimer,{passive:true});});
 
