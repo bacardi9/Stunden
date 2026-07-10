@@ -1,7 +1,7 @@
 // ── AI Scan Engine — Gemini Vision ────────────────────────────────────────
 const AI_KEY_STORAGE  = 'sch_gemini_key';
-const AI_MAX_PHOTOS   = 10; // Gemini free tier practical limit
-let aiPendingFiles    = []; // Array of { base64, mime, name, dataUrl }
+const AI_MAX_PHOTOS   = 10;
+let aiPendingFiles    = [];
 let aiReviewEntries   = [];
 
 // ── API Key Management ────────────────────────────────────────────────────
@@ -18,7 +18,8 @@ function saveAiApiKey() {
   inp.value = '••••••••••••••••••••••';
   status.style.color  = '#10b981';
   status.textContent  = '✓ API Key gespeichert';
-  document.getElementById('ai-api-key-card').style.borderLeftColor = '#10b981';
+  const card = document.getElementById('ai-api-key-card');
+  if (card) card.style.borderLeftColor = '#10b981';
   showToast('✓ Gemini API Key gespeichert');
 }
 
@@ -26,7 +27,7 @@ function getAiApiKey() {
   return localStorage.getItem(AI_KEY_STORAGE) || '';
 }
 
-(function initAiKeyUI() {
+function initAiKeyUI() {
   const key    = getAiApiKey();
   const card   = document.getElementById('ai-api-key-card');
   const inp    = document.getElementById('ai-api-key-input');
@@ -36,12 +37,17 @@ function getAiApiKey() {
     if (status) { status.style.color = '#10b981'; status.textContent = '✓ API Key vorhanden'; }
     card.style.borderLeftColor = '#10b981';
   }
-})();
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAiKeyUI);
+} else {
+  setTimeout(initAiKeyUI, 0);
+}
 
 // ── File Handling ─────────────────────────────────────────────────────────
 function handleAiFileSelect(event) {
   const input = document.getElementById('ai-file-input');
-  input.removeAttribute('capture'); // reset so next gallery click stays as picker
+  input.removeAttribute('capture');
 
   const files = Array.from(event.target.files || []);
   if (!files.length) return;
@@ -58,7 +64,6 @@ function handleAiFileSelect(event) {
     showToast(`Nur ${remaining} weitere Foto(s) hinzugefügt (Limit: ${AI_MAX_PHOTOS}).`, 'info');
   }
 
-  // Validate & load each file
   let loaded = 0;
   toAdd.forEach(file => {
     if (file.size > 10 * 1024 * 1024) {
@@ -80,7 +85,7 @@ function handleAiFileSelect(event) {
     reader.readAsDataURL(file);
   });
 
-  input.value = ''; // reset so same file can be added again if needed
+  input.value = '';
 }
 
 function handleAiDrop(event) {
@@ -88,21 +93,18 @@ function handleAiDrop(event) {
   document.getElementById('ai-dropzone').classList.remove('dragover');
   const files = Array.from(event.dataTransfer.files).filter(f => f.type.startsWith('image/'));
   if (!files.length) return;
-  // Simulate file select
   const dt   = new DataTransfer();
   files.forEach(f => dt.items.add(f));
   const fakeEvent = { target: { files: dt.files } };
   handleAiFileSelect(fakeEvent);
 }
 
-// Gallery: no capture → opens photo library / file picker (multi-select)
 function triggerAiGallery() {
   const input = document.getElementById('ai-file-input');
   input.removeAttribute('capture');
   input.click();
 }
 
-// Camera: capture=environment → opens camera directly (single shot)
 function triggerAiCamera() {
   const input = document.getElementById('ai-file-input');
   input.setAttribute('capture', 'environment');
@@ -131,13 +133,11 @@ function renderAiThumbs() {
   analyzeBtn.style.display  = 'block';
 
   if (aiPendingFiles.length === 1) {
-    // Show single large preview
     singlePrev.src           = aiPendingFiles[0].dataUrl;
     singlePrev.style.display = 'block';
     thumbsRow.style.display  = 'none';
     counter.style.display    = 'none';
   } else {
-    // Show thumbnail grid
     singlePrev.style.display = 'none';
     thumbsRow.style.display  = 'flex';
     counter.style.display    = 'block';
@@ -153,7 +153,6 @@ function renderAiThumbs() {
       thumbsRow.appendChild(item);
     });
 
-    // Add "+" tile if under limit
     if (aiPendingFiles.length < AI_MAX_PHOTOS) {
       const addTile = document.createElement('div');
       addTile.className = 'ai-thumb-item';
@@ -171,7 +170,7 @@ function removeAiPhoto(idx) {
   if (!aiPendingFiles.length) showToast('Alle Fotos entfernt.', 'info');
 }
 
-// ── AI Analysis — processes each photo separately, merges results ─────────
+// ── AI Analysis ─────────────────────────────────────────────────────────
 async function runAiAnalysis() {
   const apiKey = getAiApiKey();
   if (!apiKey) {
@@ -258,7 +257,7 @@ async function runAiAnalysis() {
   renderAiReviewStep();
 }
 
-// ── Scanning Overlay (shows progress for multi-photo) ─────────────────────
+// ── Scanning Overlay ─────────────────────────────────────────────────────
 function showAiScanningOverlay(show, current = 0, total = 1) {
   let overlay = document.getElementById('ai-scanning-overlay');
   if (show) {
@@ -270,7 +269,6 @@ function showAiScanningOverlay(show, current = 0, total = 1) {
       : '';
 
     if (overlay) {
-      // Update existing overlay progress
       const sub = overlay.querySelector('.ai-overlay-sub');
       const bar = overlay.querySelector('.ai-overlay-bar');
       if (sub) sub.textContent = progressText;
@@ -411,6 +409,19 @@ function updateAiDurationPreview(idx) {
   } catch(e) { el.textContent = ''; }
 }
 
+// ── Normalise any date string to DD/MM/YYYY ───────────────────────────────
+// Bug 6 Fix: handle ISO format YYYY-MM-DD returned by Gemini, plus DD/MM/YYYY and DD.MM.YYYY
+function normaliseAiDate(raw) {
+  if (!raw) return raw;
+  // ISO format: 2025-01-15
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  // DD/MM/YYYY, DD.MM.YYYY, DD-MM-YYYY
+  const dmy = raw.match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})$/);
+  if (dmy) return `${String(dmy[1]).padStart(2,'0')}/${String(dmy[2]).padStart(2,'0')}/${dmy[3]}`;
+  return raw; // return as-is; user can correct in the review UI
+}
+
 // ── Confirm & Add Entries ─────────────────────────────────────────────────
 function confirmAiEntries() {
   const toAdd = aiReviewEntries.filter(e => e._included);
@@ -427,7 +438,10 @@ function confirmAiEntries() {
       if (gross <= 0) { errors++; return; }
       const duration = gross / 60;
 
-      const existing  = globalLoggedSessionsDatabaseMock.filter(r => r.type === 'work' && r.date === entry.date);
+      // Bug 6 Fix: normalise date to DD/MM/YYYY regardless of Gemini's response format
+      const formattedDate = normaliseAiDate(entry.date);
+
+      const existing  = globalLoggedSessionsDatabaseMock.filter(r => r.type === 'work' && r.date === formattedDate);
       const startMins = sh * 60 + sm, endMins = eh * 60 + em;
       let overlap = false;
       for (const rec of existing) {
@@ -436,12 +450,6 @@ function confirmAiEntries() {
         if (startMins < rEnd && endMins > rStart) { overlap = true; break; }
       }
       if (overlap) { skipped++; return; }
-
-      const dateParts = entry.date.match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})$/);
-      let formattedDate = entry.date;
-      if (dateParts) {
-        formattedDate = `${String(dateParts[1]).padStart(2,'0')}/${String(dateParts[2]).padStart(2,'0')}/${dateParts[3]}`;
-      }
 
       const record = {
         id:        'work-ai-' + Date.now() + '-' + Math.random().toString(36).substr(2,5),
@@ -482,7 +490,7 @@ function resetAiScan() {
   aiPendingFiles  = [];
   aiReviewEntries = [];
 
-  renderAiThumbs(); // clears thumbs and resets placeholder
+  renderAiThumbs();
 
   const fileInput = document.getElementById('ai-file-input');
   if (fileInput) { fileInput.value = ''; fileInput.removeAttribute('capture'); }
