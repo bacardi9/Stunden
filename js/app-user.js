@@ -1,717 +1,680 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<script>(function() {
-  'use strict';
-  if (window.playablesSDK) return;
-  var HANDLER_NAME = 'playablesGameEventHandler';
-  var ANDROID_BRIDGE_NAME = '_MetaPlayablesBridge';
-  var RAF_FRAME_THRESHOLD = 3;
-  var gameReadySent = false; var firstInteractionSent = false; var errorSent = false; var frameCount = 0;
-  var originalRAF = window.requestAnimationFrame;
-  function hasIOSBridge() { return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers[HANDLER_NAME]); }
-  function hasAndroidBridge() { return !!(window[ANDROID_BRIDGE_NAME] && typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function'); }
-  function isInIframe() { return !!(window.parent && window.parent !== window); }
-  function sendEvent(eventName, payload) {
-    var message = { type: eventName, payload: payload || {}, timestamp: Date.now() };
-    if (hasIOSBridge()) { try { window.webkit.messageHandlers[HANDLER_NAME].postMessage(message); } catch (e) {} return; }
-    if (hasAndroidBridge()) { try { var p = payload || {}; p.__secureToken = window.__fbAndroidBridgeAuthToken || ''; p.timestamp = message.timestamp; window[ANDROID_BRIDGE_NAME].postEvent(eventName, JSON.stringify(p)); } catch (e) {} return; }
-    if (isInIframe()) { try { window.parent.postMessage(message, '*'); } catch (e) {} return; }
+let _trashPurgeInterval = null;
+
+function _showLoadingScreen() {
+  var existing = document.getElementById('_auth_loader');
+  if (existing) return;
+  var el = document.createElement('div');
+  el.id = '_auth_loader';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#03060f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;';
+  el.innerHTML = '<div style="width:52px;height:52px;border:3px solid rgba(227,6,19,0.2);border-top-color:#E30613;border-radius:50%;animation:_authSpin 0.75s linear infinite;"></div>'
+    + '<div style="font-size:13px;font-weight:700;color:#475569;">Wird geladen…</div>'
+    + '<style>@keyframes _authSpin{to{transform:rotate(360deg)}}</style>';
+  document.body.appendChild(el);
+}
+function _hideLoadingScreen() {
+  var el = document.getElementById('_auth_loader');
+  if (el) el.remove();
+}
+
+// Show a view by removing the inline display:none set by the head script
+// Using removeProperty allows the element's own CSS (or no CSS) to take over
+function _showEl(id, displayVal) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.style.removeProperty('display');
+  el.style.display = displayVal || 'block';
+}
+function _hideEl(id) {
+  var el = document.getElementById(id);
+  if (el) el.style.display = 'none';
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  populateLogTimeFormDropdowns();
+  setApplicationLanguage('de');
+  document.getElementById('login-form').addEventListener('submit', handleLoginSubmit);
+
+  var today = new Date().toISOString().split('T')[0];
+  document.getElementById('log-date-picker').value          = today;
+  document.getElementById('vacation-from-date-input').value = today;
+  document.getElementById('vacation-to-date-input').value   = today;
+  document.getElementById('schule-date-picker').value       = today;
+
+  var def = getDefault20to20Period();
+  var startInput = document.getElementById('export-start-date');
+  var endInput   = document.getElementById('export-end-date');
+  if (startInput && endInput) {
+    startInput.value = new Date(def.start.getTime() - def.start.getTimezoneOffset()*60000).toISOString().split('T')[0];
+    endInput.value   = new Date(def.end.getTime()   - def.end.getTimezoneOffset()*60000).toISOString().split('T')[0];
   }
-  function onFrame() {
-    if (gameReadySent) return; frameCount++;
-    if (frameCount >= RAF_FRAME_THRESHOLD) { gameReadySent = true; sendEvent('game_ready', { frame_count: frameCount, detected_at: Date.now() }); return; }
-    originalRAF.call(window, onFrame);
+
+  if (window.flatpickr) {
+    var commonOpts = {
+      dateFormat:'Y-m-d', allowInput:false, disableMobile:true,
+      locale:{
+        firstDayOfWeek:1,
+        weekdays:{shorthand:['So','Mo','Di','Mi','Do','Fr','Sa'],longhand:['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag']},
+        months:{shorthand:['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'],longhand:['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']}
+      }
+    };
+    flatpickr('#log-date-picker', Object.assign({}, commonOpts, {defaultDate:today, onChange:function(){
+      document.getElementById('log-start-time').value='07:00';
+      document.getElementById('log-end-time').value='16:15';
+      document.querySelectorAll('.break-pill').forEach(function(p){p.classList.remove('active');});
+      document.querySelector('.break-pill').classList.add('active');
+      activeSelectedFormBreakDuration=0; saveDraftWorkEntry();
+    }}));
+    flatpickr('#schule-date-picker',       Object.assign({}, commonOpts, {defaultDate:today}));
+    flatpickr('#vacation-from-date-input', Object.assign({}, commonOpts, {defaultDate:today}));
+    flatpickr('#vacation-to-date-input',   Object.assign({}, commonOpts, {defaultDate:today}));
+    flatpickr('#export-start-date',        Object.assign({}, commonOpts));
+    flatpickr('#export-end-date',          Object.assign({}, commonOpts));
+    flatpickr('#absence-start',            Object.assign({}, commonOpts, {dateFormat:'Y-m-d'}));
+    flatpickr('#absence-end',              Object.assign({}, commonOpts, {dateFormat:'Y-m-d'}));
   }
-  if (originalRAF) {
-    window.requestAnimationFrame = function(callback) {
-      if (!gameReadySent) {
-        return originalRAF.call(window, function(timestamp) {
-          frameCount++;
-          if (frameCount >= RAF_FRAME_THRESHOLD && !gameReadySent) { gameReadySent = true; sendEvent('game_ready', { frame_count: frameCount, detected_at: Date.now() }); }
-          callback(timestamp);
+
+  document.getElementById('log-date-picker').addEventListener('change', saveDraftWorkEntry);
+  _trashPurgeInterval = setInterval(enforceTrashLifespanPurgeEngine, 60000);
+  window.addEventListener('online',  updateCloudBackupStatusIndicator);
+  window.addEventListener('offline', updateCloudBackupStatusIndicator);
+  updateCloudBackupStatusIndicator();
+  ['log-project-name','log-start-time','log-end-time','log-notes'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) { el.addEventListener('input', saveDraftWorkEntry); el.addEventListener('change', saveDraftWorkEntry); }
+  });
+  window.addEventListener('online',  flushOfflineQueue);
+  window.addEventListener('online',  updateOfflineBadge);
+  window.addEventListener('offline', updateOfflineBadge);
+  updateOfflineBadge();
+
+  var cached = localStorage.getItem('schuermann_auth_user');
+  if (!cached) {
+    // No session — landing already visible from head script
+    return;
+  }
+
+  // Hide landing, show loader, wait for Firebase
+  _hideEl('landing-page');
+  _showLoadingScreen();
+  authenticatedUserGlobal = cached;
+  _waitForFirebaseAuth(cached);
+});
+
+function _waitForFirebaseAuth(cachedUid) {
+  if (auth.currentUser) {
+    _restoreSessionFromFirebase(auth.currentUser, cachedUid);
+    return;
+  }
+  var settled = false;
+  var unsubscribe = auth.onAuthStateChanged(function(user) {
+    if (settled) return;
+    settled = true;
+    unsubscribe();
+    if (user) {
+      _restoreSessionFromFirebase(user, cachedUid);
+    } else {
+      _clearSessionAndShowLanding();
+    }
+  });
+  setTimeout(function() {
+    if (settled) return;
+    settled = true;
+    unsubscribe();
+    if (!navigator.onLine) {
+      authenticatedUserRoleGlobal = localStorage.getItem('schuermann_auth_role') || 'user';
+      _hideLoadingScreen();
+      launchSessionUI();
+    } else {
+      _clearSessionAndShowLanding();
+    }
+  }, 8000);
+}
+
+async function _restoreSessionFromFirebase(user, cachedUid) {
+  if (user.uid !== cachedUid) { _clearSessionAndShowLanding(); return; }
+  try {
+    var snap = await db.collection('userProfiles').doc(cachedUid).get();
+    var data = snap.exists ? snap.data() : {};
+    authenticatedUserRoleGlobal = data.isAdmin === true ? 'admin' : 'user';
+    localStorage.setItem('schuermann_auth_role', authenticatedUserRoleGlobal);
+    if (data.name)        localStorage.setItem('schuermann_current_user', data.name);
+    if (data.companyName) localStorage.setItem('schuermann_company_name', data.companyName);
+  } catch(e) {
+    console.warn('Profile load failed, using cached role:', e);
+    authenticatedUserRoleGlobal = localStorage.getItem('schuermann_auth_role') || 'user';
+  }
+  _hideLoadingScreen();
+  launchSessionUI();
+}
+
+function _clearSessionAndShowLanding() {
+  localStorage.removeItem('schuermann_auth_user');
+  localStorage.removeItem('schuermann_auth_role');
+  authenticatedUserGlobal     = '';
+  authenticatedUserRoleGlobal = 'user';
+  _hideLoadingScreen();
+  _showEl('landing-page', 'block');
+}
+
+function reinitDatePickers() {
+  if (!window.flatpickr) return;
+  var commonOpts = {
+    dateFormat:'Y-m-d', allowInput:false, disableMobile:true,
+    locale:{
+      firstDayOfWeek:1,
+      weekdays:{shorthand:['So','Mo','Di','Mi','Do','Fr','Sa'],longhand:['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag']},
+      months:{shorthand:['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'],longhand:['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']}
+    }
+  };
+  var ids = ['log-date-picker','schule-date-picker','vacation-from-date-input','vacation-to-date-input','export-start-date','export-end-date'];
+  ids.forEach(function(id){
+    var el = document.getElementById(id);
+    if (el && !el._flatpickr) flatpickr(el, commonOpts);
+  });
+  setTimeout(function(){
+    document.querySelectorAll('.form-group').forEach(function(group){
+      var inp = group.querySelector('input[type="date"], input[readonly]');
+      if (inp && inp._flatpickr && !group.dataset.fpClick) {
+        group.dataset.fpClick = '1'; group.style.cursor = 'pointer';
+        group.addEventListener('click', function(e){
+          if (e.target.tagName==='LABEL') { inp._flatpickr.open(); return; }
+          if (e.target===inp) return;
+          inp._flatpickr.open();
         });
       }
-      return originalRAF.call(window, callback);
-    };
-  }
-  function setupFirstInteractionDetection() {
-    var events = ['touchstart', 'mousedown', 'keydown'];
-    function onFirstInteraction() { if (firstInteractionSent) return; firstInteractionSent = true; sendEvent('user_interaction_start', null); for (var i = 0; i < events.length; i++) document.removeEventListener(events[i], onFirstInteraction, true); }
-    for (var i = 0; i < events.length; i++) document.addEventListener(events[i], onFirstInteraction, true);
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupFirstInteractionDetection);
-  else setupFirstInteractionDetection();
-  window.addEventListener('error', function(event) { if (errorSent) return; errorSent = true; sendEvent('error', { message: event.message || 'Unknown error', source: event.filename || '', lineno: event.lineno || 0, colno: event.colno || 0, auto_captured: true }); });
-  window.addEventListener('unhandledrejection', function(event) { if (errorSent) return; errorSent = true; var reason = event.reason; sendEvent('error', { message: (reason instanceof Error) ? reason.message : String(reason), type: 'unhandled_promise_rejection', auto_captured: true }); });
-  window.playablesSDK = {
-    complete: function(score) { sendEvent('game_ended', { score: score, completed: true }); },
-    error: function(message) { if (errorSent) return; errorSent = true; sendEvent('error', { message: message || 'Unknown error', auto_captured: false }); },
-    sendEvent: function(eventName, payload) { if (!eventName || typeof eventName !== 'string') return; sendEvent(eventName, payload); }
-  };
-  if (originalRAF) originalRAF.call(window, onFrame);
-})();</script>
-<script>
-(function() {
-  if (window.__playableTouchPatchInstalled) return;
-  window.__playableTouchPatchInstalled = true;
-  var origAdd = EventTarget.prototype.addEventListener;
-  var blockedTypes = { touchstart: 1, touchmove: 1, wheel: 1 };
-  EventTarget.prototype.addEventListener = function(type, listener, options) {
-    if (blockedTypes[type]) {
-      if (options === undefined || options === null) options = { passive: true };
-      else if (typeof options === 'boolean') options = { capture: options, passive: true };
-      else options = Object.assign({}, options, { passive: true });
-    }
-    return origAdd.call(this, type, listener, options);
-  };
-})();
-</script>
-<script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
+    });
+  }, 300);
+}
 
-<!-- CRITICAL: Set initial visibility via JS before DOM loads.
-     Do NOT use CSS !important here — it blocks JS from overriding on mobile. -->
-<script>
-// Run immediately — hides shells, shows landing if no cached session
-(function() {
-  // Mark shells as initially hidden using a data attribute + inline style
-  // JS will remove the inline style when showing a view (overrides cleanly)
-  document.addEventListener('DOMContentLoaded', function() {
-    var cached = localStorage.getItem('schuermann_auth_user');
-    var lp = document.getElementById('landing-page');
-    var av = document.getElementById('app-view');
-    var adv = document.getElementById('admin-full-view');
-    var lv = document.getElementById('login-view');
-    if (av)  av.style.setProperty('display','none');
-    if (adv) adv.style.setProperty('display','none');
-    if (lv)  lv.style.setProperty('display','none');
-    if (lp)  lp.style.setProperty('display', cached ? 'none' : 'block');
+function showToast(msg, type) {
+  type = type || 'success';
+  var toast  = document.getElementById('toast-notification');
+  var icons  = {success:'fa-circle-check', error:'fa-circle-exclamation', info:'fa-circle-info'};
+  var colors = {success:'#10b981', error:'#ef4444', info:'#3b82f6'};
+  toast.innerHTML = '<i class="fa-solid '+(icons[type]||icons.success)+'" style="color:'+(colors[type]||colors.success)+';font-size:16px;"></i> '+msg;
+  toast.classList.add('show');
+  setTimeout(function(){ toast.classList.remove('show'); }, 3200);
+}
+
+async function handleLoginSubmit(e) {
+  e.preventDefault();
+  var rawName   = document.getElementById('username').value.trim().replace(/\s+/g,' ');
+  var codeInput = document.getElementById('passcode').value.trim();
+  var msgBox    = document.getElementById('message-box');
+  msgBox.textContent = activeLanguageGlobal==='de'?'Verbindung wird hergestellt...':'Connecting...';
+  msgBox.className = 'message success';
+  try {
+    var loginKey = rawName.toLowerCase()
+      .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
+      .replace(/[^a-z0-9]/gi,'');
+    if (!loginKey) throw new Error('empty-name');
+    var cred = await auth.signInWithEmailAndPassword(loginKey+'@sch.local', codeInput);
+    authenticatedUserGlobal = cred.user.uid;
+    var displayName = rawName.split(' ').map(function(w){return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();}).join(' ');
+    var isAdminFlag = false;
+    try {
+      var profileSnap = await db.collection('userProfiles').doc(cred.user.uid).get();
+      if (profileSnap.exists) isAdminFlag = profileSnap.data().isAdmin===true;
+    } catch(e){}
+    authenticatedUserRoleGlobal = isAdminFlag ? 'admin' : 'user';
+    localStorage.setItem('schuermann_auth_user',    authenticatedUserGlobal);
+    localStorage.setItem('schuermann_auth_role',    authenticatedUserRoleGlobal);
+    localStorage.setItem('schuermann_current_user', displayName);
+    await db.collection('userProfiles').doc(cred.user.uid).set(
+      {name:displayName, uid:cred.user.uid, lastLogin:firebase.firestore.FieldValue.serverTimestamp()},
+      {merge:true}
+    );
+    msgBox.textContent = (activeLanguageGlobal==='de'?'Willkommen zurück, ':'Welcome back, ')+displayName+'!';
+    msgBox.className = 'message success';
+    setTimeout(function(){ launchSessionUI(); }, 500);
+  } catch(err) {
+    console.error(err);
+    msgBox.innerHTML = activeLanguageGlobal==='de'
+      ? 'Mitarbeiter nicht gefunden oder falsches Kennwort.<br><span style="font-size:11px;color:#aaa;">Groß-/Kleinschreibung beachten!</span>'
+      : 'Invalid name or password.<br><span style="font-size:11px;color:#aaa;">Check case sensitivity!</span>';
+    msgBox.className = 'message error';
+  }
+}
+
+async function launchSessionUI() {
+  _hideLoadingScreen();
+  // Hide landing using _hideEl so we don't fight CSS specificity
+  _hideEl('landing-page');
+  _hideEl('login-view');
+
+  if (authenticatedUserRoleGlobal === 'admin') {
+    _hideEl('app-view');
+    _showEl('admin-full-view', 'block');
+    document.getElementById('admin-user-display').textContent = localStorage.getItem('schuermann_current_user') || 'Admin';
+    document.body.classList.add('admin-mode');
+    launchAdminDashboard();
+    return;
+  }
+
+  _hideEl('admin-full-view');
+  document.body.classList.remove('admin-mode');
+  // Use _showEl so the inline style is set cleanly
+  _showEl('app-view', 'block');
+
+  var displayName = localStorage.getItem('schuermann_current_user') || authenticatedUserGlobal;
+  document.getElementById('user-profile-title').textContent    = displayName;
+  document.getElementById('dash-profile-username').textContent = displayName;
+  document.getElementById('nav-admin-link').style.display      = 'none';
+  setApplicationLanguage(activeLanguageGlobal);
+  await loadUserDataFromCloud();
+  renderHistoricalRecordsSheet();
+  renderVacationRecordsSheet();
+  renderRecentlyDeletedBinSheet();
+  runGlobalApplicationMetricsEngine();
+  updateCloudBackupStatusIndicator();
+  updateOfflineBadge();
+  setTimeout(restoreDraftWorkEntry, 400);
+  setTimeout(reinitDatePickers, 500);
+  if (navigator.onLine) flushOfflineQueue();
+  initializeDeviceTrackingEngine(displayName);
+}
+
+function toggleSidebarDrawer(open) {
+  document.getElementById('sidebar-drawer').classList.toggle('open', open);
+  document.getElementById('menu-backdrop').classList.toggle('show', open);
+}
+
+function switchActiveView(targetId, navEl) {
+  document.querySelectorAll('.nav-item').forEach(function(i){i.classList.remove('active');});
+  if (navEl) navEl.classList.add('active');
+  document.querySelectorAll('.content-panel').forEach(function(p){p.classList.remove('active');});
+  var panel = document.getElementById('view-'+targetId);
+  if (panel) panel.classList.add('active');
+  var main = document.getElementById('main-content-layout');
+  if (targetId==='admin-panel') { main.classList.add('admin-layout-widescreen'); refreshAdminData(); }
+  else main.classList.remove('admin-layout-widescreen');
+  if (targetId==='log-work') setTimeout(function(){ restoreDraftWorkEntry(); reinitDatePickers(); }, 100);
+  toggleSidebarDrawer(false);
+}
+
+function openHiddenTrashView() { renderRecentlyDeletedBinSheet(); switchActiveView('deleted', null); }
+
+function handleSecureSignOutRequest() {
+  toggleSidebarDrawer(false);
+  showConfirmModal(activeLanguageGlobal==='de'?'Wirklich abmelden?':'Sign out?', function(){
+    auth.signOut().catch(function(){});
+    localStorage.removeItem('schuermann_auth_user');
+    localStorage.removeItem('schuermann_auth_role');
+    if (_trashPurgeInterval) { clearInterval(_trashPurgeInterval); _trashPurgeInterval=null; }
+    authenticatedUserGlobal=''; authenticatedUserRoleGlobal='user';
+    globalLoggedSessionsDatabaseMock=[]; vacationLoggedDaysArrayCache=[];
+    recentlyDeletedItemsBinCache=[]; adminAllEntriesCache=[];
+    _hideEl('app-view');
+    _hideEl('admin-full-view');
+    _hideEl('login-view');
+    document.body.classList.remove('admin-mode');
+    _showEl('landing-page', 'block');
   });
-})();
-</script>
-
-<meta name="color-scheme" content="dark light">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#e11d48">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Meine Stunden Online">
-<link rel="manifest" id="pwa-manifest-link">
-<title>Meine Stunden Online – Professionelle Zeiterfassung</title>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&family=Playfair+Display:wght@300;400;700&family=Cormorant+Garamond:wght@300;400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-<link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/admin.css">
-<link rel="stylesheet" href="css/vendor-overrides.css">
-<link rel="stylesheet" href="css/landing.css">
-
-<style>
-/* ── QUICK INTRO SECTION ── */
-.lp-intro {
-  position: relative; z-index: 1;
-  max-width: 780px; margin: 0 auto;
-  padding: 40px 16px 32px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  align-items: start;
-}
-.lp-intro-item {
-  display: flex; align-items: flex-start; gap: 12px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 14px; padding: 14px 16px;
-  transition: all 0.2s;
-}
-.lp-intro-item:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.12); }
-.lp-intro-icon {
-  width: 38px; height: 38px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px; flex-shrink: 0;
-}
-.lp-intro-text h4 { font-size: 12px; font-weight: 800; color: #f1f5f9; margin-bottom: 4px; line-height: 1.3; }
-.lp-intro-text p  { font-size: 11px; color: #64748b; line-height: 1.5; }
-@media (max-width: 480px) {
-  .lp-intro { grid-template-columns: 1fr; padding: 20px 14px 16px; gap: 10px; }
 }
 
-/* ── SHOWCASE ── */
-.lp-showcase {
-  position: relative; z-index: 1;
-  padding: 20px 16px 60px;
-  max-width: 1100px;
-  margin: 0 auto;
+function updateCloudBackupStatusIndicator() {
+  var dot = document.getElementById('dash-backup-indicator'); if (!dot) return;
+  if (navigator.onLine) { dot.className='backup-status-dot online'; dot.title='Cloud Sync Aktiv'; }
+  else                  { dot.className='backup-status-dot offline'; dot.title='Offline'; }
 }
-.lp-showcase-label { text-align: center; font-size: 11px; font-weight: 800; color: #E30613; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
-.lp-showcase-title { text-align: center; font-size: clamp(22px,4vw,36px); font-weight: 900; color: #fff; letter-spacing: -1px; margin-bottom: 10px; }
-.lp-showcase-sub { text-align: center; font-size: 14px; color: #64748b; max-width: 520px; margin: 0 auto 48px; line-height: 1.6; }
 
-.lp-feature-row { display: flex; align-items: center; gap: 40px; margin-bottom: 64px; flex-wrap: wrap; }
-.lp-feature-row.reverse { flex-direction: row-reverse; }
-.lp-feature-row-text { flex: 1; min-width: 260px; }
-.lp-feature-row-mock { flex: 1; min-width: 260px; max-width: 380px; margin: 0 auto; }
-.lp-feature-row-badge { display: inline-flex; align-items: center; gap: 7px; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 12px; border-radius: 99px; margin-bottom: 12px; }
-.lp-feature-row-title { font-size: clamp(18px,3vw,26px); font-weight: 900; color: #fff; letter-spacing: -0.6px; line-height: 1.2; margin-bottom: 10px; }
-.lp-feature-row-desc { font-size: 13px; color: #64748b; line-height: 1.75; margin-bottom: 16px; }
-.lp-feature-row-bullets { list-style: none; padding: 0; margin: 0; }
-.lp-feature-row-bullets li { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: #94a3b8; font-weight: 500; margin-bottom: 8px; line-height: 1.5; }
-.lp-feature-row-bullets li i { color: #10b981; font-size: 12px; margin-top: 2px; flex-shrink: 0; }
-
-.lp-phone { background: rgba(10,16,32,0.97); border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset; width: 100%; max-width: 320px; margin: 0 auto; font-size: 11px; }
-.lp-phone-bar { background: rgba(5,8,20,0.95); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 9px 12px; display: flex; align-items: center; justify-content: space-between; }
-.lp-phone-bar-title { font-size: 10px; font-weight: 800; color: #fff; }
-.lp-phone-body { padding: 12px; }
-
-.mock-period-bar-wrap { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
-.mock-period-label { font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: flex; justify-content: space-between; }
-.mock-progress-track { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
-.mock-progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg,#E30613,#0ea5e9); }
-.mock-missing-btn { display: inline-flex; align-items: center; gap: 5px; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); color: #ef4444; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
-.mock-missing-panel { margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; }
-.mock-missing-chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(239,68,68,0.08); border: 1.5px solid rgba(239,68,68,0.2); color: #ef4444; padding: 4px 10px; border-radius: 99px; font-size: 10px; font-weight: 700; margin: 3px; cursor: pointer; }
-.mock-save-row { display: flex; gap: 6px; margin-top: 10px; }
-.mock-save-btn { flex: 1; background: linear-gradient(135deg,#E30613,#b8000f); border: none; color: #fff; padding: 9px; border-radius: 8px; font-size: 11px; font-weight: 800; text-align: center; }
-.mock-schule-btn { background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.2); color: #0ea5e9; padding: 9px 12px; border-radius: 8px; font-size: 10px; font-weight: 700; }
-.mock-chart-bars { display: flex; align-items: flex-end; gap: 5px; height: 80px; margin: 10px 0 8px; }
-.mock-chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; justify-content: flex-end; }
-.mock-chart-bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 3px; }
-.mock-chart-lbl { font-size: 8px; font-weight: 700; color: #475569; }
-.mock-day-detail { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px; margin-top: 8px; }
-.mock-day-entry { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
-.mock-day-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
-.mock-day-text { flex: 1; }
-.mock-day-proj { font-size: 11px; font-weight: 700; color: #e2e8f0; }
-.mock-day-meta { font-size: 9px; color: #475569; }
-.mock-day-hrs { font-size: 12px; font-weight: 800; color: #0ea5e9; }
-.mock-ai-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid #0ea5e9; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
-.mock-ai-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
-.mock-ai-field { background: rgba(255,255,255,0.05); border-radius: 6px; padding: 6px 8px; }
-.mock-ai-field-label { font-size: 8px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 2px; }
-.mock-ai-field-val { font-size: 11px; font-weight: 700; color: #e2e8f0; }
-.mock-ai-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: #10b981; font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 99px; }
-.mock-pdf-frame { background: #fff; border-radius: 8px; padding: 12px; color: #1e293b; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
-.mock-pdf-header-bar { height: 3px; background: #c0392b; border-radius: 2px; margin-bottom: 8px; }
-.mock-pdf-logo-row { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 8px; }
-.mock-pdf-logo-accent { width: 3px; height: 14px; background: #c0392b; border-radius: 1px; flex-shrink: 0; margin-top: 1px; }
-.mock-pdf-logo-name { font-size: 11px; font-weight: 900; color: #0f172a; line-height: 1; }
-.mock-pdf-logo-sub { font-size: 7px; color: #64748b; margin-top: 1px; }
-.mock-pdf-title { font-size: 9px; font-weight: 800; color: #0f172a; text-align: right; line-height: 1; margin-top: 1px; }
-.mock-pdf-date-text { font-size: 7px; color: #64748b; text-align: right; }
-.mock-pdf-divider { height: 1px; background: #e2e8f0; margin: 6px 0; }
-.mock-pdf-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-bottom: 6px; }
-.mock-pdf-card { background: #f8fafc; border-radius: 4px; padding: 5px; }
-.mock-pdf-card-lbl { font-size: 6px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; }
-.mock-pdf-card-val { font-size: 9px; font-weight: 800; color: #0f172a; }
-.mock-pdf-section { background: #f1f5f9; border-radius: 4px; padding: 4px 6px; margin-bottom: 3px; }
-.mock-pdf-section-title { font-size: 8px; font-weight: 800; color: #0f172a; margin-bottom: 3px; }
-.mock-pdf-row { display: flex; justify-content: space-between; font-size: 7px; color: #475569; padding: 2px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
-.mock-pdf-row:last-child { border-bottom: none; }
-.mock-pdf-row-hrs { font-weight: 700; color: #c0392b; }
-.mock-pdf-footer { display: flex; justify-content: space-between; font-size: 6px; color: #94a3b8; margin-top: 5px; border-top: 1px solid #e2e8f0; padding-top: 4px; }
-.mock-streak-card { background: linear-gradient(135deg, rgba(227,6,19,0.12), rgba(227,6,19,0.04)); border: 1px solid rgba(227,6,19,0.2); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-.mock-streak-flame { font-size: 24px; animation: flamePulse 1.5s ease-in-out infinite alternate; }
-@keyframes flamePulse { from{transform:scale(1)} to{transform:scale(1.1)} }
-.mock-streak-num { font-size: 20px; font-weight: 900; color: #E30613; letter-spacing: -1px; line-height: 1; }
-.mock-streak-lbl { font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
-.mock-streak-best { margin-left: auto; text-align: right; }
-.mock-streak-best-num { font-size: 12px; font-weight: 800; color: #64748b; }
-.mock-streak-best-lbl { font-size: 9px; color: #334155; font-weight: 600; }
-.lp-showcase-divider { border: none; border-top: 1px solid rgba(255,255,255,0.04); margin: 0 0 64px; }
-.lp-stats-bar { position: relative; z-index: 1; background: rgba(255,255,255,0.02); border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 28px 20px; display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
-.lp-stat-item { text-align: center; }
-.lp-stat-num { font-size: 28px; font-weight: 900; color: #fff; letter-spacing: -1.5px; line-height: 1; }
-.lp-stat-num span { color: #E30613; }
-.lp-stat-lbl { font-size: 10px; font-weight: 600; color: #475569; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-
-@media (max-width: 640px) {
-  .lp-feature-row, .lp-feature-row.reverse { flex-direction: column; gap: 24px; margin-bottom: 48px; }
-  .lp-feature-row-mock { min-width: unset; max-width: 100%; width: 100%; }
-  .lp-phone { max-width: 100%; }
-  .lp-stats-bar { gap: 20px; padding: 20px 16px; }
-  .lp-showcase { padding: 0 14px 48px; }
-  .lp-showcase-divider { margin: 0 0 48px; }
-}
-</style>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-</head>
-<body>
-
-<div id="landing-page">
-  <nav class="lp-nav">
-    <div class="lp-nav-brand" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-      <div class="lp-nav-brand-main">MEINE STUNDEN</div>
-      <div class="lp-nav-brand-sub">ONLINE</div>
-    </div>
-    <div class="lp-nav-actions">
-      <button class="lp-btn-ghost" onclick="openLoginModal()">Anmelden</button>
-      <button class="lp-btn-primary" onclick="openRegisterModal()">
-        <i class="fa-solid fa-bolt" style="font-size:10px;"></i> Jetzt — 9,99 €
-      </button>
-    </div>
-  </nav>
-
-  <section class="lp-hero" style="padding-bottom: 28px;">
-    <div class="lp-hero-badge">
-      <i class="fa-solid fa-circle" style="font-size:7px;color:#E30613;"></i>
-      Professionelle Zeiterfassung für Handwerksbetriebe
-    </div>
-    <h1>Deine Arbeitszeit.<br><span>Automatisch erfasst.</span></h1>
-    <p style="margin-bottom:28px;">Stundenzettel erfassen, Überstunden berechnen, fehlende Tage erkennen und professionelle PDFs exportieren — alles in einer App, einmalig 9,99 €.</p>
-    <div class="lp-hero-btns">
-      <button class="lp-hero-btn-main" onclick="openRegisterModal()">
-        <i class="fa-solid fa-rocket"></i> Konto erstellen – einmalig 9,99 €
-      </button>
-      <button class="lp-hero-btn-secondary" onclick="openLoginModal()">
-        <i class="fa-solid fa-right-to-bracket"></i> Bereits Kunde? Anmelden
-      </button>
-    </div>
-  </section>
-
-  <div class="lp-intro">
-    <div class="lp-intro-item">
-      <div class="lp-intro-icon" style="background:rgba(239,68,68,0.12);"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i></div>
-      <div class="lp-intro-text"><h4>Fehlende Tage automatisch erkannt</h4><p>Die App zeigt dir jeden Morgen welche Arbeitstage noch fehlen — direkt dort nachbuchen.</p></div>
-    </div>
-    <div class="lp-intro-item">
-      <div class="lp-intro-icon" style="background:rgba(14,165,233,0.12);"><i class="fa-solid fa-chart-column" style="color:#0ea5e9;"></i></div>
-      <div class="lp-intro-text"><h4>Klickbare Wochenübersicht</h4><p>Balkendiagramm der aktuellen Woche — jeden Tag antippen für alle Einträge mit Zeiten.</p></div>
-    </div>
-    <div class="lp-intro-item">
-      <div class="lp-intro-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-wand-magic-sparkles" style="color:#E30613;"></i></div>
-      <div class="lp-intro-text"><h4>KI-Stundenzettel Scan</h4><p>Foto vom handgeschriebenen Zettel machen — Gemini AI trägt alles automatisch ein.</p></div>
-    </div>
-    <div class="lp-intro-item">
-      <div class="lp-intro-icon" style="background:rgba(192,57,43,0.12);"><i class="fa-solid fa-file-pdf" style="color:#c0392b;"></i></div>
-      <div class="lp-intro-text"><h4>PDF mit deinem Firmennamen</h4><p>Auf Knopfdruck ein professioneller Stundenzettel-PDF mit deinem Betriebsnamen.</p></div>
-    </div>
-  </div>
-
-  <section class="lp-showcase">
-    <div class="lp-showcase-label">So sieht's aus</div>
-    <h2 class="lp-showcase-title">Echte Features. Live im Einsatz.</h2>
-    <p class="lp-showcase-sub">Kein Marketing-Blabla — sieh selbst wie die App aussieht und was sie kann.</p>
-
-    <div class="lp-feature-row">
-      <div class="lp-feature-row-text">
-        <div class="lp-feature-row-badge" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;"><i class="fa-solid fa-triangle-exclamation" style="font-size:10px;"></i> Nie wieder vergessen</div>
-        <h3 class="lp-feature-row-title">Fehlende Tage werden<br>automatisch erkannt</h3>
-        <p class="lp-feature-row-desc">Die App prüft jeden Morgen welche Arbeitstage noch nicht erfasst sind. Du siehst sofort die offenen Tage und kannst sie direkt dort mit einem Klick nachbuchen.</p>
-        <ul class="lp-feature-row-bullets">
-          <li><i class="fa-solid fa-check"></i> Alle fehlenden Werktage auf einen Blick</li>
-          <li><i class="fa-solid fa-check"></i> Direkt im Fehltag-Panel nachbuchen</li>
-          <li><i class="fa-solid fa-check"></i> Schultag mit einem Klick eintragen</li>
-          <li><i class="fa-solid fa-check"></i> Abrechnungszeitraum-Fortschrittsbalken</li>
-        </ul>
-      </div>
-      <div class="lp-feature-row-mock">
-        <div class="lp-phone">
-          <div class="lp-phone-bar"><div class="lp-phone-bar-title"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;margin-right:6px;font-size:10px;"></i>Abrechnungszeitraum</div><span style="font-size:9px;color:#475569;">20. Mai – 19. Jun</span></div>
-          <div class="lp-phone-body">
-            <div class="mock-period-bar-wrap">
-              <div class="mock-period-label"><span>KW 24 · 20. Mai – 19. Jun</span><span style="color:#0ea5e9;">68%</span></div>
-              <div class="mock-progress-track"><div class="mock-progress-fill" style="width:68%;"></div></div>
-              <div style="display:flex;justify-content:space-between;align-items:center;">
-                <span style="font-size:9px;color:#475569;"><i class="fa-solid fa-calendar-day" style="color:#0ea5e9;margin-right:3px;"></i>6 Arbeitstage</span>
-                <div class="mock-missing-btn"><i class="fa-solid fa-triangle-exclamation" style="font-size:9px;"></i>3 fehlende<i class="fa-solid fa-chevron-down" style="font-size:8px;"></i></div>
-              </div>
-              <div class="mock-missing-panel">
-                <div style="font-size:9px;font-weight:800;color:#ef4444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px;"><i class="fa-solid fa-calendar-xmark" style="margin-right:4px;"></i>3 fehlende Arbeitstage</div>
-                <div>
-                  <div class="mock-missing-chip"><i class="fa-solid fa-circle-plus" style="font-size:8px;"></i>Mo, 10. Jun</div>
-                  <div class="mock-missing-chip"><i class="fa-solid fa-circle-plus" style="font-size:8px;"></i>Di, 11. Jun</div>
-                  <div class="mock-missing-chip" style="background:#ef4444;border-color:#ef4444;color:#fff;"><i class="fa-solid fa-circle-plus" style="font-size:8px;"></i>Mi, 12. Jun</div>
-                </div>
-                <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(239,68,68,0.15);border-radius:10px;padding:10px;margin-top:8px;">
-                  <div style="font-size:10px;font-weight:800;color:#fff;margin-bottom:8px;">Eintrag für Mi, 12. Jun</div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
-                    <div style="background:rgba(255,255,255,0.06);border-radius:6px;padding:7px;"><div style="font-size:8px;color:#475569;font-weight:700;margin-bottom:2px;">KOMMEN</div><div style="font-size:11px;color:#fff;font-weight:700;">07:00</div></div>
-                    <div style="background:rgba(255,255,255,0.06);border-radius:6px;padding:7px;"><div style="font-size:8px;color:#475569;font-weight:700;margin-bottom:2px;">GEHEN</div><div style="font-size:11px;color:#fff;font-weight:700;">16:15</div></div>
-                  </div>
-                  <div style="background:rgba(255,255,255,0.06);border-radius:6px;padding:7px;margin-bottom:8px;"><div style="font-size:8px;color:#475569;font-weight:700;margin-bottom:2px;">BAUSTELLE</div><div style="font-size:11px;color:#fff;font-weight:700;">Baustelle Hauptstr. 5</div></div>
-                  <div style="text-align:center;font-size:10px;font-weight:700;color:#10b981;margin-bottom:8px;">⏱ 07:00 – 16:15 | Netto: 8.75 h</div>
-                  <div class="mock-save-row"><div class="mock-save-btn"><i class="fa-solid fa-floppy-disk" style="margin-right:4px;"></i>Speichern</div><div class="mock-schule-btn">🎓 Schultag</div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <hr class="lp-showcase-divider">
-
-    <div class="lp-feature-row reverse">
-      <div class="lp-feature-row-text">
-        <div class="lp-feature-row-badge" style="background:rgba(14,165,233,0.12);border:1px solid rgba(14,165,233,0.25);color:#7dd3fc;"><i class="fa-solid fa-chart-column" style="font-size:10px;"></i> Wochenübersicht</div>
-        <h3 class="lp-feature-row-title">Woche auf einen Blick —<br>jeden Tag anklicken</h3>
-        <p class="lp-feature-row-desc">Das interaktive Balkendiagramm zeigt dir alle Arbeitsstunden der aktuellen Woche. Tippe auf einen Tag und du siehst sofort alle Einträge mit Zeiten, Baustelle und Pause.</p>
-        <ul class="lp-feature-row-bullets">
-          <li><i class="fa-solid fa-check"></i> Wochenübersicht mit Kalenderwoche</li>
-          <li><i class="fa-solid fa-check"></i> Heute wird rot hervorgehoben</li>
-          <li><i class="fa-solid fa-check"></i> Tag anklicken → alle Einträge sehen</li>
-          <li><i class="fa-solid fa-check"></i> Gesamtstunden der Woche auf einen Blick</li>
-        </ul>
-      </div>
-      <div class="lp-feature-row-mock">
-        <div class="lp-phone">
-          <div class="lp-phone-bar"><div class="lp-phone-bar-title"><i class="fa-solid fa-chart-column" style="color:#0ea5e9;margin-right:6px;font-size:10px;"></i>Wochenübersicht</div><span style="font-size:9px;color:#0ea5e9;font-weight:800;background:rgba(14,165,233,0.1);padding:2px 8px;border-radius:6px;">42.5 h</span></div>
-          <div class="lp-phone-body">
-            <div style="font-size:9px;color:#475569;font-weight:700;margin-bottom:2px;">KW 24 · 10. Jun – 16. Jun</div>
-            <div class="mock-chart-bars">
-              <div class="mock-chart-col"><div style="font-size:8px;font-weight:700;color:#94a3b8;">8.8</div><div class="mock-chart-bar" style="height:72%;background:#E30613;"></div><div class="mock-chart-lbl" style="color:#E30613;font-weight:800;">Mo</div></div>
-              <div class="mock-chart-col"><div style="font-size:8px;font-weight:700;color:#94a3b8;">9.3</div><div class="mock-chart-bar" style="height:86%;background:#0ea5e9;"></div><div class="mock-chart-lbl">Di</div></div>
-              <div class="mock-chart-col" style="background:rgba(14,165,233,0.08);border-radius:6px;"><div style="font-size:8px;font-weight:700;color:#0ea5e9;">8.5</div><div class="mock-chart-bar" style="height:78%;background:#0ea5e9;"></div><div class="mock-chart-lbl" style="color:#0ea5e9;font-weight:800;">Mi ▾</div></div>
-              <div class="mock-chart-col"><div style="font-size:8px;font-weight:700;color:#94a3b8;">9.0</div><div class="mock-chart-bar" style="height:82%;background:#f59e0b;"></div><div class="mock-chart-lbl">Do</div></div>
-              <div class="mock-chart-col"><div style="font-size:8px;font-weight:700;color:#94a3b8;">6.9</div><div class="mock-chart-bar" style="height:55%;background:#8b5cf6;"></div><div class="mock-chart-lbl">Fr</div></div>
-              <div class="mock-chart-col"><div style="font-size:8px;color:#334155;"></div><div class="mock-chart-bar" style="height:3%;background:#6366f1;opacity:0.2;"></div><div class="mock-chart-lbl" style="color:#334155;">Sa</div></div>
-              <div class="mock-chart-col"><div style="font-size:8px;color:#334155;"></div><div class="mock-chart-bar" style="height:3%;background:#ec4899;opacity:0.2;"></div><div class="mock-chart-lbl" style="color:#334155;">So</div></div>
-            </div>
-            <div class="mock-day-detail">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;background:#0ea5e9;border-radius:50%;"></div><span style="font-size:11px;font-weight:800;color:#f1f5f9;">Mittwoch, 12. Jun</span></div>
-                <span style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.2);color:#0ea5e9;font-size:9px;font-weight:800;padding:2px 8px;border-radius:99px;">8.50 h</span>
-              </div>
-              <div class="mock-day-entry">
-                <div class="mock-day-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-hard-hat" style="color:#E30613;"></i></div>
-                <div class="mock-day-text"><div class="mock-day-proj">Baustelle Hauptstr. 5</div><div class="mock-day-meta">07:00 – 16:00 · 30 min Pause</div></div>
-                <div class="mock-day-hrs">8.50 h</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <hr class="lp-showcase-divider">
-
-    <div class="lp-feature-row">
-      <div class="lp-feature-row-text">
-        <div class="lp-feature-row-badge" style="background:rgba(227,6,19,0.12);border:1px solid rgba(227,6,19,0.25);color:#fca5a5;"><i class="fa-solid fa-wand-magic-sparkles" style="font-size:10px;"></i> KI-Technologie</div>
-        <h3 class="lp-feature-row-title">Handzettel fotografieren —<br>KI trägt alles ein</h3>
-        <p class="lp-feature-row-desc">Einfach ein Foto vom handgeschriebenen Stundenzettel machen. Gemini AI liest Datum, Zeiten, Baustelle und Pausen automatisch aus — du bestätigst und fertig.</p>
-        <ul class="lp-feature-row-bullets">
-          <li><i class="fa-solid fa-check"></i> Bis zu 10 Fotos gleichzeitig scannen</li>
-          <li><i class="fa-solid fa-check"></i> Kamera direkt aus der App nutzen</li>
-          <li><i class="fa-solid fa-check"></i> Alle Felder vor dem Speichern prüfbar</li>
-          <li><i class="fa-solid fa-check"></i> Überschneidungen werden automatisch erkannt</li>
-        </ul>
-      </div>
-      <div class="lp-feature-row-mock">
-        <div class="lp-phone">
-          <div class="lp-phone-bar"><div class="lp-phone-bar-title"><i class="fa-solid fa-camera-retro" style="color:#E30613;margin-right:6px;font-size:10px;"></i>KI-Stundenzettel Scan</div><span style="font-size:9px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);color:#10b981;padding:2px 8px;border-radius:6px;font-weight:800;">✓ Analyse fertig</span></div>
-          <div class="lp-phone-body">
-            <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);border-radius:8px;padding:8px 10px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
-              <i class="fa-solid fa-circle-check" style="color:#10b981;font-size:14px;"></i>
-              <div><div style="font-size:11px;font-weight:700;color:#f1f5f9;">KI-Analyse abgeschlossen</div><div style="font-size:9px;color:#475569;">3 Einträge aus 1 Foto erkannt</div></div>
-            </div>
-            <div class="mock-ai-card">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-                <div style="width:22px;height:22px;background:linear-gradient(135deg,#E30613,#b8000f);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;">1</div>
-                <span style="font-size:10px;font-weight:700;color:#f1f5f9;">Eintrag 1</span>
-                <div class="mock-ai-badge"><i class="fa-solid fa-check" style="font-size:8px;"></i>Sicher</div>
-                <label style="margin-left:auto;display:flex;align-items:center;gap:4px;font-size:9px;color:#64748b;cursor:pointer;"><input type="checkbox" checked style="accent-color:#E30613;width:12px;height:12px;"> Hinzufügen</label>
-              </div>
-              <div class="mock-ai-field-row">
-                <div class="mock-ai-field"><div class="mock-ai-field-label">Datum</div><div class="mock-ai-field-val">10/06/2025</div></div>
-                <div class="mock-ai-field"><div class="mock-ai-field-label">Pause</div><div class="mock-ai-field-val">30 min</div></div>
-              </div>
-              <div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:5px 8px;margin-top:6px;"><div style="font-size:8px;font-weight:700;color:#475569;margin-bottom:2px;">BAUSTELLE</div><div style="font-size:11px;font-weight:700;color:#e2e8f0;">Musterstraße 12</div></div>
-              <div class="mock-ai-field-row" style="margin-top:6px;">
-                <div class="mock-ai-field"><div class="mock-ai-field-label">Kommen</div><div class="mock-ai-field-val">07:00</div></div>
-                <div class="mock-ai-field"><div class="mock-ai-field-label">Gehen</div><div class="mock-ai-field-val">16:15</div></div>
-              </div>
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#10b981;margin-top:8px;background:rgba(16,185,129,0.06);border-radius:6px;padding:5px;">⏱ Brutto: 9.25 h | Netto: 8.75 h (30 min Pause)</div>
-            </div>
-            <button style="width:100%;background:linear-gradient(135deg,#E30613,#b8000f);border:none;color:#fff;padding:10px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;"><i class="fa-solid fa-check" style="margin-right:5px;"></i>Alle bestätigten Einträge hinzufügen</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <hr class="lp-showcase-divider">
-
-    <div class="lp-feature-row reverse">
-      <div class="lp-feature-row-text">
-        <div class="lp-feature-row-badge" style="background:rgba(192,57,43,0.12);border:1px solid rgba(192,57,43,0.25);color:#fca5a5;"><i class="fa-solid fa-file-pdf" style="font-size:10px;"></i> PDF Export</div>
-        <h3 class="lp-feature-row-title">Professioneller Stundenzettel<br>mit deinem Firmennamen</h3>
-        <p class="lp-feature-row-desc">Auf Knopfdruck wird ein sauberer PDF-Arbeitsbericht erstellt — mit deinem Firmennamen, dem Abrechnungszeitraum und allen Einträgen nach Datum sortiert.</p>
-        <ul class="lp-feature-row-bullets">
-          <li><i class="fa-solid fa-check"></i> Dein Firmen- / Betriebsname oben im PDF</li>
-          <li><i class="fa-solid fa-check"></i> Automatischer Zeitraum 20. bis 19.</li>
-          <li><i class="fa-solid fa-check"></i> Oder eigenen Zeitraum wählen</li>
-          <li><i class="fa-solid fa-check"></i> Kommen, Gehen, Pause, Nettostunden</li>
-        </ul>
-      </div>
-      <div class="lp-feature-row-mock">
-        <div class="lp-phone">
-          <div class="lp-phone-bar"><div class="lp-phone-bar-title"><i class="fa-solid fa-file-pdf" style="color:#E30613;margin-right:6px;font-size:10px;"></i>PDF Vorschau</div><span style="font-size:9px;color:#10b981;font-weight:800;"><i class="fa-solid fa-download" style="margin-right:3px;"></i>Export</span></div>
-          <div class="lp-phone-body">
-            <div class="mock-pdf-frame">
-              <div class="mock-pdf-header-bar"></div>
-              <div class="mock-pdf-logo-row"><div style="flex:1;"><div style="display:flex;align-items:flex-start;gap:5px;"><div class="mock-pdf-logo-accent"></div><div><div class="mock-pdf-logo-name">MUSTERMANN</div><div class="mock-pdf-logo-sub">Gebäude + Energie</div></div></div></div><div><div class="mock-pdf-title">ARBEITSBERICHT</div><div class="mock-pdf-date-text">Erstellt: 19.06.2025</div></div></div>
-              <div class="mock-pdf-divider"></div>
-              <div class="mock-pdf-cards"><div class="mock-pdf-card"><div class="mock-pdf-card-lbl">Mitarbeiter</div><div class="mock-pdf-card-val">Max M.</div></div><div class="mock-pdf-card"><div class="mock-pdf-card-lbl">Einträge</div><div class="mock-pdf-card-val">18</div></div><div class="mock-pdf-card" style="background:#2c3e50;"><div class="mock-pdf-card-lbl" style="color:#94a3b8;">Gesamt</div><div class="mock-pdf-card-val" style="color:#fff;">162.5 h</div></div></div>
-              <div class="mock-pdf-section"><div class="mock-pdf-section-title">Montag, 10. Juni 2025</div><div class="mock-pdf-row"><span>07:00–16:15</span><span>Musterstr. 12</span><span class="mock-pdf-row-hrs">8.75 h</span></div></div>
-              <div class="mock-pdf-section"><div class="mock-pdf-section-title">Dienstag, 11. Juni 2025</div><div class="mock-pdf-row"><span>07:00–17:00</span><span>Schmitt GmbH</span><span class="mock-pdf-row-hrs">9.25 h</span></div></div>
-              <div class="mock-pdf-footer"><span>Mustermann GmbH</span><span>Seite 1 von 2</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <hr class="lp-showcase-divider">
-
-    <div class="lp-feature-row">
-      <div class="lp-feature-row-text">
-        <div class="lp-feature-row-badge" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.25);color:#fde68a;"><i class="fa-solid fa-fire" style="font-size:10px;"></i> Motivation & Stats</div>
-        <h3 class="lp-feature-row-title">Überstunden, Serien &<br>tägliche Kennzahlen</h3>
-        <p class="lp-feature-row-desc">Die App berechnet deine Überstunden täglich automatisch und zeigt dir deine aktuelle Arbeitsserie — wie viele Tage in Folge du schon erfasst hast.</p>
-        <ul class="lp-feature-row-bullets">
-          <li><i class="fa-solid fa-check"></i> Überstunden täglich automatisch berechnet</li>
-          <li><i class="fa-solid fa-check"></i> Freitag = 6h Sollzeit, Sa/So = frei</li>
-          <li><i class="fa-solid fa-check"></i> Aktuelle Arbeitsserie mit Bestleistung</li>
-          <li><i class="fa-solid fa-check"></i> Alle Kennzahlen anklickbar für Details</li>
-        </ul>
-      </div>
-      <div class="lp-feature-row-mock">
-        <div class="lp-phone">
-          <div class="lp-phone-bar"><div class="lp-phone-bar-title"><i class="fa-solid fa-chart-simple" style="color:#f59e0b;margin-right:6px;font-size:10px;"></i>Dashboard</div><div style="display:flex;gap:4px;align-items:center;"><div style="width:6px;height:6px;background:#10b981;border-radius:50%;box-shadow:0 0 5px #10b981;"></div><span style="font-size:9px;color:#475569;font-weight:700;">Cloud Sync</span></div></div>
-          <div class="lp-phone-body">
-            <div class="mock-streak-card"><div class="mock-streak-flame">🔥</div><div><div class="mock-streak-num">12 Tage</div><div class="mock-streak-lbl">Aktuelle Serie</div></div><div class="mock-streak-best"><div class="mock-streak-best-num">18 Tage</div><div class="mock-streak-best-lbl">Bestleistung</div></div></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-              <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-top:3px solid #0ea5e9;border-radius:10px;padding:12px;"><div style="font-size:8px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:5px;">Netto-Arbeitszeit</div><div style="font-size:18px;font-weight:800;color:#f1f5f9;letter-spacing:-0.8px;">162.50 <span style="font-size:10px;color:#64748b;">hrs</span></div></div>
-              <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);border-top:3px solid #10b981;border-radius:10px;padding:12px;"><div style="font-size:8px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:5px;">Überstunden</div><div style="font-size:18px;font-weight:800;color:#10b981;letter-spacing:-0.8px;">+14.25 <span style="font-size:10px;">hrs</span></div></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <div class="lp-stats-bar">
-    <div class="lp-stat-item"><div class="lp-stat-num">9<span>,99</span></div><div class="lp-stat-lbl">Euro einmalig</div></div>
-    <div class="lp-stat-item"><div class="lp-stat-num"><span>∞</span></div><div class="lp-stat-lbl">Lebenslanger Zugang</div></div>
-    <div class="lp-stat-item"><div class="lp-stat-num">10<span>+</span></div><div class="lp-stat-lbl">Premium Features</div></div>
-    <div class="lp-stat-item"><div class="lp-stat-num"><span>0</span></div><div class="lp-stat-lbl">Folgekosten</div></div>
-  </div>
-
-  <div class="lp-mockup-section" style="padding-top:64px;">
-    <div class="lp-mockup-frame">
-      <div class="lp-mockup-notch"></div>
-      <div class="lp-mockup-header"><div class="lp-mockup-brand">MEINE STUNDEN<span>ONLINE</span></div><div style="display:flex;gap:6px;align-items:center;"><div style="width:7px;height:7px;background:#10b981;border-radius:50%;box-shadow:0 0 6px #10b981;"></div><span style="font-size:9px;color:#475569;font-weight:700;">Live</span></div></div>
-      <div class="lp-mockup-body">
-        <div class="lp-mockup-welcome">Willkommen zurück, <strong>Max Mustermann</strong></div>
-        <div class="lp-mockup-metrics"><div class="lp-mockup-metric"><label>Netto-Arbeitszeit</label><div class="val">162.50 h</div></div><div class="lp-mockup-metric"><label>Überstunden</label><div class="val green">+14.25 h</div></div></div>
-        <div class="lp-mockup-chart-label">Wochenübersicht KW 24</div>
-        <div class="lp-mockup-bars">
-          <div class="lp-mockup-bar" style="height:72%;background:#E30613;animation-delay:0.1s;"></div>
-          <div class="lp-mockup-bar" style="height:85%;background:#0ea5e9;animation-delay:0.2s;"></div>
-          <div class="lp-mockup-bar" style="height:60%;background:#10b981;animation-delay:0.3s;"></div>
-          <div class="lp-mockup-bar" style="height:90%;background:#f59e0b;animation-delay:0.4s;"></div>
-          <div class="lp-mockup-bar" style="height:55%;background:#8b5cf6;animation-delay:0.5s;"></div>
-          <div class="lp-mockup-bar" style="height:10%;background:#6366f1;opacity:0.3;animation-delay:0.6s;"></div>
-          <div class="lp-mockup-bar" style="height:10%;background:#ec4899;opacity:0.3;animation-delay:0.7s;"></div>
-        </div>
-        <div class="lp-mockup-entry"><div><div class="lp-mockup-entry-title">Baustelle Musterstraße 12</div><div class="lp-mockup-entry-sub">Mo, 10. Jun · 07:00–16:15 · 30 min Pause</div></div><div class="lp-mockup-entry-hrs">8.75 h</div></div>
-        <div class="lp-mockup-entry" style="border-left-color:#10b981;"><div><div class="lp-mockup-entry-title">Kunde Schmitt GmbH</div><div class="lp-mockup-entry-sub">Di, 11. Jun · 07:00–17:00 · 45 min Pause</div></div><div class="lp-mockup-entry-hrs" style="color:#10b981;">9.25 h</div></div>
-        <div class="lp-mockup-badge"><i class="fa-solid fa-cloud-arrow-up" style="font-size:9px;"></i> Cloud gespeichert</div>
-      </div>
-    </div>
-  </div>
-
-  <section class="lp-features">
-    <div class="lp-section-label">Was du bekommst</div>
-    <h2 class="lp-section-title">Alles was ein Handwerksbetrieb braucht</h2>
-    <p class="lp-section-sub">Einmalig kaufen — alle Features, kein Abo, lebenslanger Zugang.</p>
-    <div class="lp-features-grid">
-      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-file-pdf" style="color:#E30613;"></i></div><div class="lp-feature-title">PDF Export mit deinem Firmennamen</div><div class="lp-feature-desc">Dein Firmenname erscheint automatisch auf jedem exportierten Stundenzettel.</div></div>
-      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(16,185,129,0.1);"><i class="fa-solid fa-clock" style="color:#10b981;"></i></div><div class="lp-feature-title">Automatische Überstundenberechnung</div><div class="lp-feature-desc">Überstunden werden täglich automatisch berechnet und summiert.</div></div>
-      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(239,68,68,0.1);"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i></div><div class="lp-feature-title">Fehlende Tage erkennen & nachtragen</div><div class="lp-feature-desc">Die App erkennt automatisch welche Arbeitstage noch fehlen.</div></div>
-      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(14,165,233,0.1);"><i class="fa-solid fa-chart-column" style="color:#0ea5e9;"></i></div><div class="lp-feature-title">Interaktive Wochenübersicht</div><div class="lp-feature-desc">Alle Arbeitsstunden der Woche als anklickbares Balkendiagramm.</div></div>
-      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(227,6,19,0.1);"><i class="fa-solid fa-wand-magic-sparkles" style="color:#E30613;"></i></div><div class="lp-feature-title">KI-Stundenzettel Scan</div><div class="lp-feature-desc">Foto aufnehmen — die KI liest alles automatisch aus und trägt ein.</div></div>
-      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(139,92,246,0.1);"><i class="fa-solid fa-cloud-arrow-up" style="color:#8b5cf6;"></i></div><div class="lp-feature-title">Cloud-Sync & Datensicherheit</div><div class="lp-feature-desc">Deine Daten sicher in der Cloud — auf jedem Gerät verfügbar.</div></div>
-      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(245,158,11,0.1);"><i class="fa-solid fa-umbrella-beach" style="color:#f59e0b;"></i></div><div class="lp-feature-title">Urlaub & Krankmeldungen</div><div class="lp-feature-desc">Urlaubstage und Krankmeldungen erfassen, Resturlaub automatisch berechnen.</div></div>
-      <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(14,165,233,0.1);"><i class="fa-solid fa-moon" style="color:#0ea5e9;"></i></div><div class="lp-feature-title">Dark Mode & mehrsprachig</div><div class="lp-feature-desc">Augenschonendes dunkles Design. Verfügbar auf Deutsch und Englisch.</div></div>
-    </div>
-  </section>
-
-  <section class="lp-how">
-    <div class="lp-section-label">So funktioniert's</div>
-    <h2 class="lp-section-title">In 3 Schritten startklar</h2>
-    <div class="lp-steps">
-      <div class="lp-step"><div class="lp-step-num">1</div><h4>Konto erstellen</h4><p>Name, Firmenname und Kennwort eingeben. Einmalig 9,99 € bezahlen — fertig.</p></div>
-      <div class="lp-step"><div class="lp-step-num">2</div><h4>Stunden erfassen</h4><p>Täglich Kommen, Gehen und Pause eintragen — oder per KI-Scan von einem Foto.</p></div>
-      <div class="lp-step"><div class="lp-step-num">3</div><h4>PDF exportieren</h4><p>Professioneller Stundenzettel mit deinem Firmennamen — auf Knopfdruck bereit.</p></div>
-    </div>
-  </section>
-
-  <div class="lp-cta-bottom" style="position:relative;z-index:1;">
-    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;">
-      <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#64748b;"><i class="fa-solid fa-check-circle" style="color:#10b981;"></i> Einmalige Zahlung</div>
-      <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#64748b;"><i class="fa-solid fa-check-circle" style="color:#10b981;"></i> Kein Abo</div>
-      <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#64748b;"><i class="fa-solid fa-check-circle" style="color:#10b981;"></i> Cloud-Backup inklusive</div>
-      <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#64748b;"><i class="fa-solid fa-check-circle" style="color:#10b981;"></i> Lebenslanger Zugang</div>
-    </div>
-    <div class="lp-cta-price-badge"><sup>€</sup>9,99<span>Einmalig — kein Abo, keine Folgekosten</span></div>
-    <h2>Bereit loszulegen?</h2>
-    <p>Konto erstellen, Firmennamen hinterlegen und sofort alle Features nutzen. Lebenslanger Zugang für einmalig 9,99 €.</p>
-    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-      <button class="lp-hero-btn-main" onclick="openRegisterModal()" style="font-size:14px;padding:14px 26px;"><i class="fa-solid fa-rocket"></i> Jetzt Konto erstellen</button>
-      <button class="lp-hero-btn-secondary" onclick="openLoginModal()" style="font-size:14px;padding:14px 20px;"><i class="fa-solid fa-right-to-bracket"></i> Anmelden</button>
-    </div>
-  </div>
-
-  <div class="lp-footer">
-    <div class="lp-footer-brand">
-      <span class="lp-footer-brand-text">MeineStunden</span><span class="lp-footer-brand-dot">.</span><span class="lp-footer-brand-tld">online</span>
-    </div>
-    <div class="lp-footer-copy">© 2026 MeineStunden.online · Professionelle Zeiterfassung für Handwerksbetriebe</div>
-    <div class="lp-footer-dev">Developed by <span>Amran Hiluf</span> &amp; MeineStunden.online</div>
-  </div>
-</div>
-
-
-<!-- LOGIN MODAL -->
-<div id="modal-login-backdrop" onclick="if(event.target===this)closeLoginModal()">
-  <div class="modal-login-box">
-    <button class="modal-close-x" onclick="closeLoginModal()"><i class="fa-solid fa-xmark"></i></button>
-    <div class="modal-login-header">
-      <div class="modal-login-logo-main">MEINE STUNDEN</div>
-      <div class="modal-login-logo-sub">ONLINE</div>
-      <div class="modal-login-subtitle">Mitarbeiter-Portal · Zeiterfassung</div>
-    </div>
-    <div class="modal-login-body">
-      <form id="modal-login-form" onsubmit="handleModalLogin(event)">
-        <div class="modal-form-group"><label>Mitarbeitername</label><input type="text" id="modal-username" placeholder="Name eingeben" autocomplete="off" required></div>
-        <div class="modal-form-group"><label>Kennwort / PIN</label><input type="password" id="modal-passcode" placeholder="••••••" required style="letter-spacing:2px;"></div>
-        <button type="submit" class="modal-login-btn" id="modal-login-btn"><i class="fa-solid fa-right-to-bracket" style="margin-right:8px;"></i>Anmelden</button>
-      </form>
-      <div class="modal-msg" id="modal-login-msg"></div>
-      <div class="modal-login-switch">Noch kein Konto? <a onclick="closeLoginModal();openRegisterModal();">Jetzt registrieren →</a></div>
-    </div>
-  </div>
-</div>
-
-
-<!-- REGISTER MODAL -->
-<div id="modal-register-backdrop" onclick="if(event.target===this)closeRegisterModal()">
-  <div class="modal-register-box">
-    <button class="modal-close-x" onclick="closeRegisterModal()" style="top:16px;right:16px;z-index:2;"><i class="fa-solid fa-xmark"></i></button>
-    <div class="reg-steps">
-      <div class="reg-step-tab active" id="reg-tab-1"><i class="fa-solid fa-user" style="margin-right:5px;font-size:10px;"></i>1. Konto</div>
-      <div class="reg-step-tab" id="reg-tab-2"><i class="fa-solid fa-credit-card" style="margin-right:5px;font-size:10px;"></i>2. Bezahlen & Aktivieren</div>
-    </div>
-    <div class="reg-step-panel active" id="reg-panel-1">
-      <div class="reg-step-title">Dein Konto erstellen</div>
-      <div class="reg-step-sub">Gib deine Daten ein. Dein Firmenname erscheint auf allen exportierten Stundenzetteln.</div>
-      <div class="modal-form-group"><label>Dein vollständiger Name</label><input type="text" id="reg-name" placeholder="Max Mustermann" autocomplete="off" required></div>
-      <div class="modal-form-group"><label>Firmen- / Betriebsname <span style="color:#E30613;font-size:10px;">(für PDF Export)</span></label><input type="text" id="reg-company" placeholder="Muster GmbH oder Einzelunternehmen" autocomplete="off" required></div>
-      <div class="modal-form-group"><label>Kennwort wählen</label><input type="password" id="reg-password" placeholder="Mind. 6 Zeichen" required style="letter-spacing:2px;"></div>
-      <div class="modal-form-group"><label>Kennwort bestätigen</label><input type="password" id="reg-password2" placeholder="Kennwort wiederholen" required style="letter-spacing:2px;"></div>
-      <div class="modal-msg" id="reg-step1-msg"></div>
-      <button type="button" class="reg-next-btn" onclick="regGoToStep2()">Weiter zur Zahlung <i class="fa-solid fa-arrow-right" style="margin-left:8px;"></i></button>
-      <div class="reg-back-link">Bereits Konto? <a onclick="closeRegisterModal();openLoginModal()">Anmelden</a></div>
-    </div>
-    <div class="reg-step-panel" id="reg-panel-2">
-      <div class="reg-step-title">Einmalig freischalten</div>
-      <div class="reg-step-sub">Zahle einmalig und erhalte sofortigen Zugang zu allen Features — lebenslang, ohne Abo.</div>
-      <div class="reg-price-block">
-        <div class="reg-price-amount"><sup>€</sup>9<span style="font-size:26px;">,99</span></div>
-        <div class="reg-price-label">Einmalige Zahlung · Kein Abo · Keine Folgekosten</div>
-        <div class="reg-price-badge"><i class="fa-solid fa-infinity" style="margin-right:5px;"></i>Lebenslanger Zugang</div>
-      </div>
-      <div class="reg-features-title"><i class="fa-solid fa-star" style="color:#f59e0b;margin-right:5px;"></i>Was du bekommst</div>
-      <div class="reg-feature-item highlight"><div class="reg-feature-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-file-pdf" style="color:#E30613;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">PDF Export mit deinem Firmennamen</div><div class="reg-feature-desc">Dein Betriebsname erscheint automatisch auf jedem Export.</div></div></div>
-      <div class="reg-feature-item highlight"><div class="reg-feature-icon" style="background:rgba(16,185,129,0.12);"><i class="fa-solid fa-clock" style="color:#10b981;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">Automatische Überstundenberechnung</div><div class="reg-feature-desc">Täglich automatisch berechnet — kein manuelles Rechnen.</div></div></div>
-      <div class="reg-feature-item highlight"><div class="reg-feature-icon" style="background:rgba(239,68,68,0.12);"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">Fehlende Tage automatisch erkennen</div><div class="reg-feature-desc">Die App zeigt dir sofort welche Arbeitstage noch fehlen.</div></div></div>
-      <div class="reg-feature-item"><div class="reg-feature-icon" style="background:rgba(14,165,233,0.1);"><i class="fa-solid fa-chart-column" style="color:#0ea5e9;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">Interaktive Wochenübersicht</div><div class="reg-feature-desc">Balkendiagramm — jeden Tag anklicken für volle Details.</div></div></div>
-      <div class="reg-feature-item"><div class="reg-feature-icon" style="background:rgba(227,6,19,0.1);"><i class="fa-solid fa-wand-magic-sparkles" style="color:#E30613;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">KI-Stundenzettel Scan</div><div class="reg-feature-desc">Foto aufnehmen, KI liest alles automatisch aus.</div></div></div>
-      <div class="reg-feature-item"><div class="reg-feature-icon" style="background:rgba(139,92,246,0.1);"><i class="fa-solid fa-cloud-arrow-up" style="color:#8b5cf6;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">Cloud-Sync auf allen Geräten</div><div class="reg-feature-desc">Deine Daten sicher in der Cloud — immer aktuell.</div></div></div>
-      <div class="modal-msg" id="reg-step2-msg" style="margin-top:12px;"></div>
-      <button type="button" class="reg-pay-btn" onclick="handleRegisterAndPay()" id="reg-pay-btn"><i class="fa-solid fa-lock"></i> Jetzt kaufen & Konto aktivieren — 9,99 €</button>
-      <div class="reg-trust-line"><i class="fa-solid fa-shield-halved"></i> Sichere Zahlung · Sofortiger Zugang · Kein Abo</div>
-      <div class="reg-back-link"><a onclick="regGoToStep1()">← Zurück zu Schritt 1</a></div>
-    </div>
-  </div>
-</div>
-
-
-<!-- Hidden legacy login -->
-<div id="login-view" class="login-container">
-  <div class="login-card">
-    <div class="login-logo-canvas-wrap"><canvas id="login-logo-canvas"></canvas></div>
-    <div class="portal-context-caption" id="lbl-login-sub">Mitarbeiter-Portal | Zeiterfassung</div>
-    <form id="login-form">
-      <div class="form-group" style="text-align:left;"><label id="lbl-login-user" for="username">Mitarbeitername</label><input type="text" id="username" placeholder="Name eingeben" autocomplete="off" required></div>
-      <div class="form-group" style="text-align:left;"><label id="lbl-login-pass" for="passcode">Kennwort / PIN</label><input type="password" id="passcode" placeholder="••••••" required></div>
-      <button type="submit" id="btn-login-submit" class="primary-btn">Anmelden</button>
-    </form>
-    <div id="message-box" class="message"></div>
-  </div>
-</div>
-
-<script>
-(function() {
-  var FONT_MAIN='300 34px "Playfair Display",Georgia,serif', FONT_SUB='600 11px "Cormorant Garamond",Georgia,serif';
-  var CS_MAIN=5, CS_SUB=4.5;
-  function ms(ctx,t,s){var w=0;t.split('').forEach(function(c){w+=ctx.measureText(c).width+s;});return w-s;}
-  function ds(ctx,t,s,x,y){t.split('').forEach(function(c){ctx.fillText(c,x,y);x+=ctx.measureText(c).width+s;});}
-  function draw(){
-    var c=document.getElementById('login-logo-canvas');if(!c)return;
-    var ctx=c.getContext('2d'),dpr=window.devicePixelRatio||1,lW=340,lH=110;
-    c.width=lW*dpr;c.height=lH*dpr;c.style.width=lW+'px';c.style.height=lH+'px';
-    ctx.scale(dpr,dpr);ctx.clearRect(0,0,lW,lH);var cx=lW/2;
-    ctx.font=FONT_MAIN;var mW=ms(ctx,'MEINE STUNDEN',CS_MAIN);
-    if(mW>lW-20){var r=(lW-20)/mW;ctx.font='300 '+Math.floor(34*r)+'px "Playfair Display",Georgia,serif';mW=ms(ctx,'MEINE STUNDEN',CS_MAIN);}
-    ctx.fillStyle='#ffffff';ctx.textBaseline='middle';ds(ctx,'MEINE STUNDEN',CS_MAIN,cx-mW/2,36);
-    var lY=54,lnW=Math.min(mW+20,lW-20),g=ctx.createLinearGradient(cx-lnW/2,0,cx+lnW/2,0);
-    g.addColorStop(0,'rgba(227,6,19,0)');g.addColorStop(0.3,'rgba(227,6,19,0.9)');g.addColorStop(0.7,'rgba(227,6,19,0.9)');g.addColorStop(1,'rgba(227,6,19,0)');
-    ctx.strokeStyle=g;ctx.lineWidth=0.8;ctx.beginPath();ctx.moveTo(cx-lnW/2,lY);ctx.lineTo(cx+lnW/2,lY);ctx.stroke();
-    ctx.font=FONT_SUB;ctx.fillStyle='#E30613';ctx.textBaseline='middle';var sW=ms(ctx,'ONLINE',CS_SUB);ds(ctx,'ONLINE',CS_SUB,cx-sW/2,80);
+function populateLogTimeFormDropdowns() {
+  var startSel = document.getElementById('log-start-time');
+  var endSel   = document.getElementById('log-end-time');
+  startSel.innerHTML=''; endSel.innerHTML='';
+  for (var h=0; h<24; h++) {
+    ['00','15','30','45'].forEach(function(m){
+      var t = (h<10?'0':'')+h+':'+m;
+      var os = document.createElement('option'); os.value=t; os.textContent=t; if(t==='07:00') os.selected=true; startSel.appendChild(os);
+      var oe = document.createElement('option'); oe.value=t; oe.textContent=t; if(t==='16:15') oe.selected=true; endSel.appendChild(oe);
+    });
   }
-  if(document.readyState!=='loading') setTimeout(draw,0); else document.addEventListener('DOMContentLoaded',function(){setTimeout(draw,0);});
-  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){setTimeout(draw,50);});
-  window.addEventListener('load',function(){setTimeout(draw,80);});
-})();
-</script>
+}
 
-<script src="partials/admin-view.js"></script>
-<script src="partials/app-view.js"></script>
+function selectBreakOption(minutes, btn) {
+  document.querySelectorAll('.break-pill').forEach(function(p){p.classList.remove('active');});
+  btn.classList.add('active');
+  activeSelectedFormBreakDuration = minutes;
+}
 
-<div id="custom-report-modal-backdrop" class="custom-modal-backdrop" onclick="closeCustomReportModal()">
-  <div class="custom-report-modal" onclick="event.stopPropagation()">
-    <div class="modal-report-header"><h4 id="custom-modal-title-header">Auswertung</h4><i id="custom-modal-icon-header" class="fa-solid fa-clock" style="color:#64748b;"></i></div>
-    <div id="modal-report-content-body" class="modal-report-body"></div>
-    <div class="modal-report-footer"><button type="button" class="modal-close-btn" id="btn-modal-close" onclick="closeCustomReportModal()">Bestätigen</button></div>
-  </div>
-</div>
+function setLeaveManagementType(leaveType) {
+  activeLeaveSubManagementType = leaveType;
+  var t=uiTranslations[activeLanguageGlobal];
+  var vacBtn=document.getElementById('toggle-leave-vacation');
+  var sickBtn=document.getElementById('toggle-leave-sick');
+  var lbl=document.getElementById('leave-context-label');
+  var inp=document.getElementById('vacation-notes-input');
+  var subBtn=document.getElementById('leave-submit-btn');
+  if (!vacBtn) return;
+  if (leaveType==='vacation') {
+    vacBtn.classList.add('active'); sickBtn.classList.remove('active');
+    if(lbl) lbl.textContent=t.vacContextV; if(inp) inp.placeholder=t.vacPlhV;
+    if(subBtn){subBtn.textContent=t.vacSubmitV; subBtn.style.background='#3b82f6';}
+  } else {
+    sickBtn.classList.add('active'); vacBtn.classList.remove('active');
+    if(lbl) lbl.textContent=t.vacContextS; if(inp) inp.placeholder=t.vacPlhS;
+    if(subBtn){subBtn.textContent=t.vacSubmitS; subBtn.style.background='#10b981';}
+  }
+}
 
-<div id="toast-notification"></div>
+function computeRawHoursDiff(start, end) {
+  var p1=start.split(':').map(Number), p2=end.split(':').map(Number);
+  var diff=(p2[0]*60+p2[1])-(p1[0]*60+p1[1]);
+  return diff>0?diff/60:0;
+}
 
-<script src="js/firebase-config.js"></script>
-<script src="js/cloud-store.js"></script>
-<script src="js/i18n.js"></script>
-<script src="js/app-user.js"></script>
-<script src="js/admin.js"></script>
-<script src="js/pdf-export.js"></script>
-<script src="js/features.js"></script>
-<script src="js/ai-scan.js"></script>
-<script src="js/premium-features.js"></script>
-<script src="js/landing.js"></script>
+function handleNewRecordSubmission(event) {
+  event.preventDefault();
+  var startVal=document.getElementById('log-start-time').value;
+  var endVal=document.getElementById('log-end-time').value;
+  var grossHrs=computeRawHoursDiff(startVal,endVal);
+  if (grossHrs<=0){showToast(activeLanguageGlobal==='de'?'⚠ Endzeit muss nach Startzeit liegen':'⚠ End time must be after start');return;}
+  var dateRaw=document.getElementById('log-date-picker').value;
+  var parts=dateRaw.split('-');
+  var dateFormatted=parts[2]+'/'+parts[1]+'/'+parts[0];
+  var startMins=parseInt(startVal.split(':')[0])*60+parseInt(startVal.split(':')[1]);
+  var endMins=parseInt(endVal.split(':')[0])*60+parseInt(endVal.split(':')[1]);
+  var existing=globalLoggedSessionsDatabaseMock.filter(function(r){return r.type==='work'&&r.date===dateFormatted;});
+  for (var i=0;i<existing.length;i++) {
+    var rec=existing[i];
+    var rStart=parseInt(rec.startTime.split(':')[0])*60+parseInt(rec.startTime.split(':')[1]);
+    var rEnd=parseInt(rec.endTime.split(':')[0])*60+parseInt(rec.endTime.split(':')[1]);
+    if (startMins<rEnd&&endMins>rStart){showToast(activeLanguageGlobal==='de'?'⚠ Überschneidung mit '+rec.startTime+'–'+rec.endTime:'⚠ Overlap with '+rec.startTime+'–'+rec.endTime);return;}
+  }
+  var record={id:'work-'+Date.now(),type:'work',date:dateFormatted,startTime:startVal,endTime:endVal,project:document.getElementById('log-project-name').value.trim(),duration:grossHrs,breakTime:activeSelectedFormBreakDuration,notes:document.getElementById('log-notes').value.trim()};
+  if (!navigator.onLine){
+    var q=getOfflineQueue(); q.push(record); saveOfflineQueue(q);
+    document.getElementById('log-project-name').value=''; document.getElementById('log-notes').value='';
+    clearDraftWorkEntry(); selectBreakOption(0,document.querySelectorAll('.break-pill')[0]);
+    showToast(activeLanguageGlobal==='de'?'📶 Offline gespeichert':'📶 Saved offline'); return;
+  }
+  globalLoggedSessionsDatabaseMock.unshift(record);
+  persistUserData(); clearDraftWorkEntry();
+  document.getElementById('log-project-name').value=''; document.getElementById('log-notes').value='';
+  selectBreakOption(0,document.querySelectorAll('.break-pill')[0]);
+  renderHistoricalRecordsSheet(); runGlobalApplicationMetricsEngine();
+  document.getElementById('log-start-time').value=endVal;
+  document.getElementById('log-project-name').focus();
+  showToast(activeLanguageGlobal==='de'?'✓ Gespeichert':'✓ Saved');
+}
 
-</body>
-</html>
+function handleSchuleSubmission() {
+  var dateRaw=document.getElementById('schule-date-picker').value;
+  if(!dateRaw){showToast(activeLanguageGlobal==='de'?'⚠ Bitte Datum wählen':'⚠ Please select date','error');return;}
+  var p=dateRaw.split('-'); var dateFormatted=p[2]+'/'+p[1]+'/'+p[0];
+  var exists=globalLoggedSessionsDatabaseMock.find(function(r){return r.date===dateFormatted&&(r.type==='schule'||r.type==='work');});
+  if(exists){showToast(activeLanguageGlobal==='de'?'⚠ Für diesen Tag existiert bereits ein Eintrag':'⚠ Entry already exists for this date','error');return;}
+  var record={id:'schule-'+Date.now(),type:'schule',date:dateFormatted,startTime:null,endTime:null,project:'BERUFSSCHULE',duration:0,breakTime:0,notes:'Schultag'};
+  globalLoggedSessionsDatabaseMock.unshift(record);
+  persistUserData(); runGlobalApplicationMetricsEngine(); renderHistoricalRecordsSheet();
+  showToast(activeLanguageGlobal==='de'?'✓ Schultag gebucht':'✓ School day logged');
+}
+
+function handleVacationDayLogSubmission(event) {
+  event.preventDefault();
+  var fromRaw=document.getElementById('vacation-from-date-input').value;
+  var toRaw=document.getElementById('vacation-to-date-input').value;
+  if(!fromRaw||!toRaw) return;
+  var fromObj=new Date(fromRaw), toObj=new Date(toRaw);
+  if(toObj<fromObj){alert(activeLanguageGlobal==='de'?'Fehler: Enddatum vor Startdatum!':'Error: To-date before From-date!');return;}
+  var totalDays=Math.round((toObj-fromObj)/86400000)+1;
+  var isSick=(activeLeaveSubManagementType==='sick');
+  for(var i=0;i<totalDays;i++){
+    var cur=new Date(fromObj); cur.setDate(fromObj.getDate()+i);
+    var dd=String(cur.getDate()).padStart(2,'0'), mm=String(cur.getMonth()+1).padStart(2,'0');
+    vacationLoggedDaysArrayCache.unshift({id:'vacation-'+Date.now()+'-'+i,type:isSick?'sick':'vacation',date:dd+'/'+mm+'/'+cur.getFullYear(),project:isSick?'Krankheit':'Urlaub',notes:document.getElementById('vacation-notes-input').value.trim(),duration:0,breakTime:0});
+  }
+  persistUserData();
+  document.getElementById('vacation-from-date-input').value='';
+  document.getElementById('vacation-to-date-input').value='';
+  document.getElementById('vacation-notes-input').value='';
+  renderVacationRecordsSheet(); runGlobalApplicationMetricsEngine();
+  showToast(activeLanguageGlobal==='de'?'✓ '+totalDays+' Tag(e) eingebucht':'✓ '+totalDays+' day(s) logged');
+}
+
+function renderHistoricalRecordsSheet() {
+  var mount=document.getElementById('history-items-container');
+  var t=uiTranslations[activeLanguageGlobal];
+  if(!mount) return;
+  mount.innerHTML='';
+  if(!globalLoggedSessionsDatabaseMock.length){mount.innerHTML='<p style="color:#64748b;font-size:13px;text-align:center;padding:24px;">'+t.emptyHist+'</p>';return;}
+  globalLoggedSessionsDatabaseMock.forEach(function(s){
+    var isSchule=s.type==='schule';
+    var net=isSchule?0:(s.duration-(s.breakTime/60));
+    var card=document.createElement('div');
+    card.className='history-item'; card.style.borderLeftColor='var(--primary-blue)'; card.id='item-card-'+s.id;
+    card.innerHTML='<div class="item-main-row"><div class="hist-left"><h5>'+(isSchule?'🎓 BERUFSSCHULE':s.project)+'</h5><p><i class="fa-solid fa-calendar-day" style="font-size:11px;margin-right:4px;"></i>'+s.date+(s.notes?' | '+s.notes:'')+'</p></div>'
+      +'<div style="display:flex;align-items:center;">'
+      +'<div class="hist-right"><div>'+(isSchule?'Schultag':net.toFixed(2)+' hrs')+'</div><div style="font-size:10px;color:#64748b;font-weight:500;">'+(isSchule?'Kein Abzug':t.lblBreak+': '+s.breakTime+'m')+'</div></div>'
+      +'<button class="action-icon-btn" onclick="initializeInlineEditRow(\''+s.id+'\')" style="'+(isSchule?'display:none':'')+'"><i class="fa-solid fa-pen-to-square"></i></button>'
+      +'<button class="action-icon-btn delete-hover" onclick="sendItemToTrashBin(\''+s.id+'\',\''+s.type+'\')"><i class="fa-solid fa-trash-can"></i></button>'
+      +'</div></div>'
+      +'<div id="inline-edit-container-'+s.id+'" style="display:none;"></div>';
+    mount.appendChild(card);
+  });
+}
+
+function renderVacationRecordsSheet() {
+  var mount=document.getElementById('vacation-days-list-container');
+  var t=uiTranslations[activeLanguageGlobal];
+  if(!mount) return; mount.innerHTML='';
+  if(!vacationLoggedDaysArrayCache.length){mount.innerHTML='<p style="color:#64748b;font-size:13px;text-align:center;padding:12px;">'+t.emptyLeave+'</p>';return;}
+  vacationLoggedDaysArrayCache.forEach(function(v){
+    var isSick=v.type==='sick';
+    var card=document.createElement('div'); card.className='history-item'; card.style.borderLeftColor=isSick?'#ef4444':'#10b981';
+    card.innerHTML='<div class="item-main-row"><div class="hist-left"><h5>'+(v.notes||(isSick?t.lblSickToken:t.lblVacToken))+'</h5><p><i class="'+(isSick?'fa-solid fa-briefcase-medical':'fa-solid fa-umbrella-beach')+'" style="font-size:11px;margin-right:4px;"></i>'+v.date+'<span style="font-size:10px;background:#f1f5f9;padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:700;color:#475569;">'+(isSick?t.lblSickToken:t.lblVacToken)+'</span></p></div>'
+      +'<div style="display:flex;align-items:center;"><div class="hist-right" style="color:'+(isSick?'#ef4444':'#10b981')+';">1 '+t.lblDay+'</div>'
+      +'<button class="action-icon-btn delete-hover" onclick="sendItemToTrashBin(\''+v.id+'\',\'leave\')"><i class="fa-solid fa-trash-can"></i></button></div></div>';
+    mount.appendChild(card);
+  });
+}
+
+function renderRecentlyDeletedBinSheet() {
+  var mount=document.getElementById('deleted-items-bin-container');
+  var t=uiTranslations[activeLanguageGlobal];
+  if(!mount) return; mount.innerHTML='';
+  if(!recentlyDeletedItemsBinCache.length){mount.innerHTML='<p style="color:#64748b;font-size:13px;text-align:center;padding:24px;">'+t.emptyTrash+'</p>';return;}
+  recentlyDeletedItemsBinCache.forEach(function(item){
+    var typeLabel=item.type==='work'?(activeLanguageGlobal==='de'?'Arbeitszeit':'Work Record'):item.type==='sick'?(activeLanguageGlobal==='de'?'Krankmeldung':'Sick Leave'):(activeLanguageGlobal==='de'?'Urlaubstag':'Vacation Day');
+    var row=document.createElement('div'); row.className='history-item'; row.style.borderLeftColor='#94a3b8';
+    row.innerHTML='<div class="item-main-row"><div class="hist-left"><h5 style="color:#94a3b8;">['+(activeLanguageGlobal==='de'?'Gelöscht':'Deleted')+'] '+(item.project||item.notes||'–')+'</h5><p>'+(item.date||'')+' ('+typeLabel+')</p></div>'
+      +'<button class="restore-btn" onclick="restoreItemFromTrashBin(\''+item.id+'\')">'+(activeLanguageGlobal==='de'?'Reaktivieren':'Restore')+'</button></div>';
+    mount.appendChild(row);
+  });
+}
+
+window.initializeInlineEditRow = function(id) {
+  var s=globalLoggedSessionsDatabaseMock.find(function(i){return i.id===id;}); if(!s) return;
+  var box=document.getElementById('inline-edit-container-'+id);
+  box.innerHTML='<div class="inline-edit-box"><div class="form-group"><label style="font-size:10px;">Baustelle/Kunde</label><input type="text" id="edit-proj-'+id+'" value="'+s.project+'"></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+    +'<div class="form-group"><label style="font-size:10px;">Kommen (HH:MM)</label><input type="text" id="edit-start-'+id+'" value="'+(s.startTime||'07:00')+'" placeholder="HH:MM"></div>'
+    +'<div class="form-group"><label style="font-size:10px;">Gehen (HH:MM)</label><input type="text" id="edit-end-'+id+'" value="'+(s.endTime||'')+'" placeholder="HH:MM"></div></div>'
+    +'<div class="form-group"><label style="font-size:10px;">Pause</label>'
+    +'<select id="edit-brk-'+id+'"><option value="0" '+(s.breakTime===0?'selected':'')+'>Keine</option><option value="15" '+(s.breakTime===15?'selected':'')+'>15m</option><option value="30" '+(s.breakTime===30?'selected':'')+'>30m</option><option value="45" '+(s.breakTime===45?'selected':'')+'>45m</option><option value="60" '+(s.breakTime===60?'selected':'')+'>1h</option></select></div>'
+    +'<div class="inline-edit-actions"><button class="inline-btn" style="background:#cbd5e1;color:#333;" onclick="closeInlineEditorFrame(\''+id+'\')">Abbrechen</button>'
+    +'<button class="inline-btn" style="background:#10b981;color:white;" onclick="commitInlineChanges(\''+id+'\')">Übernehmen</button></div></div>';
+  box.style.display='block';
+};
+window.closeInlineEditorFrame = function(id){document.getElementById('inline-edit-container-'+id).style.display='none';};
+window.commitInlineChanges = function(id){
+  var s=globalLoggedSessionsDatabaseMock.find(function(i){return i.id===id;}); if(!s) return;
+  var proj=document.getElementById('edit-proj-'+id).value.trim();
+  var start=document.getElementById('edit-start-'+id).value.trim();
+  var end=document.getElementById('edit-end-'+id).value.trim();
+  var brk=parseInt(document.getElementById('edit-brk-'+id).value);
+  if(!proj||!start||!end){alert('Bitte alle Felder ausfüllen.');return;}
+  if(!/^\d{2}:\d{2}$/.test(start)||!/^\d{2}:\d{2}$/.test(end)){alert('Bitte Zeiten im Format HH:MM eingeben.');return;}
+  var hrs=computeRawHoursDiff(start,end);
+  if(hrs<=0){alert('Ungültige Zeitspanne.');return;}
+  s.project=proj; s.startTime=start; s.endTime=end; s.duration=hrs; s.breakTime=brk;
+  persistUserData(); renderHistoricalRecordsSheet(); runGlobalApplicationMetricsEngine();
+  showToast(activeLanguageGlobal==='de'?'✓ Gespeichert':'✓ Saved');
+};
+
+window.sendItemToTrashBin = function(id,type){
+  if(type==='work'||type==='schule'){
+    var idx=globalLoggedSessionsDatabaseMock.findIndex(function(s){return s.id===id;});
+    if(idx>-1){var obj=globalLoggedSessionsDatabaseMock.splice(idx,1)[0]; obj.deletedAtTimestamp=Date.now(); recentlyDeletedItemsBinCache.push(obj);}
+  } else {
+    var idx2=vacationLoggedDaysArrayCache.findIndex(function(v){return v.id===id;});
+    if(idx2>-1){var obj2=vacationLoggedDaysArrayCache.splice(idx2,1)[0]; obj2.deletedAtTimestamp=Date.now(); recentlyDeletedItemsBinCache.push(obj2);}
+  }
+  persistUserData(); renderHistoricalRecordsSheet(); renderVacationRecordsSheet(); runGlobalApplicationMetricsEngine();
+  showToast(activeLanguageGlobal==='de'?'In Papierkorb verschoben.':'Moved to trash.','info');
+};
+
+window.restoreItemFromTrashBin = function(id){
+  var idx=recentlyDeletedItemsBinCache.findIndex(function(i){return i.id===id;});
+  if(idx>-1){
+    var item=recentlyDeletedItemsBinCache.splice(idx,1)[0];
+    delete item.deletedAtTimestamp;
+    if(item.type==='work'||item.type==='schule') globalLoggedSessionsDatabaseMock.unshift(item);
+    else vacationLoggedDaysArrayCache.unshift(item);
+  }
+  persistUserData(); renderRecentlyDeletedBinSheet(); renderHistoricalRecordsSheet(); renderVacationRecordsSheet(); runGlobalApplicationMetricsEngine();
+  showToast(activeLanguageGlobal==='de'?'✓ Wiederhergestellt':'✓ Restored');
+};
+
+function enforceTrashLifespanPurgeEngine(){
+  if(!authenticatedUserGlobal) return;
+  var limit=12*60*60*1000, now=Date.now();
+  var before=recentlyDeletedItemsBinCache.length;
+  recentlyDeletedItemsBinCache=recentlyDeletedItemsBinCache.filter(function(i){return (now-i.deletedAtTimestamp)<limit;});
+  if(recentlyDeletedItemsBinCache.length!==before) persistUserData();
+  if(document.getElementById('view-deleted').classList.contains('active')) renderRecentlyDeletedBinSheet();
+}
+
+function runGlobalApplicationMetricsEngine(){
+  var netHrs=0, otHrs=0;
+  dailyWorkTimeBreakdownLogs={}; dailyOvertimeBreakdownLogs={};
+  var target=parseFloat(document.getElementById('shift-target-constraint').value)||8.5;
+  globalLoggedSessionsDatabaseMock.forEach(function(s){
+    var net=s.duration-(s.breakTime/60); netHrs+=net;
+    dailyWorkTimeBreakdownLogs[s.date]=(dailyWorkTimeBreakdownLogs[s.date]||0)+net;
+    var p=s.date.split('/'); var dow=new Date(p[2],p[1]-1,p[0]).getDay();
+    var dayTarget=(dow===5)?6.0:(dow===0||dow===6)?0:target;
+    if(net>dayTarget){var ot=net-dayTarget; otHrs+=ot; dailyOvertimeBreakdownLogs[s.date]=(dailyOvertimeBreakdownLogs[s.date]||0)+ot;}
+  });
+  var grossEl=document.getElementById('dash-gross-hours');
+  var otEl=document.getElementById('dash-overtime-hours');
+  if(grossEl){grossEl.textContent=netHrs.toFixed(2)+' hrs'; grossEl.parentElement.style.borderTop=netHrs>0?'4px solid var(--primary-blue)':'4px solid #cbd5e1';}
+  if(otEl){otEl.textContent='+'+otHrs.toFixed(2)+' hrs'; otEl.parentElement.style.borderTop=otHrs>0?'4px solid #10b981':'4px solid #cbd5e1';}
+}
+
+function closeCustomReportModal(){document.getElementById('custom-report-modal-backdrop').classList.remove('show');}
+
+function displayWorkTimeBreakdownSummary(){
+  var t=uiTranslations[activeLanguageGlobal];
+  document.getElementById('custom-modal-title-header').textContent=t.modalWorkTitle;
+  document.getElementById('custom-modal-icon-header').className='fa-solid fa-briefcase';
+  var body=document.getElementById('modal-report-content-body'); body.innerHTML='';
+  var keys=Object.keys(dailyWorkTimeBreakdownLogs);
+  if(!keys.length){body.innerHTML='<div style="text-align:center;padding:20px;color:#64748b;"><p style="font-size:14px;font-weight:600;">'+t.noWorkMsg+'</p></div>';}
+  else{keys.forEach(function(k){var row=document.createElement('div');row.className='modal-report-row';row.innerHTML='<span>'+t.lblDay+': '+k+'</span><span style="font-weight:700;color:var(--primary-blue);">'+dailyWorkTimeBreakdownLogs[k].toFixed(2)+' hrs</span>';body.appendChild(row);});}
+  document.getElementById('custom-report-modal-backdrop').classList.add('show');
+}
+
+function displayOvertimeBreakdownSummary(){
+  var t=uiTranslations[activeLanguageGlobal];
+  document.getElementById('custom-modal-title-header').textContent=t.modalOtTitle;
+  document.getElementById('custom-modal-icon-header').className='fa-solid fa-clock';
+  var body=document.getElementById('modal-report-content-body'); body.innerHTML='';
+  var keys=Object.keys(dailyOvertimeBreakdownLogs);
+  if(!keys.length){body.innerHTML='<div style="text-align:center;padding:20px;color:#64748b;"><p style="font-size:14px;font-weight:600;">'+t.noOtMsg+'</p></div>';}
+  else{keys.forEach(function(k){var row=document.createElement('div');row.className='modal-report-row';row.innerHTML='<span>'+t.lblDay+': '+k+'</span><span style="font-weight:700;color:#10b981;">+'+dailyOvertimeBreakdownLogs[k].toFixed(2)+' hrs</span>';body.appendChild(row);});}
+  document.getElementById('custom-report-modal-backdrop').classList.add('show');
+}
+
+function displayLeaveStatementBalancesSummary(){
+  var t=uiTranslations[activeLanguageGlobal];
+  document.getElementById('custom-modal-title-header').textContent=t.modalLeaveTitle;
+  document.getElementById('custom-modal-icon-header').className='fa-solid fa-folder-open';
+  var body=document.getElementById('modal-report-content-body'); body.innerHTML='';
+  var allowed=parseFloat(document.getElementById('vacation-allowed-bank').value)||30;
+  var vacTaken=vacationLoggedDaysArrayCache.filter(function(i){return i.type==='vacation';}).length;
+  var sickTaken=vacationLoggedDaysArrayCache.filter(function(i){return i.type==='sick';}).length;
+  var remaining=allowed-vacTaken;
+  var box=document.createElement('div'); box.className='statement-summary-box';
+  box.innerHTML='<div><span>'+t.lblYearlyAllow+'</span><span style="color:#0259b6;font-weight:700;">'+allowed+' '+t.lblDays+'</span></div>'
+    +'<div><span>'+t.lblVacConsumed+'</span><span style="color:#ef4444;font-weight:700;">'+vacTaken+' '+t.lblDays+'</span></div>'
+    +'<div style="border-top:1px solid #cbd5e1;margin-top:6px;padding-top:6px;"><span style="font-weight:700;">'+t.lblNetVac+'</span><span style="font-weight:700;color:'+(remaining>=0?'#10b981':'#dc2626')+';">'+remaining+' '+t.lblDays+'</span></div>'
+    +'<div style="margin-top:4px;"><span>'+t.lblTotalSick+'</span><span style="color:#10b981;font-weight:700;">'+sickTaken+' '+t.lblDays+'</span></div>';
+  body.appendChild(box);
+  if(!vacationLoggedDaysArrayCache.length){var p=document.createElement('p');p.style.cssText='text-align:center;padding:12px;color:#94a3b8;font-size:12px;font-weight:600;';p.textContent=t.noAbsLogs;body.appendChild(p);}
+  document.getElementById('custom-report-modal-backdrop').classList.add('show');
+}
+
+function handleFeedbackSubmissionEngine(event){
+  event.preventDefault();
+  var t=uiTranslations[activeLanguageGlobal];
+  var inp=document.getElementById('feedback-message');
+  var btn=document.getElementById('btn-feedback-submit');
+  var box=document.getElementById('feedback-status-box');
+  if(!inp.value.trim()) return;
+  btn.disabled=true; btn.textContent=t.feedbackSending;
+  setTimeout(function(){
+    inp.value=''; btn.disabled=false; btn.textContent=t.feedbackBtn;
+    box.innerHTML=t.feedbackDone; box.className='message success';
+    setTimeout(function(){box.style.display='none';},4000);
+  },1200);
+}
+
+async function handlePasswordChange(){
+  var cur=document.getElementById('pin-current')?.value.trim();
+  var nw=document.getElementById('pin-new')?.value.trim();
+  var conf=document.getElementById('pin-confirm')?.value.trim();
+  var msg=document.getElementById('pin-change-msg');
+  if(!cur||!nw||!conf){msg.style.color='#dc2626';msg.textContent=activeLanguageGlobal==='de'?'Alle Felder ausfüllen.':'Fill in all fields.';return;}
+  if(nw!==conf){msg.style.color='#dc2626';msg.textContent=activeLanguageGlobal==='de'?'Kennwörter stimmen nicht überein.':'Passwords do not match.';return;}
+  if(nw.length<6){msg.style.color='#dc2626';msg.textContent=activeLanguageGlobal==='de'?'Mind. 6 Zeichen erforderlich.':'Minimum 6 characters required.';return;}
+  try{
+    var user=auth.currentUser;
+    var cred=firebase.auth.EmailAuthProvider.credential(user.email,cur);
+    await user.reauthenticateWithCredential(cred);
+    await user.updatePassword(nw);
+    msg.style.color='#16a34a'; msg.textContent=activeLanguageGlobal==='de'?'✓ Kennwort geändert.':'✓ Password updated.';
+    document.getElementById('pin-current').value=''; document.getElementById('pin-new').value=''; document.getElementById('pin-confirm').value='';
+  }catch(err){
+    msg.style.color='#dc2626';
+    msg.textContent=(err.code==='auth/wrong-password'||err.code==='auth/invalid-credential')
+      ?(activeLanguageGlobal==='de'?'Aktuelles Kennwort ist falsch.':'Current password is incorrect.')
+      :(activeLanguageGlobal==='de'?'Fehler: '+err.message:'Error: '+err.message);
+  }
+}
+
+function showProjectSuggestions(query){
+  var list=document.getElementById('project-autocomplete-list'); if(!list) return;
+  var q=query.trim().toLowerCase();
+  if(!q){list.style.display='none';return;}
+  var names=[...new Set(globalLoggedSessionsDatabaseMock.filter(function(r){return r.type==='work'&&r.project&&r.project.toLowerCase().includes(q);}).map(function(r){return r.project;}))].slice(0,8);
+  if(!names.length){list.style.display='none';return;}
+  list.innerHTML=names.map(function(n){return '<div class="autocomplete-item" onmousedown="pickProjectSuggestion(\''+n.replace(/'/g,"&#39;")+'\')" ><i class="fa-solid fa-building"></i>'+n+'</div>';}).join('');
+  list.style.display='block';
+}
+function pickProjectSuggestion(name){var inp=document.getElementById('log-project-name');if(inp)inp.value=name;hideProjectSuggestions();saveDraftWorkEntry();}
+function hideProjectSuggestions(){var list=document.getElementById('project-autocomplete-list');if(list)list.style.display='none';}
+
+function showConfirmModal(message,onConfirm){
+  var existing=document.getElementById('custom-confirm-backdrop'); if(existing) existing.remove();
+  var backdrop=document.createElement('div');
+  backdrop.id='custom-confirm-backdrop';
+  backdrop.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(3,6,15,0.75);backdrop-filter:blur(12px) saturate(140%);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  backdrop.innerHTML='<div style="width:100%;max-width:360px;border-radius:20px;overflow:hidden;animation:modalEntrance 0.3s cubic-bezier(0.16,1,0.3,1);">'
+    +'<div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);padding:28px 26px 22px;position:relative;border:1px solid rgba(251,191,36,0.2);border-bottom:none;">'
+    +'<div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#E30613,#f59e0b,#E30613);"></div>'
+    +'<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">'
+    +'<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,rgba(251,191,36,0.2),rgba(251,191,36,0.05));border:1px solid rgba(251,191,36,0.3);display:flex;align-items:center;justify-content:center;">'
+    +'<i class="fa-solid fa-shield-halved" style="color:#E30613;font-size:18px;"></i></div>'
+    +'<div><div style="font-size:11px;font-weight:800;color:#E30613;letter-spacing:1.2px;text-transform:uppercase;">MEINE STUNDEN</div>'
+    +'<div style="font-size:17px;font-weight:800;color:#fff;letter-spacing:-0.3px;margin-top:1px;">'+(activeLanguageGlobal==='de'?'Sitzung beenden':'End Session')+'</div></div></div>'
+    +'<div style="font-size:14px;color:#cbd5e1;line-height:1.6;">'+message+'</div></div>'
+    +'<div style="background:rgba(2,6,15,0.9);padding:16px 20px;border:1px solid rgba(251,191,36,0.2);border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;justify-content:flex-end;">'
+    +'<button id="confirm-cancel" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#e2e8f0;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">'+(activeLanguageGlobal==='de'?'Abbrechen':'Cancel')+'</button>'
+    +'<button id="confirm-ok" style="background:linear-gradient(135deg,#E30613 0%,#f59e0b 100%);border:none;color:#0f172a;padding:10px 22px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(251,191,36,0.3);">'+(activeLanguageGlobal==='de'?'Abmelden':'Sign Out')+'</button>'
+    +'</div></div>';
+  document.body.appendChild(backdrop);
+  document.getElementById('confirm-cancel').onclick=function(){backdrop.remove();};
+  document.getElementById('confirm-ok').onclick=function(){backdrop.remove(); if(onConfirm) onConfirm();};
+  backdrop.onclick=function(e){if(e.target===backdrop) backdrop.remove();};
+}
