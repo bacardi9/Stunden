@@ -16,17 +16,19 @@ function _hideLoadingScreen() {
   if (el) el.remove();
 }
 
-// Show a view by removing the inline display:none set by the head script
-// Using removeProperty allows the element's own CSS (or no CSS) to take over
+// Show: remove the CSS hiding class, then set display explicitly
 function _showEl(id, displayVal) {
   var el = document.getElementById(id);
   if (!el) return;
-  el.style.removeProperty('display');
+  el.classList.remove('app-shell-hidden');
   el.style.display = displayVal || 'block';
 }
+// Hide: add the CSS hiding class AND set inline style
 function _hideEl(id) {
   var el = document.getElementById(id);
-  if (el) el.style.display = 'none';
+  if (!el) return;
+  el.classList.add('app-shell-hidden');
+  el.style.display = 'none';
 }
 
 window.addEventListener('DOMContentLoaded', function() {
@@ -89,8 +91,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
   var cached = localStorage.getItem('schuermann_auth_user');
   if (!cached) {
-    // No session — landing already visible from head script
-    return;
+    return; // No session — landing already visible
   }
 
   // Hide landing, show loader, wait for Firebase
@@ -153,7 +154,8 @@ function _clearSessionAndShowLanding() {
   authenticatedUserGlobal     = '';
   authenticatedUserRoleGlobal = 'user';
   _hideLoadingScreen();
-  _showEl('landing-page', 'block');
+  var lp = document.getElementById('landing-page');
+  if (lp) { lp.classList.remove('app-shell-hidden'); lp.style.display = 'block'; }
 }
 
 function reinitDatePickers() {
@@ -238,7 +240,6 @@ async function handleLoginSubmit(e) {
 
 async function launchSessionUI() {
   _hideLoadingScreen();
-  // Hide landing using _hideEl so we don't fight CSS specificity
   _hideEl('landing-page');
   _hideEl('login-view');
 
@@ -253,7 +254,6 @@ async function launchSessionUI() {
 
   _hideEl('admin-full-view');
   document.body.classList.remove('admin-mode');
-  // Use _showEl so the inline style is set cleanly
   _showEl('app-view', 'block');
 
   var displayName = localStorage.getItem('schuermann_current_user') || authenticatedUserGlobal;
@@ -308,7 +308,8 @@ function handleSecureSignOutRequest() {
     _hideEl('admin-full-view');
     _hideEl('login-view');
     document.body.classList.remove('admin-mode');
-    _showEl('landing-page', 'block');
+    var lp = document.getElementById('landing-page');
+    if (lp) { lp.classList.remove('app-shell-hidden'); lp.style.display = 'block'; }
   });
 }
 
