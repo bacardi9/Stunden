@@ -92,107 +92,63 @@
 <link rel="stylesheet" href="css/landing.css">
 
 <style>
-/* ══════════════════════════════════════════════
-   QUICK INTRO SECTION (replaces old hero body)
-══════════════════════════════════════════════ */
+/* ── QUICK INTRO SECTION ── */
 .lp-intro {
   position: relative; z-index: 1;
   max-width: 780px; margin: 0 auto;
-  padding: 56px 28px 48px;
+  padding: 40px 16px 32px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 12px;
   align-items: start;
 }
 .lp-intro-item {
-  display: flex; align-items: flex-start; gap: 14px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 16px; padding: 18px 20px;
+  display: flex; align-items: flex-start; gap: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: 14px 16px;
   transition: all 0.2s;
 }
-.lp-intro-item:hover { background: rgba(255,255,255,0.055); border-color: rgba(255,255,255,0.1); }
+.lp-intro-item:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.12); }
 .lp-intro-icon {
-  width: 40px; height: 40px; border-radius: 11px;
+  width: 38px; height: 38px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 17px; flex-shrink: 0;
+  font-size: 16px; flex-shrink: 0;
 }
-.lp-intro-text h4 { font-size: 13px; font-weight: 800; color: #f1f5f9; margin-bottom: 4px; line-height: 1.2; }
-.lp-intro-text p  { font-size: 11px; color: #64748b; line-height: 1.55; }
-
-@media (max-width: 560px) {
-  .lp-intro { grid-template-columns: 1fr; padding: 32px 16px 28px; gap: 12px; }
+.lp-intro-text h4 { font-size: 12px; font-weight: 800; color: #f1f5f9; margin-bottom: 4px; line-height: 1.3; }
+.lp-intro-text p  { font-size: 11px; color: #64748b; line-height: 1.5; }
+@media (max-width: 480px) {
+  .lp-intro { grid-template-columns: 1fr; padding: 20px 14px 16px; gap: 10px; }
 }
 
-/* ══════════════════════════════════════════════
-   FEATURE SHOWCASE SECTION
-══════════════════════════════════════════════ */
+/* ── SHOWCASE ── */
 .lp-showcase {
   position: relative; z-index: 1;
-  padding: 0 28px 80px;
+  padding: 20px 16px 60px;
   max-width: 1100px;
   margin: 0 auto;
 }
-.lp-showcase-label {
-  text-align: center; font-size: 11px; font-weight: 800;
-  color: #E30613; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px;
-}
-.lp-showcase-title {
-  text-align: center; font-size: clamp(24px,4vw,36px); font-weight: 900;
-  color: #fff; letter-spacing: -1px; margin-bottom: 12px;
-}
-.lp-showcase-sub {
-  text-align: center; font-size: 15px; color: #64748b;
-  max-width: 520px; margin: 0 auto 60px; line-height: 1.6;
-}
+.lp-showcase-label { text-align: center; font-size: 11px; font-weight: 800; color: #E30613; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+.lp-showcase-title { text-align: center; font-size: clamp(22px,4vw,36px); font-weight: 900; color: #fff; letter-spacing: -1px; margin-bottom: 10px; }
+.lp-showcase-sub { text-align: center; font-size: 14px; color: #64748b; max-width: 520px; margin: 0 auto 48px; line-height: 1.6; }
 
-.lp-feature-row {
-  display: flex; align-items: center; gap: 48px;
-  margin-bottom: 80px; flex-wrap: wrap;
-}
+.lp-feature-row { display: flex; align-items: center; gap: 40px; margin-bottom: 64px; flex-wrap: wrap; }
 .lp-feature-row.reverse { flex-direction: row-reverse; }
 .lp-feature-row-text { flex: 1; min-width: 260px; }
-.lp-feature-row-mock { flex: 1; min-width: 280px; max-width: 420px; }
-
-.lp-feature-row-badge {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
-  text-transform: uppercase; padding: 4px 12px;
-  border-radius: 99px; margin-bottom: 14px;
-}
-.lp-feature-row-title {
-  font-size: clamp(20px,3vw,28px); font-weight: 900; color: #fff;
-  letter-spacing: -0.6px; line-height: 1.2; margin-bottom: 12px;
-}
-.lp-feature-row-desc { font-size: 14px; color: #64748b; line-height: 1.75; margin-bottom: 20px; }
+.lp-feature-row-mock { flex: 1; min-width: 260px; max-width: 380px; margin: 0 auto; }
+.lp-feature-row-badge { display: inline-flex; align-items: center; gap: 7px; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 12px; border-radius: 99px; margin-bottom: 12px; }
+.lp-feature-row-title { font-size: clamp(18px,3vw,26px); font-weight: 900; color: #fff; letter-spacing: -0.6px; line-height: 1.2; margin-bottom: 10px; }
+.lp-feature-row-desc { font-size: 13px; color: #64748b; line-height: 1.75; margin-bottom: 16px; }
 .lp-feature-row-bullets { list-style: none; padding: 0; margin: 0; }
-.lp-feature-row-bullets li {
-  display: flex; align-items: flex-start; gap: 10px;
-  font-size: 13px; color: #94a3b8; font-weight: 500;
-  margin-bottom: 10px; line-height: 1.5;
-}
-.lp-feature-row-bullets li i { color: #10b981; font-size: 12px; margin-top: 3px; flex-shrink: 0; }
+.lp-feature-row-bullets li { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: #94a3b8; font-weight: 500; margin-bottom: 8px; line-height: 1.5; }
+.lp-feature-row-bullets li i { color: #10b981; font-size: 12px; margin-top: 2px; flex-shrink: 0; }
 
-/* Phone mock shared */
-.lp-phone {
-  background: rgba(10,16,32,0.97);
-  border-radius: 24px; overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.08);
-  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset;
-  width: 100%; max-width: 340px; margin: 0 auto;
-  font-size: 11px;
-}
-.lp-phone-bar {
-  background: rgba(5,8,20,0.95);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  padding: 10px 14px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.lp-phone-bar-title { font-size: 11px; font-weight: 800; color: #fff; }
-.lp-phone-body { padding: 14px; }
+.lp-phone { background: rgba(10,16,32,0.97); border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset; width: 100%; max-width: 320px; margin: 0 auto; font-size: 11px; }
+.lp-phone-bar { background: rgba(5,8,20,0.95); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 9px 12px; display: flex; align-items: center; justify-content: space-between; }
+.lp-phone-bar-title { font-size: 10px; font-weight: 800; color: #fff; }
+.lp-phone-body { padding: 12px; }
 
-/* Missing days mock */
-.mock-period-bar-wrap { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.mock-period-bar-wrap { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
 .mock-period-label { font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: flex; justify-content: space-between; }
 .mock-progress-track { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
 .mock-progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg,#E30613,#0ea5e9); }
@@ -202,9 +158,7 @@
 .mock-save-row { display: flex; gap: 6px; margin-top: 10px; }
 .mock-save-btn { flex: 1; background: linear-gradient(135deg,#E30613,#b8000f); border: none; color: #fff; padding: 9px; border-radius: 8px; font-size: 11px; font-weight: 800; text-align: center; }
 .mock-schule-btn { background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.2); color: #0ea5e9; padding: 9px 12px; border-radius: 8px; font-size: 10px; font-weight: 700; }
-
-/* Weekly chart mock */
-.mock-chart-bars { display: flex; align-items: flex-end; gap: 5px; height: 80px; margin: 12px 0 8px; }
+.mock-chart-bars { display: flex; align-items: flex-end; gap: 5px; height: 80px; margin: 10px 0 8px; }
 .mock-chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; justify-content: flex-end; }
 .mock-chart-bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 3px; }
 .mock-chart-lbl { font-size: 8px; font-weight: 700; color: #475569; }
@@ -215,67 +169,54 @@
 .mock-day-proj { font-size: 11px; font-weight: 700; color: #e2e8f0; }
 .mock-day-meta { font-size: 9px; color: #475569; }
 .mock-day-hrs { font-size: 12px; font-weight: 800; color: #0ea5e9; }
-
-/* AI Scan mock */
 .mock-ai-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid #0ea5e9; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
 .mock-ai-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
 .mock-ai-field { background: rgba(255,255,255,0.05); border-radius: 6px; padding: 6px 8px; }
 .mock-ai-field-label { font-size: 8px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 2px; }
 .mock-ai-field-val { font-size: 11px; font-weight: 700; color: #e2e8f0; }
-.mock-ai-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: #10b981; font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 99px; margin-bottom: 8px; }
-
-/* PDF mock */
-.mock-pdf-frame { background: #fff; border-radius: 8px; padding: 14px; color: #1e293b; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
-.mock-pdf-header-bar { height: 3px; background: #c0392b; border-radius: 2px; margin-bottom: 10px; }
-.mock-pdf-logo-row { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 10px; }
+.mock-ai-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: #10b981; font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 99px; }
+.mock-pdf-frame { background: #fff; border-radius: 8px; padding: 12px; color: #1e293b; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.mock-pdf-header-bar { height: 3px; background: #c0392b; border-radius: 2px; margin-bottom: 8px; }
+.mock-pdf-logo-row { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 8px; }
 .mock-pdf-logo-accent { width: 3px; height: 14px; background: #c0392b; border-radius: 1px; flex-shrink: 0; margin-top: 1px; }
 .mock-pdf-logo-name { font-size: 11px; font-weight: 900; color: #0f172a; line-height: 1; }
 .mock-pdf-logo-sub { font-size: 7px; color: #64748b; margin-top: 1px; }
 .mock-pdf-title { font-size: 9px; font-weight: 800; color: #0f172a; text-align: right; line-height: 1; margin-top: 1px; }
 .mock-pdf-date-text { font-size: 7px; color: #64748b; text-align: right; }
-.mock-pdf-divider { height: 1px; background: #e2e8f0; margin: 8px 0; }
-.mock-pdf-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-bottom: 8px; }
-.mock-pdf-card { background: #f8fafc; border-radius: 4px; padding: 6px 5px; }
-.mock-pdf-card-lbl { font-size: 6px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 3px; }
+.mock-pdf-divider { height: 1px; background: #e2e8f0; margin: 6px 0; }
+.mock-pdf-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-bottom: 6px; }
+.mock-pdf-card { background: #f8fafc; border-radius: 4px; padding: 5px; }
+.mock-pdf-card-lbl { font-size: 6px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; }
 .mock-pdf-card-val { font-size: 9px; font-weight: 800; color: #0f172a; }
-.mock-pdf-section { background: #f1f5f9; border-radius: 4px; padding: 5px 7px; margin-bottom: 4px; }
-.mock-pdf-section-title { font-size: 8px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+.mock-pdf-section { background: #f1f5f9; border-radius: 4px; padding: 4px 6px; margin-bottom: 3px; }
+.mock-pdf-section-title { font-size: 8px; font-weight: 800; color: #0f172a; margin-bottom: 3px; }
 .mock-pdf-row { display: flex; justify-content: space-between; font-size: 7px; color: #475569; padding: 2px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
 .mock-pdf-row:last-child { border-bottom: none; }
 .mock-pdf-row-hrs { font-weight: 700; color: #c0392b; }
-.mock-pdf-footer { display: flex; justify-content: space-between; font-size: 6px; color: #94a3b8; margin-top: 6px; border-top: 1px solid #e2e8f0; padding-top: 5px; }
-
-/* Streak mock */
+.mock-pdf-footer { display: flex; justify-content: space-between; font-size: 6px; color: #94a3b8; margin-top: 5px; border-top: 1px solid #e2e8f0; padding-top: 4px; }
 .mock-streak-card { background: linear-gradient(135deg, rgba(227,6,19,0.12), rgba(227,6,19,0.04)); border: 1px solid rgba(227,6,19,0.2); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-.mock-streak-flame { font-size: 26px; animation: flamePulse 1.5s ease-in-out infinite alternate; }
+.mock-streak-flame { font-size: 24px; animation: flamePulse 1.5s ease-in-out infinite alternate; }
 @keyframes flamePulse { from{transform:scale(1)} to{transform:scale(1.1)} }
 .mock-streak-num { font-size: 20px; font-weight: 900; color: #E30613; letter-spacing: -1px; line-height: 1; }
 .mock-streak-lbl { font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
 .mock-streak-best { margin-left: auto; text-align: right; }
 .mock-streak-best-num { font-size: 12px; font-weight: 800; color: #64748b; }
 .mock-streak-best-lbl { font-size: 9px; color: #334155; font-weight: 600; }
-
-.lp-showcase-divider { border: none; border-top: 1px solid rgba(255,255,255,0.04); margin: 0 0 80px; }
-
-/* ── STATS BAR ── */
-.lp-stats-bar {
-  position: relative; z-index: 1;
-  background: rgba(255,255,255,0.02);
-  border-top: 1px solid rgba(255,255,255,0.05);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  padding: 36px 28px;
-  display: flex; justify-content: center; gap: 48px; flex-wrap: wrap;
-}
+.lp-showcase-divider { border: none; border-top: 1px solid rgba(255,255,255,0.04); margin: 0 0 64px; }
+.lp-stats-bar { position: relative; z-index: 1; background: rgba(255,255,255,0.02); border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 28px 20px; display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
 .lp-stat-item { text-align: center; }
-.lp-stat-num { font-size: 32px; font-weight: 900; color: #fff; letter-spacing: -1.5px; line-height: 1; }
+.lp-stat-num { font-size: 28px; font-weight: 900; color: #fff; letter-spacing: -1.5px; line-height: 1; }
 .lp-stat-num span { color: #E30613; }
-.lp-stat-lbl { font-size: 11px; font-weight: 600; color: #475569; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.lp-stat-lbl { font-size: 10px; font-weight: 600; color: #475569; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
 
 @media (max-width: 640px) {
-  .lp-feature-row { gap: 28px; margin-bottom: 56px; }
-  .lp-feature-row.reverse { flex-direction: column; }
-  .lp-showcase { padding: 0 16px 60px; }
-  .lp-stats-bar { gap: 28px; }
+  .lp-feature-row,
+  .lp-feature-row.reverse { flex-direction: column; gap: 24px; margin-bottom: 48px; }
+  .lp-feature-row-mock { min-width: unset; max-width: 100%; width: 100%; }
+  .lp-phone { max-width: 100%; }
+  .lp-stats-bar { gap: 20px; padding: 20px 16px; }
+  .lp-showcase { padding: 0 14px 48px; }
+  .lp-showcase-divider { margin: 0 0 48px; }
 }
 </style>
 
@@ -288,9 +229,8 @@
 </head>
 <body>
 
-<!-- LANDING PAGE -->
 <div id="landing-page">
-  <!-- ── NAV ── -->
+  <!-- NAV -->
   <nav class="lp-nav">
     <div class="lp-nav-brand" onclick="window.scrollTo({top:0,behavior:'smooth'})">
       <div class="lp-nav-brand-main">MEINE STUNDEN</div>
@@ -299,21 +239,19 @@
     <div class="lp-nav-actions">
       <button class="lp-btn-ghost" onclick="openLoginModal()">Anmelden</button>
       <button class="lp-btn-primary" onclick="openRegisterModal()">
-        <i class="fa-solid fa-bolt" style="font-size:11px;"></i> Jetzt starten — 9,99 €
+        <i class="fa-solid fa-bolt" style="font-size:10px;"></i> Jetzt — 9,99 €
       </button>
     </div>
   </nav>
 
-  <!-- ══════════════════════════════════════════
-       1. HERO — short title + two CTA buttons only
-  ══════════════════════════════════════════ -->
-  <section class="lp-hero" style="padding-bottom: 32px;">
+  <!-- 1. HERO -->
+  <section class="lp-hero" style="padding-bottom: 28px;">
     <div class="lp-hero-badge">
       <i class="fa-solid fa-circle" style="font-size:7px;color:#E30613;"></i>
       Professionelle Zeiterfassung für Handwerksbetriebe
     </div>
     <h1>Deine Arbeitszeit.<br><span>Automatisch erfasst.</span></h1>
-    <p style="margin-bottom:32px;">Stundenzettel erfassen, Überstunden berechnen, fehlende Tage erkennen und professionelle PDFs exportieren — alles in einer App, einmalig 9,99 €.</p>
+    <p style="margin-bottom:28px;">Stundenzettel erfassen, Überstunden berechnen, fehlende Tage erkennen und professionelle PDFs exportieren — alles in einer App, einmalig 9,99 €.</p>
     <div class="lp-hero-btns">
       <button class="lp-hero-btn-main" onclick="openRegisterModal()">
         <i class="fa-solid fa-rocket"></i> Konto erstellen – einmalig 9,99 €
@@ -324,9 +262,7 @@
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════
-       2. QUICK FEATURE INTRO — 4 cards
-  ══════════════════════════════════════════ -->
+  <!-- 2. QUICK FEATURE INTRO -->
   <div class="lp-intro">
     <div class="lp-intro-item">
       <div class="lp-intro-icon" style="background:rgba(239,68,68,0.12);"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i></div>
@@ -353,20 +289,18 @@
       <div class="lp-intro-icon" style="background:rgba(192,57,43,0.12);"><i class="fa-solid fa-file-pdf" style="color:#c0392b;"></i></div>
       <div class="lp-intro-text">
         <h4>PDF mit deinem Firmennamen</h4>
-        <p>Auf Knopfdruck ein professioneller Stundenzettel-PDF mit deinem Betriebs&shy;namen.</p>
+        <p>Auf Knopfdruck ein professioneller Stundenzettel-PDF mit deinem Betriebsnamen.</p>
       </div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════
-       3. FEATURE SHOWCASE — phone mockup rows
-  ══════════════════════════════════════════ -->
+  <!-- 3. FEATURE SHOWCASE -->
   <section class="lp-showcase">
     <div class="lp-showcase-label">So sieht's aus</div>
     <h2 class="lp-showcase-title">Echte Features. Live im Einsatz.</h2>
     <p class="lp-showcase-sub">Kein Marketing-Blabla — sieh selbst wie die App aussieht und was sie kann.</p>
 
-    <!-- ROW 1: Fehltag-Erkennung -->
+    <!-- ROW 1: Fehltag -->
     <div class="lp-feature-row">
       <div class="lp-feature-row-text">
         <div class="lp-feature-row-badge" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;">
@@ -389,23 +323,14 @@
           </div>
           <div class="lp-phone-body">
             <div class="mock-period-bar-wrap">
-              <div class="mock-period-label">
-                <span>KW 24 · 20. Mai – 19. Jun</span>
-                <span style="color:#0ea5e9;">68%</span>
-              </div>
+              <div class="mock-period-label"><span>KW 24 · 20. Mai – 19. Jun</span><span style="color:#0ea5e9;">68%</span></div>
               <div class="mock-progress-track"><div class="mock-progress-fill" style="width:68%;"></div></div>
               <div style="display:flex;justify-content:space-between;align-items:center;">
                 <span style="font-size:9px;color:#475569;"><i class="fa-solid fa-calendar-day" style="color:#0ea5e9;margin-right:3px;"></i>6 Arbeitstage verbleibend</span>
-                <div class="mock-missing-btn">
-                  <i class="fa-solid fa-triangle-exclamation" style="font-size:9px;"></i>
-                  3 fehlende Einträge
-                  <i class="fa-solid fa-chevron-down" style="font-size:8px;"></i>
-                </div>
+                <div class="mock-missing-btn"><i class="fa-solid fa-triangle-exclamation" style="font-size:9px;"></i>3 fehlende<i class="fa-solid fa-chevron-down" style="font-size:8px;"></i></div>
               </div>
               <div class="mock-missing-panel">
-                <div style="font-size:9px;font-weight:800;color:#ef4444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px;">
-                  <i class="fa-solid fa-calendar-xmark" style="margin-right:4px;"></i>3 fehlende Arbeitstage — Tippe zum Eintragen
-                </div>
+                <div style="font-size:9px;font-weight:800;color:#ef4444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px;"><i class="fa-solid fa-calendar-xmark" style="margin-right:4px;"></i>3 fehlende Arbeitstage</div>
                 <div>
                   <div class="mock-missing-chip"><i class="fa-solid fa-circle-plus" style="font-size:8px;"></i>Mo, 10. Jun</div>
                   <div class="mock-missing-chip"><i class="fa-solid fa-circle-plus" style="font-size:8px;"></i>Di, 11. Jun</div>
@@ -467,10 +392,7 @@
             </div>
             <div class="mock-day-detail">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <div style="display:flex;align-items:center;gap:6px;">
-                  <div style="width:8px;height:8px;background:#0ea5e9;border-radius:50%;box-shadow:0 0 6px #0ea5e955;"></div>
-                  <span style="font-size:11px;font-weight:800;color:#f1f5f9;">Mittwoch, 12. Jun</span>
-                </div>
+                <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;background:#0ea5e9;border-radius:50%;box-shadow:0 0 6px #0ea5e955;"></div><span style="font-size:11px;font-weight:800;color:#f1f5f9;">Mittwoch, 12. Jun</span></div>
                 <span style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.2);color:#0ea5e9;font-size:9px;font-weight:800;padding:2px 8px;border-radius:99px;">8.50 h</span>
               </div>
               <div class="mock-day-entry">
@@ -517,29 +439,20 @@
                 <div style="width:22px;height:22px;background:linear-gradient(135deg,#E30613,#b8000f);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;">1</div>
                 <span style="font-size:10px;font-weight:700;color:#f1f5f9;">Eintrag 1</span>
                 <div class="mock-ai-badge"><i class="fa-solid fa-check" style="font-size:8px;"></i>Sicher</div>
-                <label style="margin-left:auto;display:flex;align-items:center;gap:4px;font-size:9px;color:#64748b;cursor:pointer;">
-                  <input type="checkbox" checked style="accent-color:#E30613;width:12px;height:12px;"> Hinzufügen
-                </label>
+                <label style="margin-left:auto;display:flex;align-items:center;gap:4px;font-size:9px;color:#64748b;cursor:pointer;"><input type="checkbox" checked style="accent-color:#E30613;width:12px;height:12px;"> Hinzufügen</label>
               </div>
               <div class="mock-ai-field-row">
                 <div class="mock-ai-field"><div class="mock-ai-field-label">Datum</div><div class="mock-ai-field-val">10/06/2025</div></div>
                 <div class="mock-ai-field"><div class="mock-ai-field-label">Pause</div><div class="mock-ai-field-val">30 min</div></div>
               </div>
-              <div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:5px 8px;margin-top:6px;">
-                <div style="font-size:8px;font-weight:700;color:#475569;margin-bottom:2px;">BAUSTELLE</div>
-                <div style="font-size:11px;font-weight:700;color:#e2e8f0;">Musterstraße 12</div>
-              </div>
+              <div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:5px 8px;margin-top:6px;"><div style="font-size:8px;font-weight:700;color:#475569;margin-bottom:2px;">BAUSTELLE</div><div style="font-size:11px;font-weight:700;color:#e2e8f0;">Musterstraße 12</div></div>
               <div class="mock-ai-field-row" style="margin-top:6px;">
                 <div class="mock-ai-field"><div class="mock-ai-field-label">Kommen</div><div class="mock-ai-field-val">07:00</div></div>
                 <div class="mock-ai-field"><div class="mock-ai-field-label">Gehen</div><div class="mock-ai-field-val">16:15</div></div>
               </div>
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#10b981;margin-top:8px;background:rgba(16,185,129,0.06);border-radius:6px;padding:5px;">
-                ⏱ Brutto: 9.25 h | Netto: 8.75 h (30 min Pause)
-              </div>
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#10b981;margin-top:8px;background:rgba(16,185,129,0.06);border-radius:6px;padding:5px;">⏱ Brutto: 9.25 h | Netto: 8.75 h (30 min Pause)</div>
             </div>
-            <button style="width:100%;background:linear-gradient(135deg,#E30613,#b8000f);border:none;color:#fff;padding:10px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;">
-              <i class="fa-solid fa-check" style="margin-right:5px;"></i>Alle bestätigten Einträge hinzufügen
-            </button>
+            <button style="width:100%;background:linear-gradient(135deg,#E30613,#b8000f);border:none;color:#fff;padding:10px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;"><i class="fa-solid fa-check" style="margin-right:5px;"></i>Alle bestätigten Einträge hinzufügen</button>
           </div>
         </div>
       </div>
@@ -547,7 +460,7 @@
 
     <hr class="lp-showcase-divider">
 
-    <!-- ROW 4: PDF Export -->
+    <!-- ROW 4: PDF -->
     <div class="lp-feature-row reverse">
       <div class="lp-feature-row-text">
         <div class="lp-feature-row-badge" style="background:rgba(192,57,43,0.12);border:1px solid rgba(192,57,43,0.25);color:#fca5a5;">
@@ -579,12 +492,12 @@
               <div class="mock-pdf-cards">
                 <div class="mock-pdf-card"><div class="mock-pdf-card-lbl">Mitarbeiter</div><div class="mock-pdf-card-val">Max M.</div></div>
                 <div class="mock-pdf-card"><div class="mock-pdf-card-lbl">Einträge</div><div class="mock-pdf-card-val">18</div></div>
-                <div class="mock-pdf-card" style="background:#2c3e50;"><div class="mock-pdf-card-lbl" style="color:#94a3b8;">Gesamtzeit</div><div class="mock-pdf-card-val" style="color:#fff;">162.5 h</div></div>
+                <div class="mock-pdf-card" style="background:#2c3e50;"><div class="mock-pdf-card-lbl" style="color:#94a3b8;">Gesamt</div><div class="mock-pdf-card-val" style="color:#fff;">162.5 h</div></div>
               </div>
-              <div class="mock-pdf-section"><div class="mock-pdf-section-title">Montag, 10. Juni 2025</div><div class="mock-pdf-row"><span>07:00 – 16:15</span><span>Baustelle Musterstr. 12</span><span class="mock-pdf-row-hrs">8.75 h</span></div></div>
-              <div class="mock-pdf-section"><div class="mock-pdf-section-title">Dienstag, 11. Juni 2025</div><div class="mock-pdf-row"><span>07:00 – 17:00</span><span>Kunde Schmitt GmbH</span><span class="mock-pdf-row-hrs">9.25 h</span></div></div>
-              <div class="mock-pdf-section"><div class="mock-pdf-section-title">Mittwoch, 12. Juni 2025</div><div class="mock-pdf-row"><span>07:00 – 16:00</span><span>Hauptstraße 5</span><span class="mock-pdf-row-hrs">8.50 h</span></div></div>
-              <div class="mock-pdf-footer"><span>Mustermann Gebäude + Energie</span><span>Seite 1 von 2</span></div>
+              <div class="mock-pdf-section"><div class="mock-pdf-section-title">Montag, 10. Juni 2025</div><div class="mock-pdf-row"><span>07:00–16:15</span><span>Musterstr. 12</span><span class="mock-pdf-row-hrs">8.75 h</span></div></div>
+              <div class="mock-pdf-section"><div class="mock-pdf-section-title">Dienstag, 11. Juni 2025</div><div class="mock-pdf-row"><span>07:00–17:00</span><span>Schmitt GmbH</span><span class="mock-pdf-row-hrs">9.25 h</span></div></div>
+              <div class="mock-pdf-section"><div class="mock-pdf-section-title">Mittwoch, 12. Juni 2025</div><div class="mock-pdf-row"><span>07:00–16:00</span><span>Hauptstraße 5</span><span class="mock-pdf-row-hrs">8.50 h</span></div></div>
+              <div class="mock-pdf-footer"><span>Mustermann GmbH</span><span>Seite 1 von 2</span></div>
             </div>
           </div>
         </div>
@@ -593,7 +506,7 @@
 
     <hr class="lp-showcase-divider">
 
-    <!-- ROW 5: Streak + Überstunden Dashboard -->
+    <!-- ROW 5: Streak -->
     <div class="lp-feature-row">
       <div class="lp-feature-row-text">
         <div class="lp-feature-row-badge" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.25);color:#fde68a;">
@@ -623,17 +536,15 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
               <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-top:3px solid #0ea5e9;border-radius:10px;padding:12px;">
                 <div style="font-size:8px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Netto-Arbeitszeit</div>
-                <div style="font-size:20px;font-weight:800;color:#f1f5f9;letter-spacing:-0.8px;">162.50 <span style="font-size:11px;color:#64748b;">hrs</span></div>
+                <div style="font-size:18px;font-weight:800;color:#f1f5f9;letter-spacing:-0.8px;">162.50 <span style="font-size:10px;color:#64748b;">hrs</span></div>
               </div>
               <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);border-top:3px solid #10b981;border-radius:10px;padding:12px;">
                 <div style="font-size:8px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Überstunden</div>
-                <div style="font-size:20px;font-weight:800;color:#10b981;letter-spacing:-0.8px;">+14.25 <span style="font-size:11px;">hrs</span></div>
+                <div style="font-size:18px;font-weight:800;color:#10b981;letter-spacing:-0.8px;">+14.25 <span style="font-size:10px;">hrs</span></div>
               </div>
             </div>
-            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:center;">
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:9px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <span style="font-size:10px;font-weight:700;color:#475569;"><i class="fa-solid fa-calendar-check" style="color:#0ea5e9;margin-right:3px;"></i>18 Einträge</span>
-              <span style="color:rgba(255,255,255,0.1);">|</span>
-              <span style="font-size:10px;font-weight:700;color:#475569;"><i class="fa-solid fa-clock" style="color:#10b981;margin-right:3px;"></i>162.5 hrs</span>
               <span style="color:rgba(255,255,255,0.1);">|</span>
               <span style="font-size:10px;font-weight:700;color:#475569;"><i class="fa-solid fa-chart-bar" style="color:#f59e0b;margin-right:3px;"></i>9.0 h/Tag Ø</span>
             </div>
@@ -643,9 +554,7 @@
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════
-       4. STATS BAR
-  ══════════════════════════════════════════ -->
+  <!-- 4. STATS BAR -->
   <div class="lp-stats-bar">
     <div class="lp-stat-item"><div class="lp-stat-num">9<span>,99</span></div><div class="lp-stat-lbl">Euro einmalig</div></div>
     <div class="lp-stat-item"><div class="lp-stat-num"><span>∞</span></div><div class="lp-stat-lbl">Lebenslanger Zugang</div></div>
@@ -653,18 +562,13 @@
     <div class="lp-stat-item"><div class="lp-stat-num"><span>0</span></div><div class="lp-stat-lbl">Folgekosten</div></div>
   </div>
 
-  <!-- ══════════════════════════════════════════
-       5. HERO MOCKUP (main app screenshot)
-  ══════════════════════════════════════════ -->
-  <div class="lp-mockup-section" style="padding-top:80px;">
+  <!-- 5. HERO MOCKUP -->
+  <div class="lp-mockup-section" style="padding-top:64px;">
     <div class="lp-mockup-frame">
       <div class="lp-mockup-notch"></div>
       <div class="lp-mockup-header">
         <div class="lp-mockup-brand">MEINE STUNDEN<span>ONLINE</span></div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <div style="width:7px;height:7px;background:#10b981;border-radius:50%;box-shadow:0 0 6px #10b981;"></div>
-          <span style="font-size:9px;color:#475569;font-weight:700;">Live</span>
-        </div>
+        <div style="display:flex;gap:6px;align-items:center;"><div style="width:7px;height:7px;background:#10b981;border-radius:50%;box-shadow:0 0 6px #10b981;"></div><span style="font-size:9px;color:#475569;font-weight:700;">Live</span></div>
       </div>
       <div class="lp-mockup-body">
         <div class="lp-mockup-welcome">Willkommen zurück, <strong>Max Mustermann</strong></div>
@@ -682,30 +586,22 @@
           <div class="lp-mockup-bar" style="height:10%;background:#6366f1;opacity:0.3;animation-delay:0.6s;"></div>
           <div class="lp-mockup-bar" style="height:10%;background:#ec4899;opacity:0.3;animation-delay:0.7s;"></div>
         </div>
-        <div class="lp-mockup-entry">
-          <div><div class="lp-mockup-entry-title">Baustelle Musterstraße 12</div><div class="lp-mockup-entry-sub">Mo, 10. Jun · 07:00 – 16:15 · 30 min Pause</div></div>
-          <div class="lp-mockup-entry-hrs">8.75 h</div>
-        </div>
-        <div class="lp-mockup-entry" style="border-left-color:#10b981;">
-          <div><div class="lp-mockup-entry-title">Kunde Schmitt GmbH</div><div class="lp-mockup-entry-sub">Di, 11. Jun · 07:00 – 17:00 · 45 min Pause</div></div>
-          <div class="lp-mockup-entry-hrs" style="color:#10b981;">9.25 h</div>
-        </div>
+        <div class="lp-mockup-entry"><div><div class="lp-mockup-entry-title">Baustelle Musterstraße 12</div><div class="lp-mockup-entry-sub">Mo, 10. Jun · 07:00–16:15 · 30 min Pause</div></div><div class="lp-mockup-entry-hrs">8.75 h</div></div>
+        <div class="lp-mockup-entry" style="border-left-color:#10b981;"><div><div class="lp-mockup-entry-title">Kunde Schmitt GmbH</div><div class="lp-mockup-entry-sub">Di, 11. Jun · 07:00–17:00 · 45 min Pause</div></div><div class="lp-mockup-entry-hrs" style="color:#10b981;">9.25 h</div></div>
         <div class="lp-mockup-badge"><i class="fa-solid fa-cloud-arrow-up" style="font-size:9px;"></i> Cloud gespeichert</div>
       </div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════
-       6. FEATURES GRID
-  ══════════════════════════════════════════ -->
+  <!-- 6. FEATURES GRID -->
   <section class="lp-features">
     <div class="lp-section-label">Was du bekommst</div>
     <h2 class="lp-section-title">Alles was ein Handwerksbetrieb braucht</h2>
     <p class="lp-section-sub">Einmalig kaufen — alle Features, kein Abo, lebenslanger Zugang.</p>
     <div class="lp-features-grid">
-      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-file-pdf" style="color:#E30613;"></i></div><div class="lp-feature-title">PDF Export mit deinem Firmennamen</div><div class="lp-feature-desc">Dein Firmenname erscheint automatisch auf jedem exportierten Stundenzettel — professionell, sauber und sofort einsatzbereit.</div></div>
-      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(16,185,129,0.1);"><i class="fa-solid fa-clock" style="color:#10b981;"></i></div><div class="lp-feature-title">Automatische Überstundenberechnung</div><div class="lp-feature-desc">Überstunden werden täglich automatisch berechnet und über den gesamten Zeitraum summiert — kein manuelles Rechnen.</div></div>
-      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(239,68,68,0.1);"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i></div><div class="lp-feature-title">Fehlende Tage erkennen & nachtragen</div><div class="lp-feature-desc">Die App erkennt automatisch welche Arbeitstage noch nicht erfasst sind — mit einem Klick direkt dort nachbuchen.</div></div>
+      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-file-pdf" style="color:#E30613;"></i></div><div class="lp-feature-title">PDF Export mit deinem Firmennamen</div><div class="lp-feature-desc">Dein Firmenname erscheint automatisch auf jedem exportierten Stundenzettel — professionell und sofort einsatzbereit.</div></div>
+      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(16,185,129,0.1);"><i class="fa-solid fa-clock" style="color:#10b981;"></i></div><div class="lp-feature-title">Automatische Überstundenberechnung</div><div class="lp-feature-desc">Überstunden werden täglich automatisch berechnet und summiert — kein manuelles Rechnen.</div></div>
+      <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(239,68,68,0.1);"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i></div><div class="lp-feature-title">Fehlende Tage erkennen & nachtragen</div><div class="lp-feature-desc">Die App erkennt automatisch welche Arbeitstage noch fehlen — mit einem Klick direkt nachbuchen.</div></div>
       <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(14,165,233,0.1);"><i class="fa-solid fa-chart-column" style="color:#0ea5e9;"></i></div><div class="lp-feature-title">Interaktive Wochenübersicht</div><div class="lp-feature-desc">Alle Arbeitsstunden der aktuellen Woche als anklickbares Balkendiagramm — jeden Tag antippen für volle Details.</div></div>
       <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(227,6,19,0.1);"><i class="fa-solid fa-wand-magic-sparkles" style="color:#E30613;"></i></div><div class="lp-feature-title">KI-Stundenzettel Scan</div><div class="lp-feature-desc">Foto aufnehmen — die KI liest Datum, Zeiten, Baustelle und Pausen automatisch aus und trägt alles ein.</div></div>
       <div class="lp-feature-card"><div class="lp-feature-icon" style="background:rgba(139,92,246,0.1);"><i class="fa-solid fa-cloud-arrow-up" style="color:#8b5cf6;"></i></div><div class="lp-feature-title">Cloud-Sync & Datensicherheit</div><div class="lp-feature-desc">Deine Daten sicher in der Cloud — auf jedem Gerät verfügbar. Auch offline erfassen, automatisch synchronisieren.</div></div>
@@ -714,9 +610,7 @@
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════
-       7. HOW IT WORKS
-  ══════════════════════════════════════════ -->
+  <!-- 7. HOW IT WORKS -->
   <section class="lp-how">
     <div class="lp-section-label">So funktioniert's</div>
     <h2 class="lp-section-title">In 3 Schritten startklar</h2>
@@ -727,12 +621,9 @@
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════
-       8. TRUST STRIP + CTA (moved to bottom)
-  ══════════════════════════════════════════ -->
+  <!-- 8. CTA + TRUST STRIP (moved to bottom) -->
   <div class="lp-cta-bottom" style="position:relative;z-index:1;">
-    <!-- Trust pills now live here -->
-    <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:28px;">
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;">
       <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#64748b;"><i class="fa-solid fa-check-circle" style="color:#10b981;"></i> Einmalige Zahlung</div>
       <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#64748b;"><i class="fa-solid fa-check-circle" style="color:#10b981;"></i> Kein Abo</div>
       <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#64748b;"><i class="fa-solid fa-check-circle" style="color:#10b981;"></i> Cloud-Backup inklusive</div>
@@ -741,15 +632,19 @@
     <div class="lp-cta-price-badge"><sup>€</sup>9,99<span>Einmalig — kein Abo, keine Folgekosten</span></div>
     <h2>Bereit loszulegen?</h2>
     <p>Konto erstellen, Firmennamen hinterlegen und sofort alle Features nutzen. Lebenslanger Zugang für einmalig 9,99 €.</p>
-    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-      <button class="lp-hero-btn-main" onclick="openRegisterModal()" style="font-size:14px;padding:14px 28px;"><i class="fa-solid fa-rocket"></i> Jetzt Konto erstellen</button>
-      <button class="lp-hero-btn-secondary" onclick="openLoginModal()" style="font-size:14px;padding:14px 22px;"><i class="fa-solid fa-right-to-bracket"></i> Anmelden</button>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <button class="lp-hero-btn-main" onclick="openRegisterModal()" style="font-size:14px;padding:14px 26px;"><i class="fa-solid fa-rocket"></i> Jetzt Konto erstellen</button>
+      <button class="lp-hero-btn-secondary" onclick="openLoginModal()" style="font-size:14px;padding:14px 20px;"><i class="fa-solid fa-right-to-bracket"></i> Anmelden</button>
     </div>
   </div>
 
+  <!-- FOOTER — updated branding + year + developer credit -->
   <div class="lp-footer">
-    <div style="font-size:14px;font-weight:800;color:#1e293b;margin-bottom:6px;">MEINE STUNDEN <span style="color:#E30613;">ONLINE</span></div>
-    <div>© 2025 Meine Stunden Online · Professionelle Zeiterfassung für Handwerksbetriebe</div>
+    <div class="lp-footer-brand">
+      <span class="lp-footer-brand-text">MeineStunden</span><span class="lp-footer-brand-dot">.</span><span class="lp-footer-brand-tld">online</span>
+    </div>
+    <div class="lp-footer-copy">© 2026 MeineStunden.online · Professionelle Zeiterfassung für Handwerksbetriebe</div>
+    <div class="lp-footer-dev">Developed by <span>Amran Hiluf</span> &amp; MeineStunden.online</div>
   </div>
 </div><!-- /#landing-page -->
 
@@ -779,7 +674,7 @@
 <!-- REGISTER MODAL -->
 <div id="modal-register-backdrop" onclick="if(event.target===this)closeRegisterModal()">
   <div class="modal-register-box">
-    <button class="modal-close-x" onclick="closeRegisterModal()" style="top:20px;right:20px;z-index:2;"><i class="fa-solid fa-xmark"></i></button>
+    <button class="modal-close-x" onclick="closeRegisterModal()" style="top:16px;right:16px;z-index:2;"><i class="fa-solid fa-xmark"></i></button>
     <div class="reg-steps">
       <div class="reg-step-tab active" id="reg-tab-1"><i class="fa-solid fa-user" style="margin-right:5px;font-size:10px;"></i>1. Konto</div>
       <div class="reg-step-tab" id="reg-tab-2"><i class="fa-solid fa-credit-card" style="margin-right:5px;font-size:10px;"></i>2. Bezahlen & Aktivieren</div>
@@ -799,17 +694,17 @@
       <div class="reg-step-title">Einmalig freischalten</div>
       <div class="reg-step-sub">Zahle einmalig und erhalte sofortigen Zugang zu allen Features — lebenslang, ohne Abo.</div>
       <div class="reg-price-block">
-        <div class="reg-price-amount"><sup>€</sup>9<span style="font-size:28px;">,99</span></div>
+        <div class="reg-price-amount"><sup>€</sup>9<span style="font-size:26px;">,99</span></div>
         <div class="reg-price-label">Einmalige Zahlung · Kein Abo · Keine Folgekosten</div>
         <div class="reg-price-badge"><i class="fa-solid fa-infinity" style="margin-right:5px;"></i>Lebenslanger Zugang</div>
       </div>
       <div class="reg-features-title"><i class="fa-solid fa-star" style="color:#f59e0b;margin-right:5px;"></i>Was du bekommst</div>
-      <div class="reg-feature-item highlight"><div class="reg-feature-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-file-pdf" style="color:#E30613;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">PDF Export mit deinem Firmennamen</div><div class="reg-feature-desc">Dein Betriebsname erscheint automatisch auf jedem Stundenzettel-Export.</div></div></div>
-      <div class="reg-feature-item highlight"><div class="reg-feature-icon" style="background:rgba(16,185,129,0.12);"><i class="fa-solid fa-clock" style="color:#10b981;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">Automatische Überstundenberechnung</div><div class="reg-feature-desc">Täglich automatisch berechnet und summiert — kein manuelles Rechnen.</div></div></div>
+      <div class="reg-feature-item highlight"><div class="reg-feature-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-file-pdf" style="color:#E30613;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">PDF Export mit deinem Firmennamen</div><div class="reg-feature-desc">Dein Betriebsname erscheint automatisch auf jedem Export.</div></div></div>
+      <div class="reg-feature-item highlight"><div class="reg-feature-icon" style="background:rgba(16,185,129,0.12);"><i class="fa-solid fa-clock" style="color:#10b981;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">Automatische Überstundenberechnung</div><div class="reg-feature-desc">Täglich automatisch berechnet — kein manuelles Rechnen.</div></div></div>
       <div class="reg-feature-item highlight"><div class="reg-feature-icon" style="background:rgba(239,68,68,0.12);"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">Fehlende Tage automatisch erkennen</div><div class="reg-feature-desc">Die App zeigt dir sofort welche Arbeitstage noch fehlen.</div></div></div>
-      <div class="reg-feature-item"><div class="reg-feature-icon" style="background:rgba(14,165,233,0.1);"><i class="fa-solid fa-chart-column" style="color:#0ea5e9;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">Interaktive Wochenübersicht</div><div class="reg-feature-desc">Balkendiagramm der aktuellen Woche — jeden Tag anklicken für volle Details.</div></div></div>
+      <div class="reg-feature-item"><div class="reg-feature-icon" style="background:rgba(14,165,233,0.1);"><i class="fa-solid fa-chart-column" style="color:#0ea5e9;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">Interaktive Wochenübersicht</div><div class="reg-feature-desc">Balkendiagramm — jeden Tag anklicken für volle Details.</div></div></div>
       <div class="reg-feature-item"><div class="reg-feature-icon" style="background:rgba(227,6,19,0.1);"><i class="fa-solid fa-wand-magic-sparkles" style="color:#E30613;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">KI-Stundenzettel Scan</div><div class="reg-feature-desc">Foto aufnehmen, KI liest alles automatisch aus.</div></div></div>
-      <div class="reg-feature-item"><div class="reg-feature-icon" style="background:rgba(139,92,246,0.1);"><i class="fa-solid fa-cloud-arrow-up" style="color:#8b5cf6;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">Cloud-Sync auf allen Geräten</div><div class="reg-feature-desc">Deine Daten sicher in der Cloud — auf Handy, Tablet und PC immer aktuell.</div></div></div>
+      <div class="reg-feature-item"><div class="reg-feature-icon" style="background:rgba(139,92,246,0.1);"><i class="fa-solid fa-cloud-arrow-up" style="color:#8b5cf6;"></i></div><div class="reg-feature-body"><div class="reg-feature-name">Cloud-Sync auf allen Geräten</div><div class="reg-feature-desc">Deine Daten sicher in der Cloud — immer aktuell.</div></div></div>
       <div class="modal-msg" id="reg-step2-msg" style="margin-top:12px;"></div>
       <button type="button" class="reg-pay-btn" onclick="handleRegisterAndPay()" id="reg-pay-btn"><i class="fa-solid fa-lock"></i> Jetzt kaufen & Konto aktivieren — 9,99 €</button>
       <div class="reg-trust-line"><i class="fa-solid fa-shield-halved"></i> Sichere Zahlung · Sofortiger Zugang · Kein Abo</div>
