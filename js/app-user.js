@@ -1,4 +1,4 @@
-let _trashPurgeInterval = null; // Bug 4 Fix: store interval reference for cleanup
+let _trashPurgeInterval = null;
 
 window.addEventListener('DOMContentLoaded', () => {
   populateLogTimeFormDropdowns();
@@ -21,150 +21,165 @@ window.addEventListener('DOMContentLoaded', () => {
 
   if (window.flatpickr) {
     const commonOpts = {
-      dateFormat: 'Y-m-d',
-      allowInput: false,
-      disableMobile: true,
+      dateFormat: 'Y-m-d', allowInput: false, disableMobile: true,
       locale: {
         firstDayOfWeek: 1,
-        weekdays: {
-          shorthand: ['So','Mo','Di','Mi','Do','Fr','Sa'],
-          longhand:  ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag']
-        },
-        months: {
-          shorthand: ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'],
-          longhand:  ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']
-        }
+        weekdays: { shorthand:['So','Mo','Di','Mi','Do','Fr','Sa'], longhand:['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'] },
+        months: { shorthand:['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'], longhand:['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'] }
       }
     };
-
-    flatpickr('#log-date-picker', {
-      ...commonOpts,
-      defaultDate: today,
-      onChange: () => {
-        document.getElementById('log-start-time').value = '07:00';
-        document.getElementById('log-end-time').value   = '16:15';
-        document.querySelectorAll('.break-pill').forEach(p => p.classList.remove('active'));
-        document.querySelector('.break-pill').classList.add('active');
-        activeSelectedFormBreakDuration = 0;
-        saveDraftWorkEntry();
-      }
-    });
-
+    flatpickr('#log-date-picker', { ...commonOpts, defaultDate: today, onChange: () => {
+      document.getElementById('log-start-time').value = '07:00';
+      document.getElementById('log-end-time').value   = '16:15';
+      document.querySelectorAll('.break-pill').forEach(p => p.classList.remove('active'));
+      document.querySelector('.break-pill').classList.add('active');
+      activeSelectedFormBreakDuration = 0;
+      saveDraftWorkEntry();
+    }});
     flatpickr('#schule-date-picker', { ...commonOpts, defaultDate: today });
     flatpickr('#vacation-from-date-input', { ...commonOpts, defaultDate: today });
     flatpickr('#vacation-to-date-input',   { ...commonOpts, defaultDate: today });
     flatpickr('#export-start-date', { ...commonOpts });
     flatpickr('#export-end-date',   { ...commonOpts });
-
     const adminOpts = { ...commonOpts, dateFormat: 'Y-m-d' };
     flatpickr('#absence-start', adminOpts);
     flatpickr('#absence-end',   adminOpts);
   }
 
-  document.querySelectorAll('.form-group').forEach(group => {
-    const fp = group.querySelector('input._flatpickr, input[data-input]');
-    if (!fp || !fp._flatpickr) {
-      const inp = group.querySelector('input[type="date"], input[type="text"][readonly]');
-      if (inp && inp._flatpickr) {
-        group.style.cursor = 'pointer';
-        group.addEventListener('click', (e) => {
-          if (e.target === inp) return;
-          inp._flatpickr.open();
-        });
-      }
-    }
-  });
-
   document.getElementById('log-date-picker').addEventListener('change', saveDraftWorkEntry);
-
-  // Bug 4 Fix: store interval so it can be cleared on logout
   _trashPurgeInterval = setInterval(enforceTrashLifespanPurgeEngine, 60000);
-
   window.addEventListener('online',  updateCloudBackupStatusIndicator);
   window.addEventListener('offline', updateCloudBackupStatusIndicator);
   updateCloudBackupStatusIndicator();
-
   ['log-project-name','log-start-time','log-end-time','log-notes'].forEach(id => {
     document.getElementById(id)?.addEventListener('input',  saveDraftWorkEntry);
     document.getElementById(id)?.addEventListener('change', saveDraftWorkEntry);
   });
 
-  const lp = document.getElementById('landing-page');
-
-  const cached = localStorage.getItem('schuermann_auth_user');
-  if (cached) {
-    authenticatedUserGlobal = cached;
-    (async () => {
-      try {
-        await new Promise((resolve, reject) => {
-          const unsubscribe = auth.onAuthStateChanged(user => {
-            unsubscribe();
-            if (user) resolve(user);
-            else reject(new Error('no-session'));
-          });
-        });
-
-        const snap = await db.collection('userProfiles').doc(cached).get();
-        const profileData = snap.exists ? snap.data() : {};
-        authenticatedUserRoleGlobal = profileData.isAdmin === true ? 'admin' : 'user';
-        localStorage.setItem('schuermann_auth_role', authenticatedUserRoleGlobal);
-
-        if (lp) lp.style.display = 'none';
-        launchSessionUI();
-      } catch(e) {
-        localStorage.removeItem('schuermann_auth_user');
-        localStorage.removeItem('schuermann_auth_role');
-        authenticatedUserGlobal = '';
-        authenticatedUserRoleGlobal = 'user';
-        if (lp) lp.style.display = 'block';
-      }
-    })();
-  } else {
-    if (lp) lp.style.display = 'block';
-  }
-
   window.addEventListener('online',  flushOfflineQueue);
   window.addEventListener('online',  updateOfflineBadge);
   window.addEventListener('offline', updateOfflineBadge);
   updateOfflineBadge();
+
+  const lp     = document.getElementById('landing-page');
+  const cached = localStorage.getItem('schuermann_auth_user');
+
+  if (!cached) {
+    // No cached session — just show landing
+    if (lp) lp.style.display = 'block';
+    return;
+  }
+
+  // We have a cached UID — hide landing immediately to prevent flash
+  if (lp) lp.style.display = 'none';
+  authenticatedUserGlobal = cached;
+
+  // Show a loading state while Firebase confirms auth
+  _waitForFirebaseAuth(cached);
 });
+
+// ── Wait for Firebase auth state (mobile-safe, up to 8 seconds) ──────────
+function _waitForFirebaseAuth(cachedUid) {
+  const lp = document.getElementById('landing-page');
+
+  // First try: Firebase already has a user (desktop / fast connection)
+  if (auth.currentUser) {
+    _restoreSessionFromFirebase(auth.currentUser, cachedUid);
+    return;
+  }
+
+  // Listen for auth state — this fires even on mobile after token refresh
+  let settled = false;
+  const unsubscribe = auth.onAuthStateChanged(function(user) {
+    if (settled) return;
+    settled = true;
+    unsubscribe();
+
+    if (user) {
+      _restoreSessionFromFirebase(user, cachedUid);
+    } else {
+      // Firebase says no active session — clear cache, show landing
+      _clearSessionAndShowLanding();
+    }
+  });
+
+  // Safety net: if onAuthStateChanged never fires (offline / slow), try anyway after 6s
+  setTimeout(function() {
+    if (settled) return;
+    settled = true;
+    unsubscribe();
+
+    // If we're offline and have cached data, launch with cached role
+    if (!navigator.onLine) {
+      const cachedRole = localStorage.getItem('schuermann_auth_role') || 'user';
+      authenticatedUserRoleGlobal = cachedRole;
+      launchSessionUI();
+      return;
+    }
+
+    // Online but Firebase didn't respond — clear and show landing
+    _clearSessionAndShowLanding();
+  }, 6000);
+}
+
+async function _restoreSessionFromFirebase(user, cachedUid) {
+  try {
+    // Verify UID matches cached (security check)
+    if (user.uid !== cachedUid) {
+      _clearSessionAndShowLanding();
+      return;
+    }
+
+    const snap = await db.collection('userProfiles').doc(cachedUid).get();
+    const profileData = snap.exists ? snap.data() : {};
+    authenticatedUserRoleGlobal = profileData.isAdmin === true ? 'admin' : 'user';
+    localStorage.setItem('schuermann_auth_role', authenticatedUserRoleGlobal);
+
+    // Update display name from Firestore if available
+    if (profileData.name) {
+      localStorage.setItem('schuermann_current_user', profileData.name);
+    }
+    if (profileData.companyName) {
+      localStorage.setItem('schuermann_company_name', profileData.companyName);
+    }
+
+    launchSessionUI();
+  } catch(e) {
+    console.warn('Profile load failed, launching with cached role:', e);
+    // Use cached role as fallback — don't kick user out on network error
+    const cachedRole = localStorage.getItem('schuermann_auth_role') || 'user';
+    authenticatedUserRoleGlobal = cachedRole;
+    launchSessionUI();
+  }
+}
+
+function _clearSessionAndShowLanding() {
+  localStorage.removeItem('schuermann_auth_user');
+  localStorage.removeItem('schuermann_auth_role');
+  authenticatedUserGlobal     = '';
+  authenticatedUserRoleGlobal = 'user';
+  const lp = document.getElementById('landing-page');
+  if (lp) lp.style.display = 'block';
+}
 
 function reinitDatePickers() {
   if (!window.flatpickr) return;
   const commonOpts = {
-    dateFormat: 'Y-m-d',
-    allowInput: false,
-    disableMobile: true,
+    dateFormat: 'Y-m-d', allowInput: false, disableMobile: true,
     locale: {
       firstDayOfWeek: 1,
-      weekdays: {
-        shorthand: ['So','Mo','Di','Mi','Do','Fr','Sa'],
-        longhand:  ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag']
-      },
-      months: {
-        shorthand: ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'],
-        longhand:  ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']
-      }
+      weekdays: { shorthand:['So','Mo','Di','Mi','Do','Fr','Sa'], longhand:['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'] },
+      months: { shorthand:['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'], longhand:['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'] }
     }
   };
-  const ids = ['log-date-picker','schule-date-picker','vacation-from-date-input',
-               'vacation-to-date-input','export-start-date','export-end-date'];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el && !el._flatpickr) flatpickr(el, commonOpts);
-  });
-
+  const ids = ['log-date-picker','schule-date-picker','vacation-from-date-input','vacation-to-date-input','export-start-date','export-end-date'];
+  ids.forEach(id => { const el = document.getElementById(id); if (el && !el._flatpickr) flatpickr(el, commonOpts); });
   setTimeout(() => {
     document.querySelectorAll('.form-group').forEach(group => {
       const inp = group.querySelector('input[type="date"], input[readonly]');
       if (inp && inp._flatpickr && !group.dataset.fpClick) {
-        group.dataset.fpClick = '1';
-        group.style.cursor = 'pointer';
-        group.addEventListener('click', (e) => {
-          if (e.target.tagName === 'LABEL') { inp._flatpickr.open(); return; }
-          if (e.target === inp) return;
-          inp._flatpickr.open();
-        });
+        group.dataset.fpClick = '1'; group.style.cursor = 'pointer';
+        group.addEventListener('click', (e) => { if (e.target.tagName === 'LABEL') { inp._flatpickr.open(); return; } if (e.target === inp) return; inp._flatpickr.open(); });
       }
     });
   }, 300);
@@ -184,49 +199,27 @@ async function handleLoginSubmit(e) {
   const rawName   = document.getElementById('username').value.trim().replace(/\s+/g, ' ');
   const codeInput = document.getElementById('passcode').value.trim();
   const msgBox    = document.getElementById('message-box');
-
   msgBox.textContent = activeLanguageGlobal === 'de' ? 'Verbindung wird hergestellt...' : 'Connecting...';
   msgBox.className = 'message success';
-
   try {
     const loginKey = rawName.toLowerCase()
       .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
       .replace(/[^a-z0-9]/gi,'');
-
     if (!loginKey) throw new Error('empty-name');
-
     const email = loginKey + '@sch.local';
     const cred  = await auth.signInWithEmailAndPassword(email, codeInput);
-
     authenticatedUserGlobal = cred.user.uid;
-
-    const displayName = rawName.split(' ')
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-      .join(' ');
-
+    const displayName = rawName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     let isAdminFlag = false;
-    try {
-      const profileSnap = await db.collection('userProfiles').doc(cred.user.uid).get();
-      if (profileSnap.exists) isAdminFlag = profileSnap.data().isAdmin === true;
-    } catch(e) { isAdminFlag = false; }
-
+    try { const profileSnap = await db.collection('userProfiles').doc(cred.user.uid).get(); if (profileSnap.exists) isAdminFlag = profileSnap.data().isAdmin === true; } catch(e) {}
     authenticatedUserRoleGlobal = isAdminFlag ? 'admin' : 'user';
     localStorage.setItem('schuermann_auth_user',    authenticatedUserGlobal);
     localStorage.setItem('schuermann_auth_role',    authenticatedUserRoleGlobal);
     localStorage.setItem('schuermann_current_user', displayName);
-
-    await db.collection('userProfiles').doc(cred.user.uid).set({
-      name:      displayName,
-      uid:       cred.user.uid,
-      lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-
-    msgBox.textContent = activeLanguageGlobal === 'de'
-      ? `Willkommen zurück, ${displayName}!`
-      : `Welcome back, ${displayName}!`;
+    await db.collection('userProfiles').doc(cred.user.uid).set({ name:displayName, uid:cred.user.uid, lastLogin:firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
+    msgBox.textContent = activeLanguageGlobal === 'de' ? `Willkommen zurück, ${displayName}!` : `Welcome back, ${displayName}!`;
     msgBox.className = 'message success';
     setTimeout(() => launchSessionUI(), 500);
-
   } catch (err) {
     console.error(err);
     msgBox.innerHTML = activeLanguageGlobal === 'de'
@@ -238,6 +231,11 @@ async function handleLoginSubmit(e) {
 
 async function launchSessionUI() {
   document.getElementById('login-view').style.display = 'none';
+
+  // Always hide landing when launching app
+  const lp = document.getElementById('landing-page');
+  if (lp) lp.style.display = 'none';
+
   if (authenticatedUserRoleGlobal === 'admin') {
     document.getElementById('app-view').style.display        = 'none';
     document.getElementById('admin-full-view').style.display = 'block';
@@ -293,10 +291,7 @@ function handleSecureSignOutRequest() {
     auth.signOut().catch(()=>{});
     localStorage.removeItem('schuermann_auth_user');
     localStorage.removeItem('schuermann_auth_role');
-
-    // Bug 4 Fix: clear the trash purge interval on logout
     if (_trashPurgeInterval) { clearInterval(_trashPurgeInterval); _trashPurgeInterval = null; }
-
     authenticatedUserGlobal = ''; authenticatedUserRoleGlobal = 'user';
     globalLoggedSessionsDatabaseMock = []; vacationLoggedDaysArrayCache = [];
     recentlyDeletedItemsBinCache = []; adminAllEntriesCache = [];
@@ -310,8 +305,7 @@ function handleSecureSignOutRequest() {
 }
 
 function updateCloudBackupStatusIndicator() {
-  const dot = document.getElementById('dash-backup-indicator');
-  if (!dot) return;
+  const dot = document.getElementById('dash-backup-indicator'); if (!dot) return;
   if (navigator.onLine) { dot.className = 'backup-status-dot online'; dot.title = 'Cloud Sync Aktiv'; }
   else                  { dot.className = 'backup-status-dot offline'; dot.title = 'Offline'; }
 }
@@ -337,7 +331,7 @@ function selectBreakOption(minutes, btn) {
 
 function setLeaveManagementType(leaveType) {
   activeLeaveSubManagementType = leaveType;
-  const t       = uiTranslations[activeLanguageGlobal];
+  const t = uiTranslations[activeLanguageGlobal];
   const vacBtn  = document.getElementById('toggle-leave-vacation');
   const sickBtn = document.getElementById('toggle-leave-sick');
   const lbl     = document.getElementById('leave-context-label');
@@ -346,13 +340,11 @@ function setLeaveManagementType(leaveType) {
   if (!vacBtn) return;
   if (leaveType === 'vacation') {
     vacBtn.classList.add('active'); sickBtn.classList.remove('active');
-    if (lbl)    lbl.textContent    = t.vacContextV;
-    if (inp)    inp.placeholder    = t.vacPlhV;
+    if (lbl) lbl.textContent = t.vacContextV; if (inp) inp.placeholder = t.vacPlhV;
     if (subBtn) { subBtn.textContent = t.vacSubmitV; subBtn.style.background = '#3b82f6'; }
   } else {
     sickBtn.classList.add('active'); vacBtn.classList.remove('active');
-    if (lbl)    lbl.textContent    = t.vacContextS;
-    if (inp)    inp.placeholder    = t.vacPlhS;
+    if (lbl) lbl.textContent = t.vacContextS; if (inp) inp.placeholder = t.vacPlhS;
     if (subBtn) { subBtn.textContent = t.vacSubmitS; subBtn.style.background = '#10b981'; }
   }
 }
@@ -370,49 +362,29 @@ function handleNewRecordSubmission(event) {
   const endVal   = document.getElementById('log-end-time').value;
   const grossHrs = computeRawHoursDiff(startVal, endVal);
   if (grossHrs <= 0) { showToast(activeLanguageGlobal === 'de' ? '⚠ Endzeit muss nach Startzeit liegen' : '⚠ End time must be after start'); return; }
-
   const dateRaw       = document.getElementById('log-date-picker').value;
   const [y,mo,d]      = dateRaw.split('-');
   const dateFormatted = `${d}/${mo}/${y}`;
   const startMins     = parseInt(startVal.split(':')[0])*60 + parseInt(startVal.split(':')[1]);
   const endMins       = parseInt(endVal.split(':')[0])*60   + parseInt(endVal.split(':')[1]);
   const existing      = globalLoggedSessionsDatabaseMock.filter(r => r.type === 'work' && r.date === dateFormatted);
-
   for (const rec of existing) {
     const rStart = parseInt(rec.startTime.split(':')[0])*60 + parseInt(rec.startTime.split(':')[1]);
     const rEnd   = parseInt(rec.endTime.split(':')[0])*60   + parseInt(rec.endTime.split(':')[1]);
-    if (startMins < rEnd && endMins > rStart) {
-      showToast(activeLanguageGlobal === 'de' ? `⚠ Überschneidung mit ${rec.startTime}–${rec.endTime}` : `⚠ Overlap with ${rec.startTime}–${rec.endTime}`);
-      return;
-    }
+    if (startMins < rEnd && endMins > rStart) { showToast(activeLanguageGlobal === 'de' ? `⚠ Überschneidung mit ${rec.startTime}–${rec.endTime}` : `⚠ Overlap with ${rec.startTime}–${rec.endTime}`); return; }
   }
-
-  const record = {
-    id: 'work-' + Date.now(), type: 'work', date: dateFormatted,
-    startTime: startVal, endTime: endVal,
-    project:   document.getElementById('log-project-name').value.trim(),
-    duration:  grossHrs, breakTime: activeSelectedFormBreakDuration,
-    notes:     document.getElementById('log-notes').value.trim()
-  };
-
+  const record = { id:'work-'+Date.now(), type:'work', date:dateFormatted, startTime:startVal, endTime:endVal, project:document.getElementById('log-project-name').value.trim(), duration:grossHrs, breakTime:activeSelectedFormBreakDuration, notes:document.getElementById('log-notes').value.trim() };
   if (!navigator.onLine) {
     const q = getOfflineQueue(); q.push(record); saveOfflineQueue(q);
-    document.getElementById('log-project-name').value = '';
-    document.getElementById('log-notes').value        = '';
-    clearDraftWorkEntry();
-    selectBreakOption(0, document.querySelectorAll('.break-pill')[0]);
-    showToast(activeLanguageGlobal === 'de' ? '📶 Offline gespeichert' : '📶 Saved offline');
-    return;
+    document.getElementById('log-project-name').value = ''; document.getElementById('log-notes').value = '';
+    clearDraftWorkEntry(); selectBreakOption(0, document.querySelectorAll('.break-pill')[0]);
+    showToast(activeLanguageGlobal === 'de' ? '📶 Offline gespeichert' : '📶 Saved offline'); return;
   }
-
   globalLoggedSessionsDatabaseMock.unshift(record);
-  persistUserData();
-  clearDraftWorkEntry();
-  document.getElementById('log-project-name').value = '';
-  document.getElementById('log-notes').value        = '';
+  persistUserData(); clearDraftWorkEntry();
+  document.getElementById('log-project-name').value = ''; document.getElementById('log-notes').value = '';
   selectBreakOption(0, document.querySelectorAll('.break-pill')[0]);
-  renderHistoricalRecordsSheet();
-  runGlobalApplicationMetricsEngine();
+  renderHistoricalRecordsSheet(); runGlobalApplicationMetricsEngine();
   document.getElementById('log-start-time').value = endVal;
   document.getElementById('log-project-name').focus();
   showToast(activeLanguageGlobal === 'de' ? '✓ Gespeichert' : '✓ Saved');
@@ -421,8 +393,7 @@ function handleNewRecordSubmission(event) {
 function handleSchuleSubmission() {
   const dateRaw = document.getElementById('schule-date-picker').value;
   if (!dateRaw) { showToast(activeLanguageGlobal === 'de' ? '⚠ Bitte Datum wählen' : '⚠ Please select date', 'error'); return; }
-  const [y,mo,d]      = dateRaw.split('-');
-  const dateFormatted = `${d}/${mo}/${y}`;
+  const [y,mo,d] = dateRaw.split('-'); const dateFormatted = `${d}/${mo}/${y}`;
   const exists = globalLoggedSessionsDatabaseMock.find(r => r.date === dateFormatted && (r.type === 'schule' || r.type === 'work'));
   if (exists) { showToast(activeLanguageGlobal === 'de' ? '⚠ Für diesen Tag existiert bereits ein Eintrag' : '⚠ Entry already exists for this date', 'error'); return; }
   const record = { id:'schule-'+Date.now(), type:'schule', date:dateFormatted, startTime:null, endTime:null, project:'BERUFSSCHULE', duration:0, breakTime:0, notes:'Schultag' };
@@ -436,13 +407,13 @@ function handleVacationDayLogSubmission(event) {
   const fromRaw = document.getElementById('vacation-from-date-input').value;
   const toRaw   = document.getElementById('vacation-to-date-input').value;
   if (!fromRaw || !toRaw) return;
-  const fromObj   = new Date(fromRaw), toObj = new Date(toRaw);
+  const fromObj = new Date(fromRaw), toObj = new Date(toRaw);
   if (toObj < fromObj) { alert(activeLanguageGlobal === 'de' ? 'Fehler: Enddatum vor Startdatum!' : 'Error: To-date before From-date!'); return; }
   const totalDays = Math.round((toObj - fromObj) / 86400000) + 1;
   const isSick    = (activeLeaveSubManagementType === 'sick');
   for (let i = 0; i < totalDays; i++) {
     const cur = new Date(fromObj); cur.setDate(fromObj.getDate() + i);
-    const dd  = String(cur.getDate()).padStart(2,'0'), mm = String(cur.getMonth()+1).padStart(2,'0');
+    const dd = String(cur.getDate()).padStart(2,'0'), mm = String(cur.getMonth()+1).padStart(2,'0');
     vacationLoggedDaysArrayCache.unshift({ id:'vacation-'+Date.now()+'-'+i, type:isSick?'sick':'vacation', date:`${dd}/${mm}/${cur.getFullYear()}`, project:isSick?'Krankheit':'Urlaub', notes:document.getElementById('vacation-notes-input').value.trim(), duration:0, breakTime:0 });
   }
   persistUserData();
@@ -518,7 +489,7 @@ function renderRecentlyDeletedBinSheet() {
   mount.innerHTML = '';
   if (!recentlyDeletedItemsBinCache.length) { mount.innerHTML = `<p style="color:#64748b;font-size:13px;text-align:center;padding:24px;">${t.emptyTrash}</p>`; return; }
   recentlyDeletedItemsBinCache.forEach(item => {
-    const typeLabel = item.type==='work' ? (activeLanguageGlobal==='de'?'Arbeitszeit':'Work Record') : item.type==='sick' ? (activeLanguageGlobal==='de'?'Krankmeldung':'Sick Leave') : (activeLanguageGlobal==='de'?'Urlaubstag':'Vacation Day');
+    const typeLabel = item.type==='work'?(activeLanguageGlobal==='de'?'Arbeitszeit':'Work Record'):item.type==='sick'?(activeLanguageGlobal==='de'?'Krankmeldung':'Sick Leave'):(activeLanguageGlobal==='de'?'Urlaubstag':'Vacation Day');
     const row = document.createElement('div'); row.className = 'history-item'; row.style.borderLeftColor = '#94a3b8';
     row.innerHTML = `
       <div class="item-main-row">
@@ -568,17 +539,10 @@ window.commitInlineChanges = function(id) {
   const end   = document.getElementById(`edit-end-${id}`).value.trim();
   const brk   = parseInt(document.getElementById(`edit-brk-${id}`).value);
   if (!proj || !start || !end) { alert('Bitte alle Felder ausfüllen.'); return; }
-  if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) {
-    alert('Bitte Zeiten im Format HH:MM eingeben (z.B. 07:00).');
-    return;
-  }
+  if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) { alert('Bitte Zeiten im Format HH:MM eingeben.'); return; }
   const hrs = computeRawHoursDiff(start, end);
   if (hrs <= 0) { alert('Ungültige Zeitspanne.'); return; }
-  s.project   = proj;
-  s.startTime = start;
-  s.endTime   = end;
-  s.duration  = hrs;
-  s.breakTime = brk;
+  s.project = proj; s.startTime = start; s.endTime = end; s.duration = hrs; s.breakTime = brk;
   persistUserData(); renderHistoricalRecordsSheet(); runGlobalApplicationMetricsEngine();
   showToast(activeLanguageGlobal === 'de' ? '✓ Gespeichert' : '✓ Saved');
 };
@@ -612,9 +576,7 @@ function enforceTrashLifespanPurgeEngine() {
   const limit = 12 * 60 * 60 * 1000, now = Date.now();
   const before = recentlyDeletedItemsBinCache.length;
   recentlyDeletedItemsBinCache = recentlyDeletedItemsBinCache.filter(i => (now - i.deletedAtTimestamp) < limit);
-  if (recentlyDeletedItemsBinCache.length !== before) {
-    persistUserData();
-  }
+  if (recentlyDeletedItemsBinCache.length !== before) persistUserData();
   if (document.getElementById('view-deleted').classList.contains('active')) renderRecentlyDeletedBinSheet();
 }
 
@@ -622,7 +584,6 @@ function runGlobalApplicationMetricsEngine() {
   let netHrs = 0, otHrs = 0;
   dailyWorkTimeBreakdownLogs = {}; dailyOvertimeBreakdownLogs = {};
   const target = parseFloat(document.getElementById('shift-target-constraint').value) || 8.5;
-
   globalLoggedSessionsDatabaseMock.forEach(s => {
     const net = s.duration - (s.breakTime / 60);
     netHrs += net;
@@ -632,7 +593,6 @@ function runGlobalApplicationMetricsEngine() {
     const dayTarget  = (dow === 5) ? 6.0 : (dow === 0 || dow === 6) ? 0 : target;
     if (net > dayTarget) { const ot = net - dayTarget; otHrs += ot; dailyOvertimeBreakdownLogs[s.date] = (dailyOvertimeBreakdownLogs[s.date] || 0) + ot; }
   });
-
   const grossEl = document.getElementById('dash-gross-hours');
   const otEl    = document.getElementById('dash-overtime-hours');
   if (grossEl) { grossEl.textContent = `${netHrs.toFixed(2)} hrs`; grossEl.parentElement.style.borderTop = netHrs > 0 ? '4px solid var(--primary-blue)' : '4px solid #cbd5e1'; }
@@ -642,33 +602,33 @@ function runGlobalApplicationMetricsEngine() {
 function closeCustomReportModal() { document.getElementById('custom-report-modal-backdrop').classList.remove('show'); }
 
 function displayWorkTimeBreakdownSummary() {
-  const t    = uiTranslations[activeLanguageGlobal];
+  const t = uiTranslations[activeLanguageGlobal];
   document.getElementById('custom-modal-title-header').textContent = t.modalWorkTitle;
   document.getElementById('custom-modal-icon-header').className    = 'fa-solid fa-briefcase';
   const body = document.getElementById('modal-report-content-body'); body.innerHTML = '';
   const keys = Object.keys(dailyWorkTimeBreakdownLogs);
-  if (!keys.length) { body.innerHTML = `<div style="text-align:center;padding:20px;color:#64748b;"><i class="fa-solid fa-circle-notch" style="font-size:32px;color:#cbd5e1;display:block;margin-bottom:10px;"></i><p style="font-size:14px;font-weight:600;">${t.noWorkMsg}</p></div>`; }
-  else { keys.forEach(k => { const row = document.createElement('div'); row.className = 'modal-report-row'; row.innerHTML = `<span><i class="fa-regular fa-calendar-days" style="margin-right:6px;color:#94a3b8;"></i>${t.lblDay}: ${k}</span><span style="font-weight:700;color:var(--primary-blue);">${dailyWorkTimeBreakdownLogs[k].toFixed(2)} hrs</span>`; body.appendChild(row); }); }
+  if (!keys.length) { body.innerHTML = `<div style="text-align:center;padding:20px;color:#64748b;"><p style="font-size:14px;font-weight:600;">${t.noWorkMsg}</p></div>`; }
+  else { keys.forEach(k => { const row = document.createElement('div'); row.className = 'modal-report-row'; row.innerHTML = `<span>${t.lblDay}: ${k}</span><span style="font-weight:700;color:var(--primary-blue);">${dailyWorkTimeBreakdownLogs[k].toFixed(2)} hrs</span>`; body.appendChild(row); }); }
   document.getElementById('custom-report-modal-backdrop').classList.add('show');
 }
 
 function displayOvertimeBreakdownSummary() {
-  const t    = uiTranslations[activeLanguageGlobal];
+  const t = uiTranslations[activeLanguageGlobal];
   document.getElementById('custom-modal-title-header').textContent = t.modalOtTitle;
   document.getElementById('custom-modal-icon-header').className    = 'fa-solid fa-clock';
   const body = document.getElementById('modal-report-content-body'); body.innerHTML = '';
   const keys = Object.keys(dailyOvertimeBreakdownLogs);
-  if (!keys.length) { body.innerHTML = `<div style="text-align:center;padding:20px;color:#64748b;"><i class="fa-solid fa-circle-check" style="font-size:32px;color:#cbd5e1;display:block;margin-bottom:10px;"></i><p style="font-size:14px;font-weight:600;">${t.noOtMsg}</p></div>`; }
-  else { keys.forEach(k => { const row = document.createElement('div'); row.className = 'modal-report-row'; row.innerHTML = `<span><i class="fa-regular fa-calendar-check" style="margin-right:6px;color:#94a3b8;"></i>${t.lblDay}: ${k}</span><span style="font-weight:700;color:#10b981;">+${dailyOvertimeBreakdownLogs[k].toFixed(2)} hrs</span>`; body.appendChild(row); }); }
+  if (!keys.length) { body.innerHTML = `<div style="text-align:center;padding:20px;color:#64748b;"><p style="font-size:14px;font-weight:600;">${t.noOtMsg}</p></div>`; }
+  else { keys.forEach(k => { const row = document.createElement('div'); row.className = 'modal-report-row'; row.innerHTML = `<span>${t.lblDay}: ${k}</span><span style="font-weight:700;color:#10b981;">+${dailyOvertimeBreakdownLogs[k].toFixed(2)} hrs</span>`; body.appendChild(row); }); }
   document.getElementById('custom-report-modal-backdrop').classList.add('show');
 }
 
 function displayLeaveStatementBalancesSummary() {
-  const t    = uiTranslations[activeLanguageGlobal];
+  const t = uiTranslations[activeLanguageGlobal];
   document.getElementById('custom-modal-title-header').textContent = t.modalLeaveTitle;
   document.getElementById('custom-modal-icon-header').className    = 'fa-solid fa-folder-open';
-  const body      = document.getElementById('modal-report-content-body'); body.innerHTML = '';
-  const allowed   = parseFloat(document.getElementById('vacation-allowed-bank').value) || 30;
+  const body    = document.getElementById('modal-report-content-body'); body.innerHTML = '';
+  const allowed = parseFloat(document.getElementById('vacation-allowed-bank').value) || 30;
   const vacTaken  = vacationLoggedDaysArrayCache.filter(i => i.type === 'vacation').length;
   const sickTaken = vacationLoggedDaysArrayCache.filter(i => i.type === 'sick').length;
   const remaining = allowed - vacTaken;
@@ -714,11 +674,8 @@ async function handlePasswordChange() {
     const cred = firebase.auth.EmailAuthProvider.credential(user.email, cur);
     await user.reauthenticateWithCredential(cred);
     await user.updatePassword(nw);
-    msg.style.color = '#16a34a';
-    msg.textContent = activeLanguageGlobal==='de'?'✓ Kennwort geändert.':'✓ Password updated.';
-    document.getElementById('pin-current').value = '';
-    document.getElementById('pin-new').value     = '';
-    document.getElementById('pin-confirm').value = '';
+    msg.style.color = '#16a34a'; msg.textContent = activeLanguageGlobal==='de'?'✓ Kennwort geändert.':'✓ Password updated.';
+    document.getElementById('pin-current').value = ''; document.getElementById('pin-new').value = ''; document.getElementById('pin-confirm').value = '';
   } catch(err) {
     msg.style.color = '#dc2626';
     msg.textContent = (err.code==='auth/wrong-password'||err.code==='auth/invalid-credential')
@@ -729,7 +686,7 @@ async function handlePasswordChange() {
 
 function showProjectSuggestions(query) {
   const list = document.getElementById('project-autocomplete-list'); if (!list) return;
-  const q    = query.trim().toLowerCase();
+  const q = query.trim().toLowerCase();
   if (!q) { list.style.display = 'none'; return; }
   const names = [...new Set(globalLoggedSessionsDatabaseMock.filter(r => r.type==='work' && r.project && r.project.toLowerCase().includes(q)).map(r => r.project))].slice(0,8);
   if (!names.length) { list.style.display = 'none'; return; }
@@ -740,8 +697,7 @@ function pickProjectSuggestion(name) { const inp = document.getElementById('log-
 function hideProjectSuggestions()    { const list = document.getElementById('project-autocomplete-list'); if(list) list.style.display='none'; }
 
 function showConfirmModal(message, onConfirm) {
-  const existing = document.getElementById('custom-confirm-backdrop');
-  if (existing) existing.remove();
+  const existing = document.getElementById('custom-confirm-backdrop'); if (existing) existing.remove();
   const backdrop = document.createElement('div');
   backdrop.id = 'custom-confirm-backdrop';
   backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(3,6,15,0.75);backdrop-filter:blur(12px) saturate(140%);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
