@@ -4,17 +4,16 @@ async function persistUserDataNow() {
   if (!authenticatedUserGlobal || authenticatedUserRoleGlobal === 'admin') return;
   try {
     const docRef = db.collection('userProfiles').doc(authenticatedUserGlobal);
-    const snap = await docRef.get();
-    const existing = snap.exists ? snap.data() : {};
     const vacAllowedVal = parseFloat(document.getElementById('vacation-allowed-bank')?.value);
     const dataToSave = {
       name: localStorage.getItem('schuermann_current_user') || authenticatedUserGlobal,
       updatedAt: Date.now(),
-      vacationAllowed: isNaN(vacAllowedVal) ? 30 : vacAllowedVal
+      vacationAllowed: isNaN(vacAllowedVal) ? 30 : vacAllowedVal,
+      // Fix #1: Always save arrays — even when empty (so deletions persist)
+      workSessions: globalLoggedSessionsDatabaseMock,
+      leaveDays:    vacationLoggedDaysArrayCache,
+      trash:        recentlyDeletedItemsBinCache
     };
-    if (globalLoggedSessionsDatabaseMock.length > 0 || !existing.workSessions) dataToSave.workSessions = globalLoggedSessionsDatabaseMock;
-    if (vacationLoggedDaysArrayCache.length > 0 || !existing.leaveDays) dataToSave.leaveDays = vacationLoggedDaysArrayCache;
-    if (recentlyDeletedItemsBinCache.length > 0 || !existing.trash) dataToSave.trash = recentlyDeletedItemsBinCache;
     await docRef.set(dataToSave, { merge: true });
   } catch (err) {
     console.error('Save failed:', err);
