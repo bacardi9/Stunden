@@ -1,9 +1,7 @@
 // ══════════════════════════════════════════════════════════════════
 //  LANDING PAGE — Modal controls, Login flow, Register flow
-//  Loaded LAST so all app globals are available
 // ══════════════════════════════════════════════════════════════════
 
-// ── Modal helpers ──────────────────────────────────────────────────
 function openLoginModal() {
   document.getElementById('modal-login-backdrop').classList.add('open');
   setTimeout(function() { var el = document.getElementById('modal-username'); if (el) el.focus(); }, 100);
@@ -24,7 +22,6 @@ function closeRegisterModal() {
   var m2 = document.getElementById('reg-step2-msg'); if (m2) m2.textContent = '';
 }
 
-// ── Register step navigation ────────────────────────────────────────
 function regGoToStep1() {
   document.getElementById('reg-panel-1').classList.add('active');
   document.getElementById('reg-panel-2').classList.remove('active');
@@ -51,7 +48,7 @@ function regGoToStep2() {
 }
 function showRegMsg(el, text) { el.textContent = text; el.className = 'modal-msg error'; }
 
-// ── Register & Pay ───────────────────────────────────────────────────
+// ── Register & Pay ────────────────────────────────────────────────
 async function handleRegisterAndPay() {
   var btn     = document.getElementById('reg-pay-btn');
   var msg     = document.getElementById('reg-step2-msg');
@@ -88,7 +85,7 @@ async function handleRegisterAndPay() {
     setTimeout(function() {
       closeRegisterModal();
       _showApp();
-    }, 1000);
+    }, 800);
   } catch(err) {
     console.error(err);
     var errMsg = 'Fehler beim Erstellen des Kontos.';
@@ -100,15 +97,15 @@ async function handleRegisterAndPay() {
   }
 }
 
-// ── Core: hide landing & launch app ─────────────────────────────────
-// Single place that hides landing + calls launchSessionUI.
-// All login paths call this instead of duplicating the logic.
+// ── Core show-app helper ──────────────────────────────────────────
+// Hides landing, ensures all views are hidden, then calls launchSessionUI.
+// Uses a small retry loop so mobile Firebase auth state settles first.
 function _showApp() {
-  // 1. Hide landing
+  // Hide landing page immediately
   var lp = document.getElementById('landing-page');
   if (lp) lp.style.display = 'none';
 
-  // 2. Make sure all three shell views start hidden — launchSessionUI picks the right one
+  // Hide all shell views — launchSessionUI will show the correct one
   var appView   = document.getElementById('app-view');
   var adminView = document.getElementById('admin-full-view');
   var loginView = document.getElementById('login-view');
@@ -116,11 +113,37 @@ function _showApp() {
   if (adminView) adminView.style.display = 'none';
   if (loginView) loginView.style.display = 'none';
 
-  // 3. Launch — this sets the correct view to block
-  launchSessionUI();
+  // On mobile Firebase sometimes needs a tick to stabilise auth state.
+  // Wait for auth.currentUser to be available, then launch (max 3s).
+  var attempts = 0;
+  var maxAttempts = 30; // 30 × 100ms = 3s
+  var tryLaunch = function() {
+    attempts++;
+    // If we have our global uid set, go straight away
+    if (authenticatedUserGlobal) {
+      launchSessionUI();
+      return;
+    }
+    // Fallback: check Firebase current user
+    var firebaseUser = (typeof auth !== 'undefined') ? auth.currentUser : null;
+    if (firebaseUser) {
+      authenticatedUserGlobal = firebaseUser.uid;
+      launchSessionUI();
+      return;
+    }
+    // Still waiting — retry
+    if (attempts < maxAttempts) {
+      setTimeout(tryLaunch, 100);
+    } else {
+      // Give up waiting and try anyway
+      console.warn('_showApp: auth not ready after 3s, launching anyway');
+      launchSessionUI();
+    }
+  };
+  setTimeout(tryLaunch, 80);
 }
 
-// ── Login via modal ──────────────────────────────────────────────────
+// ── Login via modal ───────────────────────────────────────────────
 async function handleModalLogin(e) {
   e.preventDefault();
   var rawName = document.getElementById('modal-username').value.trim().replace(/\s+/g, ' ');
@@ -131,7 +154,7 @@ async function handleModalLogin(e) {
   msg.textContent = 'Verbindung wird hergestellt…';
   msg.className   = 'modal-msg success';
   btn.disabled    = true;
-  btn.textContent = 'Anmelden…';
+  btn.innerHTML   = '<i class="fa-solid fa-circle-notch fa-spin" style="margin-right:8px;"></i>Anmelden…';
 
   try {
     var loginKey = rawName.toLowerCase()
@@ -142,20 +165,26 @@ async function handleModalLogin(e) {
     var email = loginKey + '@sch.local';
     var cred  = await auth.signInWithEmailAndPassword(email, code);
 
+    // Set globals immediately so _showApp can find them
     authenticatedUserGlobal = cred.user.uid;
 
     var displayName = rawName.split(' ').map(function(w) {
       return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
     }).join(' ');
 
+    // Load profile in parallel — don't block the login on slow mobile connections
     var isAdminFlag = false, companyName = '';
     try {
       var snap = await db.collection('userProfiles').doc(cred.user.uid).get();
       if (snap.exists) {
         isAdminFlag = snap.data().isAdmin === true;
         companyName = snap.data().companyName || '';
+        // Pick up the stored display name if available
+        if (snap.data().name) displayName = snap.data().name;
       }
-    } catch(e) {}
+    } catch(profileErr) {
+      console.warn('Profile load error (non-fatal):', profileErr);
+    }
 
     authenticatedUserRoleGlobal = isAdminFlag ? 'admin' : 'user';
     localStorage.setItem('schuermann_auth_user',    cred.user.uid);
@@ -163,36 +192,43 @@ async function handleModalLogin(e) {
     localStorage.setItem('schuermann_current_user', displayName);
     if (companyName) localStorage.setItem('schuermann_company_name', companyName);
 
-    await db.collection('userProfiles').doc(cred.user.uid).set({
+    // Fire-and-forget lastLogin update — don't await, keeps mobile fast
+    db.collection('userProfiles').doc(cred.user.uid).set({
       name: displayName, uid: cred.user.uid,
       lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+    }, { merge: true }).catch(function(e){ console.warn('lastLogin update failed:', e); });
 
     msg.textContent = 'Willkommen, ' + displayName + '!';
     msg.className   = 'modal-msg success';
 
-    // Close modal first, THEN show the app after a short tick
-    closeLoginModal();
-    setTimeout(function() { _showApp(); }, 300);
+    // Close modal, tiny pause so the success message is visible, then show app
+    setTimeout(function() {
+      closeLoginModal();
+      _showApp();
+    }, 400);
 
   } catch(err) {
-    console.error(err);
-    msg.textContent = 'Mitarbeiter nicht gefunden oder falsches Kennwort.';
+    console.error('Login error:', err);
+    var errText = 'Mitarbeiter nicht gefunden oder falsches Kennwort.';
+    if (err.code === 'auth/network-request-failed') errText = 'Kein Internet. Bitte Verbindung prüfen.';
+    if (err.code === 'auth/too-many-requests')      errText = 'Zu viele Versuche. Bitte kurz warten.';
+    msg.textContent = errText;
     msg.className   = 'modal-msg error';
     btn.disabled    = false;
     btn.innerHTML   = '<i class="fa-solid fa-right-to-bracket" style="margin-right:8px;"></i>Anmelden';
   }
 }
 
-// ── Hide landing, reveal app shell (kept for backwards-compat) ────────
+// ── Backwards-compat stub ─────────────────────────────────────────
 function hideLandingShowApp() {
   var lp = document.getElementById('landing-page');
   if (lp) lp.style.display = 'none';
 }
 
-// ── Patch sign-out to return to landing ──────────────────────────────
+// ── Sign-out patches ──────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
 
+  // Patch user sign-out
   var _origSignOut = window.handleSecureSignOutRequest;
   window.handleSecureSignOutRequest = function() {
     if (typeof toggleSidebarDrawer === 'function') toggleSidebarDrawer(false);
@@ -226,6 +262,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   };
 
+  // Patch admin sign-out
   var _origAdminSignOut = window.handleAdminSignOut;
   if (typeof _origAdminSignOut === 'function') {
     window.handleAdminSignOut = function() {
@@ -249,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// ── ESC closes modals ─────────────────────────────────────────────────
+// ── ESC closes modals ─────────────────────────────────────────────
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') { closeLoginModal(); closeRegisterModal(); }
 });
