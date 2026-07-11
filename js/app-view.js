@@ -70,7 +70,10 @@ document.write(`
         <div class="view-title" id="lbl-log-title">Arbeitszeit erfassen</div>
         <div class="app-card">
           <form id="shift-submission-form" onsubmit="handleNewRecordSubmission(event)">
-            <div class="form-group"><label id="lbl-form-date">Buchungstag auswählen</label><input type="date" id="log-date-picker" required></div>
+            <div class="form-group">
+              <label id="lbl-form-date">Buchungstag auswählen</label>
+              <input type="text" id="log-date-picker" class="flatpickr-input" readonly required>
+            </div>
             <div class="form-group"><label id="lbl-form-project">Baustelle/Kunde</label><div class="autocomplete-wrapper"><input type="text" id="log-project-name" placeholder="Baustelle oder Kundenname eintragen" autocomplete="off" required oninput="showProjectSuggestions(this.value)" onblur="setTimeout(()=>hideProjectSuggestions(),180)"><div class="autocomplete-list" id="project-autocomplete-list"></div></div></div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group"><label id="lbl-form-start">Arbeitsbeginn (Kommen)</label><select id="log-start-time"></select></div>
@@ -86,7 +89,7 @@ document.write(`
             <div><h4 style="font-size:15px;font-weight:700;color:var(--text-main);margin:0;">Berufsschule</h4><p style="font-size:12px;color:var(--text-muted);margin:2px 0 0;">Für Auszubildende – Schultag ohne Arbeitszeit</p></div>
             <i class="fa-solid fa-graduation-cap" style="font-size:22px;color:var(--primary-blue);opacity:0.7;"></i>
           </div>
-          <div class="form-group"><label>Schultag auswählen</label><input type="date" id="schule-date-picker" style="width:100%;"></div>
+          <div class="form-group"><label>Schultag auswählen</label><input type="text" id="schule-date-picker" class="flatpickr-input" readonly style="width:100%;"></div>
           <button type="button" class="primary-btn" style="background:var(--primary-blue);" onclick="handleSchuleSubmission()"><i class="fa-solid fa-plus" style="margin-right:6px;"></i>Schultag buchen</button>
         </div>
       </div>
@@ -101,8 +104,8 @@ document.write(`
         <div class="app-card">
           <form id="vacation-entry-form" onsubmit="handleVacationDayLogSubmission(event)">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="form-group"><label id="lbl-vac-from-date">Von</label><input type="date" id="vacation-from-date-input" required></div>
-              <div class="form-group"><label id="lbl-vac-to-date">Bis</label><input type="date" id="vacation-to-date-input" required></div>
+              <div class="form-group"><label id="lbl-vac-from-date">Von</label><input type="text" id="vacation-from-date-input" class="flatpickr-input" readonly required></div>
+              <div class="form-group"><label id="lbl-vac-to-date">Bis</label><input type="text" id="vacation-to-date-input" class="flatpickr-input" readonly required></div>
             </div>
             <div class="form-group"><label id="leave-context-label">Art der Freistellung / Urlaubsgrund</label><input type="text" id="vacation-notes-input" placeholder="Erholungsurlaub gesetzlich/vertraglich" required></div>
             <button type="submit" id="leave-submit-btn" class="primary-btn" style="background:#3b82f6;margin-bottom:14px;">Urlaubszeit einbuchen</button>
@@ -124,9 +127,9 @@ document.write(`
         </div>
         <div style="display:flex;gap:8px;align-items:center;margin:8px 0 16px;padding:12px 14px;background:rgba(255,255,255,0.7);border-radius:12px;flex-wrap:wrap;border:1px solid rgba(0,0,0,0.05);backdrop-filter:blur(8px);">
           <label style="font-size:12px;font-weight:700;color:#475569;">Von:</label>
-          <input type="date" id="export-start-date" style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;">
+          <input type="text" id="export-start-date" class="flatpickr-input" readonly style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;">
           <label style="font-size:12px;font-weight:700;color:#475569;">Bis:</label>
-          <input type="date" id="export-end-date" style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;">
+          <input type="text" id="export-end-date" class="flatpickr-input" readonly style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;">
           <span style="font-size:11px;color:#94a3b8;margin-left:auto;font-weight:500;">Standard: 20. bis 20.</span>
         </div>
         <div id="quick-stats-strip"></div>
