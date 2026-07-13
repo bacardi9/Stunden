@@ -18,6 +18,348 @@ function hideSkeletonLoader(containerId) {
   if (skel) skel.remove();
 }
 
+// ══════════════════════════════════════════════════════════════════
+// FEATURE 17b: Niedersachsen Public Holidays
+// ══════════════════════════════════════════════════════════════════
+
+function getEasterSunday(year) {
+  // Anonymous Gregorian algorithm
+  const a = year % 19, b = Math.floor(year/100), c = year % 100;
+  const d = Math.floor(b/4), e = b % 4, f = Math.floor((b+8)/25);
+  const g = Math.floor((b-f+1)/3), h = (19*a+b-d-g+15) % 30;
+  const i = Math.floor(c/4), k = c % 4;
+  const l = (32+2*e+2*i-h-k) % 7;
+  const m = Math.floor((a+11*h+22*l)/451);
+  const month = Math.floor((h+l-7*m+114)/31);
+  const day   = ((h+l-7*m+114) % 31) + 1;
+  return new Date(year, month-1, day);
+}
+
+function getNiedersachsenHolidays(year) {
+  const easter = getEasterSunday(year);
+  const add = (d, days) => { const r = new Date(d); r.setDate(r.getDate()+days); return r; };
+  const fmt  = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+
+  const holidays = {
+    [fmt(new Date(year,0,1))]:   'Neujahr',
+    [fmt(add(easter,-2))]:       'Karfreitag',
+    [fmt(easter)]:               'Ostersonntag',
+    [fmt(add(easter,1))]:        'Ostermontag',
+    [fmt(new Date(year,4,1))]:   'Tag der Arbeit',
+    [fmt(add(easter,39))]:       'Christi Himmelfahrt',
+    [fmt(add(easter,49))]:       'Pfingstsonntag',
+    [fmt(add(easter,50))]:       'Pfingstmontag',
+    [fmt(new Date(year,9,3))]:   'Tag der Deutschen Einheit',
+    [fmt(new Date(year,9,31))]:  'Reformationstag',        // Niedersachsen-specific
+    [fmt(new Date(year,11,25))]: '1. Weihnachtstag',
+    [fmt(new Date(year,11,26))]: '2. Weihnachtstag',
+  };
+  return holidays;
+}
+
+function isNiedersachsenHoliday(dmyKey) {
+  try {
+    const [d,m,y] = dmyKey.split('/').map(Number);
+    return getNiedersachsenHolidays(y)[dmyKey] || null;
+  } catch(e) { return null; }
+}
+
+// Inject holiday awareness into getMissingDays so holidays are excluded
+const _origGetMissingDays = window.getMissingDays;
+window.getMissingDays = function(def) {
+  if (typeof _origGetMissingDays !== 'function') return [];
+  return _origGetMissingDays(def).filter(d => !isNiedersachsenHoliday(d.key));
+};
+
+// Show holiday badge on period progress bar
+function injectHolidayBadges() {
+  const def = (typeof getDefault20to20Period === 'function') ? getDefault20to20Period() : null;
+  if (!def) return;
+  const badges = [];
+  const cursor = new Date(def.start); cursor.setHours(0,0,0,0);
+  const end    = new Date(def.end);   end.setHours(23,59,59,999);
+  const today  = new Date(); today.setHours(0,0,0,0);
+  while (cursor <= end) {
+    const dd  = String(cursor.getDate()).padStart(2,'0');
+    const mm  = String(cursor.getMonth()+1).padStart(2,'0');
+    const yy  = cursor.getFullYear();
+    const key = `${dd}/${mm}/${yy}`;
+    const name = isNiedersachsenHoliday(key);
+    if (name) {
+      const isPast = cursor < today;
+      badges.push(`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);color:#b45309;padding:3px 9px;border-radius:99px;font-size:10px;font-weight:700;margin:3px;opacity:${isPast?0.5:1};">
+        <i class="fa-solid fa-church" style="font-size:9px;"></i>${cursor.toLocaleDateString('de-DE',{day:'2-digit',month:'short'})} · ${name}
+      </span>`);
+    }
+    cursor.setDate(cursor.getDate()+1);
+  }
+  if (!badges.length) return;
+  ['period-progress-bar-card','period-progress-bar-card-hist'].forEach(id => {
+    const card = document.getElementById(id);
+    if (!card) return;
+    if (card.querySelector('.holiday-badges-row')) return; // already injected
+    const row = document.createElement('div');
+    row.className = 'holiday-badges-row';
+    row.style.cssText = 'margin-top:10px;border-top:1px solid rgba(0,0,0,0.06);padding-top:8px;';
+    row.innerHTML = `<div style="font-size:9px;font-weight:800;color:#b45309;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;"><i class="fa-solid fa-star-and-crescent" style="margin-right:4px;"></i>Feiertage (Niedersachsen)</div>${badges.join('')}`;
+    card.appendChild(row);
+  });
+}
+
+// Hook into renderPeriodProgressBar
+document.addEventListener('DOMContentLoaded', function() {
+  const _origRender = window.renderPeriodProgressBar;
+  if (typeof _origRender === 'function') {
+    window.renderPeriodProgressBar = function() {
+      _origRender.apply(this, arguments);
+      setTimeout(injectHolidayBadges, 60);
+    };
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+// FEATURE 25: Daily Reminder — "Hast du heute schon gebucht?"
+// ══════════════════════════════════════════════════════════════════
+
+const DAILY_REMINDER_KEY = 'sch_reminder_dismissed';
+
+function checkAndShowDailyReminder() {
+  // Only for logged-in users in app-view
+  if (!authenticatedUserGlobal || authenticatedUserRoleGlobal === 'admin') return;
+  if (document.getElementById('daily-reminder-banner')) return;
+
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0=Sun, 6=Sat
+  if (dayOfWeek === 0 || dayOfWeek === 6) return; // No reminder on weekends
+
+  const todayKey = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
+
+  // Check if dismissed today
+  const dismissed = localStorage.getItem(DAILY_REMINDER_KEY);
+  if (dismissed === todayKey) return;
+
+  // Check if holiday
+  if (isNiedersachsenHoliday(todayKey)) return;
+
+  // Check if already logged today
+  const hasEntry = (globalLoggedSessionsDatabaseMock || []).some(s => s.date === todayKey)
+                || (vacationLoggedDaysArrayCache || []).some(s => s.date === todayKey);
+  if (hasEntry) return;
+
+  // Only show after 12:00 (noon)
+  if (today.getHours() < 12) {
+    // Schedule for noon
+    const msUntilNoon = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12, 0, 0) - today;
+    if (msUntilNoon > 0) setTimeout(checkAndShowDailyReminder, msUntilNoon);
+    return;
+  }
+
+  showDailyReminderBanner(todayKey, today);
+}
+
+function showDailyReminderBanner(todayKey, today) {
+  const appView = document.getElementById('app-view');
+  if (!appView) return;
+
+  const existing = document.getElementById('daily-reminder-banner');
+  if (existing) existing.remove();
+
+  const dayName = today.toLocaleDateString('de-DE', { weekday:'long' });
+  const dateStr = today.toLocaleDateString('de-DE', { day:'2-digit', month:'long' });
+
+  const banner = document.createElement('div');
+  banner.id = 'daily-reminder-banner';
+  banner.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+      <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;flex-shrink:0;animation:bellRing 1s ease-in-out 2;">
+        <i class="fa-solid fa-bell" style="color:#fff;font-size:16px;"></i>
+      </div>
+      <div style="min-width:0;">
+        <div style="font-size:13px;font-weight:800;color:#92400e;line-height:1.2;">Hast du heute schon gebucht? ⏰</div>
+        <div style="font-size:11px;color:#b45309;margin-top:2px;font-weight:500;">${dayName}, ${dateStr} · Kein Eintrag gefunden</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0;">
+      <button onclick="dismissReminderAndLog()" style="background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">
+        <i class="fa-solid fa-pen-to-square" style="margin-right:4px;"></i>Jetzt buchen
+      </button>
+      <button onclick="dismissDailyReminder('${todayKey}')" style="background:rgba(180,83,9,0.12);border:1px solid rgba(180,83,9,0.2);color:#b45309;padding:8px;border-radius:8px;font-size:13px;cursor:pointer;">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>`;
+
+  banner.style.cssText = `
+    position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(120px);
+    background:linear-gradient(135deg,rgba(254,243,199,0.98),rgba(253,230,138,0.95));
+    backdrop-filter:blur(16px);
+    border:1px solid rgba(245,158,11,0.4);
+    border-radius:16px; padding:14px 16px;
+    box-shadow:0 16px 48px rgba(180,83,9,0.25),0 4px 12px rgba(0,0,0,0.1);
+    z-index:8800; display:flex; align-items:center; gap:12px;
+    width:calc(100% - 32px); max-width:480px;
+    transition:transform 0.4s cubic-bezier(0.16,1,0.3,1);`;
+
+  document.body.appendChild(banner);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      banner.style.transform = 'translateX(-50%) translateY(0)';
+    });
+  });
+
+  // Auto-dismiss after 12 seconds
+  setTimeout(() => dismissDailyReminder(todayKey, true), 12000);
+}
+
+function dismissDailyReminder(todayKey, silent) {
+  localStorage.setItem(DAILY_REMINDER_KEY, todayKey);
+  const banner = document.getElementById('daily-reminder-banner');
+  if (!banner) return;
+  banner.style.transform = 'translateX(-50%) translateY(120px)';
+  setTimeout(() => banner.remove(), 400);
+  if (!silent) showEnhancedToast('Erinnerung geschlossen. Vergiss nicht zu buchen! 📝', 'info');
+}
+
+function dismissReminderAndLog() {
+  const todayKey = `${String(new Date().getDate()).padStart(2,'0')}/${String(new Date().getMonth()+1).padStart(2,'0')}/${new Date().getFullYear()}`;
+  localStorage.setItem(DAILY_REMINDER_KEY, todayKey);
+  const banner = document.getElementById('daily-reminder-banner');
+  if (banner) { banner.style.transform='translateX(-50%) translateY(120px)'; setTimeout(()=>banner.remove(),400); }
+  if (typeof switchActiveView === 'function') {
+    switchActiveView('log-work', document.querySelector('[onclick*="switchActiveView(\'log-work\'"]'));
+  }
+}
+
+// Re-check after a new entry is saved
+const _origPersist = window.persistUserData;
+window.persistUserData = function() {
+  if (typeof _origPersist === 'function') _origPersist.apply(this, arguments);
+  // Remove reminder if user just logged today
+  const banner = document.getElementById('daily-reminder-banner');
+  if (!banner) return;
+  const today = new Date();
+  const todayKey = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
+  const hasEntry = (globalLoggedSessionsDatabaseMock||[]).some(s=>s.date===todayKey)
+                || (vacationLoggedDaysArrayCache||[]).some(s=>s.date===todayKey);
+  if (hasEntry) {
+    banner.style.transform='translateX(-50%) translateY(120px)';
+    setTimeout(()=>banner.remove(),400);
+    showEnhancedToast('✓ Heute gebucht — Erinnerung erledigt! 🎉','success');
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════
+// FEATURE 35: Smart Duplicate Detection
+// ══════════════════════════════════════════════════════════════════
+
+function checkForDuplicateEntry(date, startTime, endTime, project) {
+  if (!date || !startTime || !endTime) return null;
+  const [sh,sm] = startTime.split(':').map(Number);
+  const [eh,em] = endTime.split(':').map(Number);
+  const newStart = sh*60+sm, newEnd = eh*60+em;
+
+  for (const rec of (globalLoggedSessionsDatabaseMock||[])) {
+    if (rec.type !== 'work' || rec.date !== date) continue;
+
+    // Exact duplicate
+    if (rec.startTime === startTime && rec.endTime === endTime) {
+      return { type:'exact', rec };
+    }
+
+    // Overlap
+    if (rec.startTime && rec.endTime) {
+      const [rsh,rsm] = rec.startTime.split(':').map(Number);
+      const [reh,rem] = rec.endTime.split(':').map(Number);
+      const rStart = rsh*60+rsm, rEnd = reh*60+rem;
+      if (newStart < rEnd && newEnd > rStart) {
+        return { type:'overlap', rec };
+      }
+    }
+
+    // Same project same day (near duplicate)
+    if (project && rec.project && rec.project.toLowerCase().trim() === project.toLowerCase().trim()) {
+      return { type:'same-project', rec };
+    }
+  }
+  return null;
+}
+
+function showDuplicateWarning(dupResult, onProceed, onCancel) {
+  const existing = document.getElementById('duplicate-warning-modal');
+  if (existing) existing.remove();
+
+  const messages = {
+    exact:        { icon:'fa-copy',                color:'#ef4444', title:'Exakter Duplikat erkannt!',     desc:`Für diesen Tag gibt es bereits einen identischen Eintrag (${dupResult.rec.startTime}–${dupResult.rec.endTime}).` },
+    overlap:      { icon:'fa-triangle-exclamation', color:'#f59e0b', title:'Zeitüberschneidung erkannt!',   desc:`Dieser Eintrag überschneidet sich mit: ${dupResult.rec.project} (${dupResult.rec.startTime}–${dupResult.rec.endTime}).` },
+    'same-project':{ icon:'fa-clone',               color:'#3b82f6', title:'Gleiche Baustelle heute schon', desc:`Du hast heute schon einen Eintrag für "${dupResult.rec.project}" (${dupResult.rec.startTime}–${dupResult.rec.endTime}).` },
+  };
+  const m = messages[dupResult.type] || messages.exact;
+
+  const modal = document.createElement('div');
+  modal.id = 'duplicate-warning-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(5,10,25,0.75);backdrop-filter:blur(12px);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px;animation:modalEntrance 0.25s ease;';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:20px;max-width:380px;width:100%;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,0.3);">
+      <div style="background:linear-gradient(135deg,${m.color}18,${m.color}08);border-bottom:2px solid ${m.color}30;padding:20px 22px;display:flex;align-items:center;gap:12px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:${m.color}18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="fa-solid ${m.icon}" style="color:${m.color};font-size:18px;"></i>
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:#0f172a;">${m.title}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:3px;line-height:1.4;">${m.desc}</div>
+        </div>
+      </div>
+      <div style="padding:18px 22px;">
+        <div style="background:#f8fafc;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#475569;line-height:1.5;">
+          <i class="fa-solid fa-circle-info" style="color:#3b82f6;margin-right:6px;"></i>
+          Möchtest du den Eintrag <strong>trotzdem speichern</strong> oder abbrechen und korrigieren?
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button onclick="document.getElementById('duplicate-warning-modal').remove();if(typeof _dupCancel==='function')_dupCancel();"
+            style="flex:1;background:#f1f5f9;border:1.5px solid #e2e8f0;color:#475569;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">
+            <i class="fa-solid fa-pen" style="margin-right:6px;"></i>Korrigieren
+          </button>
+          <button onclick="document.getElementById('duplicate-warning-modal').remove();if(typeof _dupProceed==='function')_dupProceed();"
+            style="flex:1;background:${m.color};border:none;color:#fff;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">
+            <i class="fa-solid fa-floppy-disk" style="margin-right:6px;"></i>Trotzdem speichern
+          </button>
+        </div>
+      </div>
+    </div>`;
+  window._dupProceed = onProceed;
+  window._dupCancel  = onCancel;
+  document.body.appendChild(modal);
+}
+
+// Patch handleNewRecordSubmission to check for duplicates first
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('shift-submission-form');
+  if (!form) return;
+  // Remove old submit handler and add new one with duplicate check
+  const newHandler = function(e) {
+    e.preventDefault();
+    const date    = typeof isoToDMY==='function' ? isoToDMY(document.getElementById('log-date-picker')?.value) : '';
+    const project = document.getElementById('log-project-name')?.value.trim();
+    const start   = document.getElementById('log-start-time')?.value;
+    const end     = document.getElementById('log-end-time')?.value;
+    if (!date || !project || !start || !end) { handleNewRecordSubmission(e); return; }
+
+    const dup = checkForDuplicateEntry(date, start, end, project);
+    if (dup) {
+      showDuplicateWarning(
+        dup,
+        () => { handleNewRecordSubmission({ preventDefault:()=>{} }); }, // proceed
+        () => {}  // cancel — user stays on form
+      );
+    } else {
+      handleNewRecordSubmission(e);
+    }
+  };
+  form.removeEventListener('submit', form._dupHandler);
+  form._dupHandler = newHandler;
+  form.addEventListener('submit', newHandler);
+});
+
+
 // ── INJECT ALL CSS ────────────────────────────────────────────────
 (function injectAllCSS() {
   const s = document.createElement('style');
@@ -233,6 +575,23 @@ function hideSkeletonLoader(containerId) {
     .ripple-container { position:relative; overflow:hidden; }
     .ripple-effect { position:absolute; border-radius:50%; background:rgba(14,165,233,0.25); transform:scale(0); animation:rippleAnim 0.5s linear; pointer-events:none; }
     @keyframes rippleAnim { to { transform:scale(4); opacity:0; } }
+
+    /* ── DAILY REMINDER BANNER ── */
+    @keyframes bellRing {
+      0%,100%{transform:rotate(0)} 20%{transform:rotate(-15deg)} 40%{transform:rotate(15deg)}
+      60%{transform:rotate(-10deg)} 80%{transform:rotate(10deg)}
+    }
+
+    /* ── HOLIDAY BADGES ── */
+    .holiday-badges-row { animation:slideInUp 0.25s ease; }
+    body.dark-mode .holiday-badges-row span {
+      background:rgba(245,158,11,0.12) !important;
+      border-color:rgba(245,158,11,0.2) !important;
+      color:#fbbf24 !important;
+    }
+
+    /* ── DUPLICATE MODAL ── */
+    @keyframes modalEntrance { from{opacity:0;transform:scale(0.95) translateY(-12px)} to{opacity:1;transform:scale(1) translateY(0)} }
   `;
   document.head.appendChild(s);
 })();
@@ -337,4 +696,48 @@ function updateStreakCard() {
   if(streak>0&&streak%5===0) triggerConfetti();
 }
 
-// باقي file unchanged
+// ══════════════════════════════════════════════════════════════════
+// Start daily reminder check after session loads
+// ══════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+  // Hook into launchSessionUI completion
+  const _origLaunch = window.launchSessionUI;
+  if (typeof _origLaunch === 'function') {
+    window.launchSessionUI = async function() {
+      await _origLaunch.apply(this, arguments);
+      setTimeout(checkAndShowDailyReminder, 3000); // 3s after login
+    };
+  }
+
+  const orig = window.runGlobalApplicationMetricsEngine;
+  if (typeof orig === 'function') {
+    window.runGlobalApplicationMetricsEngine = function() {
+      const gBefore=document.getElementById('dash-gross-hours')?.textContent;
+      const oBefore=document.getElementById('dash-overtime-hours')?.textContent;
+      orig.apply(this, arguments);
+      const grossEl=document.getElementById('dash-gross-hours');
+      const otEl=document.getElementById('dash-overtime-hours');
+      if(grossEl && grossEl.textContent!==gBefore) animateCountUp(grossEl, grossEl.textContent);
+      if(otEl    && otEl.textContent!==oBefore)    animateCountUp(otEl,    otEl.textContent);
+      renderQuickStatsStrip();
+      renderPeriodProgressBar();
+      updateNavBadge();
+    };
+  }
+});
+
+function animateCountUp(el, targetStr) {
+  if (!el) return;
+  const match = targetStr.match(/([\+\-]?)([\d\.]+)(.*)/);
+  if (!match) { el.textContent=targetStr; return; }
+  const prefix=match[1], target=parseFloat(match[2]), suffix=match[3];
+  const decimals=(match[2].split('.')[1]||'').length;
+  const duration=700, startTime=performance.now();
+  el.classList.remove('count-animate'); void el.offsetWidth; el.classList.add('count-animate');
+  function step(now) {
+    const pct=Math.min((now-startTime)/duration,1), ease=1-Math.pow(1-pct,3);
+    el.textContent=prefix+(ease*target).toFixed(decimals)+suffix;
+    if(pct<1) requestAnimationFrame(step); else el.textContent=targetStr;
+  }
+  requestAnimationFrame(step);
+}
