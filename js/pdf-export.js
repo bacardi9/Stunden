@@ -12,25 +12,17 @@ function parseDMY(dmy) {
   return new Date(y, m-1, d);
 }
 
-// Draws the Schürmann Gebäude+Energie logo in old style onto the PDF
 function drawSchuermannLogo(doc, x, y, pageWidth, margin) {
-  // Red accent bar on left of logo block
   doc.setFillColor(192, 57, 43);
   doc.rect(x, y, 2.5, 14, 'F');
-
-  // Company name: SCHÜRMANN  (bold, large)
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(15);
   doc.setTextColor(15, 23, 42);
   doc.text('SCHÜRMANN', x + 6, y + 6.5);
-
-  // Subtitle: Gebäude + Energie  (lighter, smaller, same font)
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(80, 80, 80);
   doc.text('Gebäude  +  Energie', x + 6, y + 12);
-
-  // Thin red underline under the whole logo block
   doc.setDrawColor(192, 57, 43);
   doc.setLineWidth(0.4);
   doc.line(x, y + 14.5, x + 68, y + 14.5);
@@ -57,6 +49,14 @@ function triggerPDFExportEngine(useCustom = false) {
   } else { const def = getDefault20to20Period(); periodStart = def.start; periodEnd = def.end; }
 
   const filteredSessions = sessions.filter(s => { const d = parseDMY(s.date); return d >= periodStart && d <= periodEnd; });
+
+  // Filter leave days in period
+  const filteredLeave = (vacationLoggedDaysArrayCache || []).filter(l => {
+    try { const d = parseDMY(l.date); return d >= periodStart && d <= periodEnd; } catch(e) { return false; }
+  });
+  const vacDays  = filteredLeave.filter(l => l.type === 'vacation');
+  const sickDays = filteredLeave.filter(l => l.type === 'sick');
+
   const today = new Date().toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' });
 
   const groups = {};
@@ -72,11 +72,7 @@ function triggerPDFExportEngine(useCustom = false) {
   // ── Header ──
   doc.setFillColor(...primaryRed); doc.rect(0, 0, pageWidth, 3, 'F');
   y = 8;
-
-  // Schürmann logo left side
   drawSchuermannLogo(doc, margin, y, pageWidth, margin);
-
-  // Right side: ARBEITSBERICHT + date
   doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...textDark);
   doc.text('ARBEITSBERICHT', pageWidth - margin, y + 6, {align:'right'});
   doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...textMuted);
@@ -86,34 +82,44 @@ function triggerPDFExportEngine(useCustom = false) {
   doc.setDrawColor(...primaryRed); doc.setLineWidth(0.8); doc.line(margin, y, pageWidth - margin, y);
   y += 8;
 
-  // ── Summary cards: MITARBEITER | EINTRÄGE | GESAMTARBEITSZEIT (NO vacation cards) ──
-  const cardWidth = (pageWidth - margin*2 - 4) / 3, cardHeight = 18;
-  [{label:'MITARBEITER', value:user, accent:false},
-   {label:'EINTRÄGE',    value:filteredSessions.length.toString(), accent:false},
-   {label:'GESAMTARBEITSZEIT', value:totalNet.toFixed(2)+' h', accent:true}
-  ].forEach((card, i) => {
-    const x = margin + i*(cardWidth+2);
+  // ── Summary cards: MITARBEITER | ARBEITSTAGE | GESAMTARBEITSZEIT | URLAUB | KRANKTAGE ──
+  const cards = [
+    {label:'MITARBEITER',      value: user,                   accent: false},
+    {label:'ARBEITSTAGE',      value: filteredSessions.filter(s=>s.type==='work').length + ' Einträge', accent: false},
+    {label:'GESAMTARBEITSZEIT',value: totalNet.toFixed(2)+' h', accent: true},
+    {label:'URLAUBSTAGE',      value: vacDays.length + ' Tage',  accent: false, color:[59,130,246]},
+    {label:'KRANKTAGE',        value: sickDays.length + ' Tage', accent: false, color:[220,38,38]},
+  ];
+  const cardW = (pageWidth - margin*2 - (cards.length-1)*2) / cards.length;
+  const cardH = 18;
+  cards.forEach((card, i) => {
+    const x = margin + i*(cardW+2);
     doc.setFillColor(...(card.accent ? darkSlate : lightGray));
-    doc.roundedRect(x, y, cardWidth, cardHeight, 2, 2, 'F');
-    doc.setFillColor(...(card.accent ? primaryRed : darkSlate));
-    doc.rect(x, y, 2, cardHeight, 'F');
-    doc.setFontSize(7); doc.setFont('helvetica','bold');
+    doc.roundedRect(x, y, cardW, cardH, 2, 2, 'F');
+    const accentColor = card.color || (card.accent ? primaryRed : darkSlate);
+    doc.setFillColor(...accentColor);
+    doc.rect(x, y, 2, cardH, 'F');
+    doc.setFontSize(6); doc.setFont('helvetica','bold');
     doc.setTextColor(...(card.accent ? [203,213,225] : textMuted));
-    doc.text(card.label, x+6, y+6);
-    const nameFont = card.label === 'MITARBEITER' && card.value.length > 18 ? 9 : 11;
-    doc.setFontSize(nameFont); doc.setFont('helvetica','bold');
-    doc.setTextColor(...(card.accent ? [255,255,255] : textDark));
-    doc.text(card.value, x+6, y+13);
+    doc.text(card.label, x+5, y+5.5);
+    doc.setFontSize(9); doc.setFont('helvetica','bold');
+    doc.setTextColor(...(card.accent ? [255,255,255] : (card.color || textDark)));
+    doc.text(card.value, x+5, y+13);
   });
-  y += cardHeight + 10;
+  y += cardH + 10;
 
-  // ── Work entries ──
   const fmtDate = (key) => { const [d,m,yr] = key.split('/').map(Number); return new Date(yr,m-1,d).toLocaleDateString('de-DE', {weekday:'long',day:'2-digit',month:'long',year:'numeric'}); };
 
+  // ── Work entries ──
   if (!dateKeys.length) {
     doc.setFontSize(11); doc.setTextColor(...textMuted);
-    doc.text('Keine Arbeitseinträge vorhanden.', pageWidth/2, y+20, {align:'center'});
+    doc.text('Keine Arbeitseinträge vorhanden.', pageWidth/2, y+10, {align:'center'});
+    y += 20;
   } else {
+    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...primaryRed);
+    doc.text('ARBEITSZEIT', margin, y); y += 6;
+    doc.setDrawColor(...borderGray); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth-margin, y); y += 6;
+
     dateKeys.forEach(key => {
       const items = groups[key].slice().sort((a,b) => (a.startTime||'').localeCompare(b.startTime||''));
       let dailyNet = 0, dailyBreak = 0;
@@ -165,6 +171,52 @@ function triggerPDFExportEngine(useCustom = false) {
     });
   }
 
+  // ── Vacation section ──
+  if (vacDays.length > 0) {
+    if (y + 30 > pageHeight - 20) { doc.addPage(); y = margin; doc.setFillColor(...primaryRed); doc.rect(0,0,pageWidth,3,'F'); drawSchuermannLogo(doc, margin, 8, pageWidth, margin); y = 30; }
+    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(59,130,246);
+    doc.text('URLAUBSTAGE', margin, y); y += 6;
+    doc.setDrawColor(...borderGray); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth-margin, y); y += 4;
+    const vacSorted = [...vacDays].sort((a,b) => parseDMY(a.date) - parseDMY(b.date));
+    doc.autoTable({
+      startY: y,
+      head: [['DATUM','GRUND']],
+      body: vacSorted.map(l => [
+        (() => { try { const [d,m,yr]=l.date.split('/').map(Number); return new Date(yr,m-1,d).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'long',year:'numeric'}); } catch(e){ return l.date; } })(),
+        l.notes || 'Erholungsurlaub'
+      ]),
+      margin: {left:margin, right:margin, bottom:15},
+      styles: {fontSize:9, cellPadding:3, textColor:textDark, lineColor:borderGray, lineWidth:0.1},
+      headStyles: {fillColor:[59,130,246], textColor:[255,255,255], fontStyle:'bold', fontSize:8},
+      alternateRowStyles: {fillColor:[239,246,255]},
+      columnStyles: {0:{cellWidth:65}},
+    });
+    y = doc.lastAutoTable.finalY + 10;
+  }
+
+  // ── Sick days section ──
+  if (sickDays.length > 0) {
+    if (y + 30 > pageHeight - 20) { doc.addPage(); y = margin; doc.setFillColor(...primaryRed); doc.rect(0,0,pageWidth,3,'F'); drawSchuermannLogo(doc, margin, 8, pageWidth, margin); y = 30; }
+    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(220,38,38);
+    doc.text('KRANKMELDUNGEN', margin, y); y += 6;
+    doc.setDrawColor(...borderGray); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth-margin, y); y += 4;
+    const sickSorted = [...sickDays].sort((a,b) => parseDMY(a.date) - parseDMY(b.date));
+    doc.autoTable({
+      startY: y,
+      head: [['DATUM','BEMERKUNG']],
+      body: sickSorted.map(l => [
+        (() => { try { const [d,m,yr]=l.date.split('/').map(Number); return new Date(yr,m-1,d).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'long',year:'numeric'}); } catch(e){ return l.date; } })(),
+        l.notes || 'Arbeitsunfähigkeit'
+      ]),
+      margin: {left:margin, right:margin, bottom:15},
+      styles: {fontSize:9, cellPadding:3, textColor:textDark, lineColor:borderGray, lineWidth:0.1},
+      headStyles: {fillColor:[220,38,38], textColor:[255,255,255], fontStyle:'bold', fontSize:8},
+      alternateRowStyles: {fillColor:[254,242,242]},
+      columnStyles: {0:{cellWidth:65}},
+    });
+    y = doc.lastAutoTable.finalY + 10;
+  }
+
   // ── Footer on every page ──
   const totalPages = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
@@ -198,9 +250,9 @@ function generateEmployeePDFDocument(employeeName) {
     catch(e) { return true; }
   });
   const workEntries = empPeriod.filter(r => r.category === 'WORK');
+  const vacEntries  = empPeriod.filter(r => r.category === 'VACATION');
+  const sickEntries = empPeriod.filter(r => r.category === 'SICK');
   const totalHours  = workEntries.reduce((sum,r) => sum+r.hrs, 0);
-  const vacDays     = empPeriod.filter(r => r.category === 'VACATION').length;
-  const sickDays    = empPeriod.filter(r => r.category === 'SICK').length;
   const today       = new Date().toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'});
 
   const workByDate = {};
@@ -210,12 +262,11 @@ function generateEmployeePDFDocument(employeeName) {
     return parse(a) - parse(b);
   });
 
-  const red=[192,57,43], slate=[44,62,80], hdrGray=[236,240,244], sumGray=[248,250,252], txtDark=[15,23,42], txtMuted=[100,116,139], white=[255,255,255];
+  const red=[192,57,43], slate=[44,62,80], hdrGray=[236,240,244], sumGray=[248,250,252], txtDark=[15,23,42], txtMuted=[100,116,139], white=[255,255,255], borderGray=[229,231,235];
   const fmtDate = (key) => { const [d,m,y] = key.split('/').map(Number); return new Date(y,m-1,d).toLocaleDateString('de-DE', {weekday:'short',day:'2-digit',month:'long',year:'numeric'}); };
 
   const drawHeader = () => {
     doc.setFillColor(...red); doc.rect(0,0,pageWidth,3,'F');
-    // Schürmann logo in header
     drawSchuermannLogo(doc, margin, 8, pageWidth, margin);
     doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(...txtDark);
     doc.text('Arbeitsbericht', pageWidth-margin, 13, {align:'right'});
@@ -231,17 +282,36 @@ function generateEmployeePDFDocument(employeeName) {
   doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...txtMuted);
   doc.text(
     workEntries.length+' Arbeitseinträge   |   Gesamtarbeit: '+totalHours.toFixed(2)+' h'
-    +(vacDays?'   |   Urlaub: '+vacDays+' Tag(e)':'')
-    +(sickDays?'   |   Krank: '+sickDays+' Tag(e)':''),
+    +(vacEntries.length?'   |   Urlaub: '+vacEntries.length+' Tag(e)':'')
+    +(sickEntries.length?'   |   Krank: '+sickEntries.length+' Tag(e)':''),
     margin, y
   ); y += 10;
 
-  // ── NO vacation cards on admin employee PDF either — just the work table ──
+  // ── Summary cards ──
+  const summaryCards = [
+    {label:'ARBEITSSTUNDEN', value:totalHours.toFixed(2)+' h', color:slate},
+    {label:'URLAUBSTAGE',    value:vacEntries.length+' Tage',   color:[59,130,246]},
+    {label:'KRANKTAGE',      value:sickEntries.length+' Tage',  color:[220,38,38]},
+  ];
+  const scW = (pageWidth - margin*2 - 4) / summaryCards.length, scH = 16;
+  summaryCards.forEach((c, i) => {
+    const x = margin + i*(scW+2);
+    doc.setFillColor(...sumGray); doc.roundedRect(x, y, scW, scH, 2, 2, 'F');
+    doc.setFillColor(...c.color); doc.rect(x, y, 2, scH, 'F');
+    doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...txtMuted);
+    doc.text(c.label, x+5, y+5.5);
+    doc.setFontSize(10); doc.setTextColor(...c.color);
+    doc.text(c.value, x+5, y+13);
+  });
+  y += scH + 10;
 
-  const tableBody = [], dateHeaderRows = new Set(), dailySumRows = new Set();
-  if (!dateKeys.length) {
-    tableBody.push([{content:'Keine Arbeitseinträge vorhanden.',colSpan:4,styles:{halign:'center',textColor:txtMuted,fontStyle:'italic'}}]);
-  } else {
+  // ── Work table ──
+  if (dateKeys.length) {
+    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...red);
+    doc.text('ARBEITSZEIT', margin, y); y += 6;
+    doc.setDrawColor(...borderGray); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth-margin, y); y += 4;
+
+    const tableBody = [], dateHeaderRows = new Set(), dailySumRows = new Set();
     dateKeys.forEach(key => {
       const items = workByDate[key];
       dateHeaderRows.add(tableBody.length);
@@ -255,34 +325,91 @@ function generateEmployeePDFDocument(employeeName) {
       dailySumRows.add(tableBody.length);
       tableBody.push([{content:'Tagesarbeit: '+dailyWork.toFixed(2)+' h   |   Pause: '+dailyBreak.toFixed(2)+' h',colSpan:4,styles:{}}]);
     });
+
+    doc.autoTable({
+      startY:y, head:[['ZEIT','PROJEKT / BAUSTELLE','AUFGABE','DAUER']], body:tableBody,
+      margin:{left:margin,right:margin}, tableWidth:'auto',
+      styles:{fontSize:9,cellPadding:{top:3,right:5,bottom:3,left:5},textColor:txtDark,lineColor:[220,225,230],lineWidth:0.1,overflow:'linebreak'},
+      headStyles:{fillColor:slate,textColor:white,fontStyle:'bold',fontSize:8,cellPadding:{top:4,right:5,bottom:4,left:5}},
+      alternateRowStyles:{fillColor:[250,251,252]},
+      columnStyles:{0:{cellWidth:34},1:{cellWidth:'auto'},2:{cellWidth:28},3:{cellWidth:22,halign:'right',fontStyle:'bold',textColor:slate}},
+      didParseCell:(data) => {
+        if (data.section !== 'body') return;
+        const ri = data.row.index;
+        if (dateHeaderRows.has(ri)) { data.cell.styles.fillColor=hdrGray; data.cell.styles.textColor=txtDark; data.cell.styles.fontStyle='bold'; data.cell.styles.fontSize=9; data.cell.styles.cellPadding={top:5,right:8,bottom:5,left:8}; }
+        if (dailySumRows.has(ri))   { data.cell.styles.fillColor=sumGray; data.cell.styles.textColor=txtMuted; data.cell.styles.fontStyle='bold'; data.cell.styles.halign='right'; data.cell.styles.fontSize=8; data.cell.styles.cellPadding={top:4,right:8,bottom:4,left:8}; data.cell.styles.lineColor=[200,210,220]; }
+      },
+      didDrawPage:(data) => {
+        if (data.pageNumber > 1) drawHeader();
+        const pg = data.pageNumber;
+        doc.setDrawColor(220,225,230); doc.setLineWidth(0.3);
+        doc.line(margin, pageHeight-12, pageWidth-margin, pageHeight-12);
+        doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...txtMuted);
+        doc.text('Schürmann Gebäude + Energie', margin, pageHeight-8);
+        doc.text(employeeName+'  |  '+today, pageWidth/2, pageHeight-8, {align:'center'});
+        doc.text('Seite '+pg, pageWidth-margin, pageHeight-8, {align:'right'});
+        doc.setFontSize(8); doc.setTextColor(150,150,150);
+        doc.text('https://meinestunden.online/', pageWidth/2, pageHeight-4, {align:'center'});
+      }
+    });
+    y = doc.lastAutoTable.finalY + 10;
   }
 
-  doc.autoTable({
-    startY:y, head:[['ZEIT','PROJEKT / BAUSTELLE','AUFGABE','DAUER']], body:tableBody,
-    margin:{left:margin,right:margin}, tableWidth:'auto',
-    styles:{fontSize:9,cellPadding:{top:3,right:5,bottom:3,left:5},textColor:txtDark,lineColor:[220,225,230],lineWidth:0.1,overflow:'linebreak'},
-    headStyles:{fillColor:slate,textColor:white,fontStyle:'bold',fontSize:8,cellPadding:{top:4,right:5,bottom:4,left:5}},
-    alternateRowStyles:{fillColor:[250,251,252]},
-    columnStyles:{0:{cellWidth:34},1:{cellWidth:'auto'},2:{cellWidth:28},3:{cellWidth:22,halign:'right',fontStyle:'bold',textColor:slate}},
-    didParseCell:(data) => {
-      if (data.section !== 'body') return;
-      const ri = data.row.index;
-      if (dateHeaderRows.has(ri)) { data.cell.styles.fillColor=hdrGray; data.cell.styles.textColor=txtDark; data.cell.styles.fontStyle='bold'; data.cell.styles.fontSize=9; data.cell.styles.cellPadding={top:5,right:8,bottom:5,left:8}; }
-      if (dailySumRows.has(ri))   { data.cell.styles.fillColor=sumGray; data.cell.styles.textColor=txtMuted; data.cell.styles.fontStyle='bold'; data.cell.styles.halign='right'; data.cell.styles.fontSize=8; data.cell.styles.cellPadding={top:4,right:8,bottom:4,left:8}; data.cell.styles.lineColor=[200,210,220]; }
-    },
-    didDrawPage:(data) => {
-      if (data.pageNumber > 1) drawHeader();
-      const pg = data.pageNumber;
-      doc.setDrawColor(220,225,230); doc.setLineWidth(0.3);
-      doc.line(margin, pageHeight-12, pageWidth-margin, pageHeight-12);
-      doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...txtMuted);
-      doc.text('Schürmann Gebäude + Energie', margin, pageHeight-8);
-      doc.text(employeeName+'  |  '+today, pageWidth/2, pageHeight-8, {align:'center'});
-      doc.text('Seite '+pg, pageWidth-margin, pageHeight-8, {align:'right'});
-      doc.setFontSize(8); doc.setTextColor(150,150,150);
-      doc.text('https://meinestunden.online/', pageWidth/2, pageHeight-4, {align:'center'});
-    }
-  });
+  // ── Vacation section ──
+  if (vacEntries.length > 0) {
+    if (y + 30 > pageHeight - 20) { doc.addPage(); y = margin; drawHeader(); y = 30; }
+    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(59,130,246);
+    doc.text('URLAUBSTAGE', margin, y); y += 6;
+    doc.setDrawColor(...borderGray); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth-margin, y); y += 4;
+    const vacSorted = [...vacEntries].sort((a,b) => { const p=k=>{const[d,m,yr]=k.split('/').map(Number);return new Date(yr,m-1,d);}; return p(a.date)-p(b.date); });
+    doc.autoTable({
+      startY: y,
+      head: [['DATUM','GRUND']],
+      body: vacSorted.map(l => [fmtDate(l.date), l.desc || 'Erholungsurlaub']),
+      margin: {left:margin, right:margin, bottom:15},
+      styles: {fontSize:9, cellPadding:3, textColor:txtDark, lineColor:[220,225,230], lineWidth:0.1},
+      headStyles: {fillColor:[59,130,246], textColor:white, fontStyle:'bold', fontSize:8},
+      alternateRowStyles: {fillColor:[239,246,255]},
+      columnStyles: {0:{cellWidth:65}},
+      didDrawPage: (data) => { if (data.pageNumber > 1) drawHeader(); }
+    });
+    y = doc.lastAutoTable.finalY + 10;
+  }
+
+  // ── Sick days section ──
+  if (sickEntries.length > 0) {
+    if (y + 30 > pageHeight - 20) { doc.addPage(); y = margin; drawHeader(); y = 30; }
+    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(220,38,38);
+    doc.text('KRANKMELDUNGEN', margin, y); y += 6;
+    doc.setDrawColor(...borderGray); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth-margin, y); y += 4;
+    const sickSorted = [...sickEntries].sort((a,b) => { const p=k=>{const[d,m,yr]=k.split('/').map(Number);return new Date(yr,m-1,d);}; return p(a.date)-p(b.date); });
+    doc.autoTable({
+      startY: y,
+      head: [['DATUM','BEMERKUNG']],
+      body: sickSorted.map(l => [fmtDate(l.date), l.desc || 'Arbeitsunfähigkeit']),
+      margin: {left:margin, right:margin, bottom:15},
+      styles: {fontSize:9, cellPadding:3, textColor:txtDark, lineColor:[220,225,230], lineWidth:0.1},
+      headStyles: {fillColor:[220,38,38], textColor:white, fontStyle:'bold', fontSize:8},
+      alternateRowStyles: {fillColor:[254,242,242]},
+      columnStyles: {0:{cellWidth:65}},
+      didDrawPage: (data) => { if (data.pageNumber > 1) drawHeader(); }
+    });
+    y = doc.lastAutoTable.finalY + 10;
+  }
+
+  // ── Footer on every page ──
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(220,225,230); doc.setLineWidth(0.3);
+    doc.line(margin, pageHeight-12, pageWidth-margin, pageHeight-12);
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...txtMuted);
+    doc.text('Schürmann Gebäude + Energie', margin, pageHeight-8);
+    doc.text(employeeName+'  |  '+today, pageWidth/2, pageHeight-8, {align:'center'});
+    doc.text('Seite '+i+' von '+totalPages, pageWidth-margin, pageHeight-8, {align:'right'});
+    doc.setFontSize(8); doc.setTextColor(150,150,150);
+    doc.text('https://meinestunden.online/', pageWidth/2, pageHeight-4, {align:'center'});
+  }
 
   const lang = activeLanguageGlobal==='en' ? 'en-GB' : 'de-DE';
   const fmt = d => d.toLocaleDateString(lang,{day:'2-digit',month:'short',year:'numeric'}).replace(/\./g,'').replace(/\s+/g,'_');
