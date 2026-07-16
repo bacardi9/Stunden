@@ -1,14 +1,43 @@
 let _persistTimer = null;
-let _cloudDataLoadedForUid = '';
+let _cloudDataLoading = false;
+let _cloudDataLoaded = false;
+let _cloudProfileRef = null;
+let _cloudFieldNames = {
+  work: 'workSessions',
+  leave: 'leaveDays',
+  trash: 'trash'
+};
+let _cloudBaseline = {
+  work: 0,
+  leave: 0,
+  trash: 0
+};
 
-function getStoredArray(data, keys) {
-  for (const key of keys) {
-    if (Array.isArray(data?.[key])) return data[key];
-  }
-  return [];
-}
+const WORK_FIELD_NAMES = [
+  'workSessions',
+  'workLogs',
+  'sessions',
+  'loggedSessions',
+  'logs',
+  'entries',
+  'timeEntries',
+  'workEntries'
+];
 
-function normalizeAccountKey(value) {
+const LEAVE_FIELD_NAMES = [
+  'leaveDays',
+  'vacationDays',
+  'absences',
+  'leaveEntries'
+];
+
+const TRASH_FIELD_NAMES = [
+  'trash',
+  'deletedItems',
+  'trashItems'
+];
+
+function normalizeCloudIdentity(value) {
   return String(value || '')
     .trim()
     .toLowerCase()
@@ -19,217 +48,334 @@ function normalizeAccountKey(value) {
     .replace(/[^a-z0-9]/g, '');
 }
 
-function getProfileArrays(data) {
-  return {
-    workSessions: getStoredArray(data, [
-      'workSessions',
-      'workLogs',
-      'sessions',
-      'loggedSessions',
-      'globalLoggedSessionsDatabaseMock'
-    ]),
-    leaveDays: getStoredArray(data, [
-      'leaveDays',
-      'vacationDays',
-      'vacationLogs',
-      'vacationLoggedDaysArrayCache'
-    ]),
-    trash: getStoredArray(data, [
-      'trash',
-      'deletedItems',
-      'recentlyDeletedItemsBinCache'
-    ])
-  };
+function toArray(value) {
+  if (Array.isArray(value)) return value;
+
+  if (value && typeof value === 'object') {
+    return Object.values(value).filter(item => {
+      return item && typeof item === 'object';
+    });
+  }
+
+  return [];
 }
 
-async function findLegacyUserProfile(uid, displayName) {
-  const candidates = new Map();
-  const directIds = [
-    displayName,
-    String(displayName || '').toLowerCase(),
-    normalizeAccountKey(displayName)
+function readArrayFieldDetailed(data, fieldNames) {
+  const sources = [
+    data,
+    data?.userData,
+    data?.data,
+    data?.profileData
   ].filter(Boolean);
 
-  for (const docId of [...new Set(directIds)]) {
-    if (docId === uid) continue;
-    try {
-      const snap = await db.collection('userProfiles').doc(docId).get();
-      if (snap.exists) candidates.set(snap.id, snap);
-    } catch (err) {
-      console.warn('Legacy profile lookup failed:', docId, err);
+  for (const source of sources) {
+    for (const fieldName of fieldNames) {
+      const value = source[fieldName];
+
+      if (Array.isArray(value)) {
+        return { values: value, fieldName };
+      }
+
+      if (value && typeof value === 'object') {
+        return { values: toArray(value), fieldName };
+      }
     }
   }
 
-  const queries = [
-    ['name', '==', displayName],
-    ['uid', '==', uid]
-  ];
+  return { values: [], fieldName: null };
+}
 
-  for (const [field, operator, value] of queries) {
-    if (!value) continue;
-    try {
-      const snap = await db.collection('userProfiles')
-        .where(field, operator, value)
-        .limit(10)
-        .get();
+function getProfileEntryCount(data) {
+  const work = readArrayFieldDetailed(data, WORK_FIELD_NAMES).values.length;
+  const leave = readArrayFieldDetailed(data, LEAVE_FIELD_NAMES).values.length;
+  const trash = readArrayFieldDetailed(data, TRASH_FIELD_NAMES).values.length;
+  return work + leave + trash;
+}
 
-      snap.forEach(doc => {
-        if (doc.id !== uid) candidates.set(doc.id, doc);
-      });
-    } catch (err) {
-      console.warn('Legacy profile query failed:', field, err);
-    }
+async function getAuthenticatedUid() {
+  if (auth.currentUser?.uid) {
+    authenticatedUserGlobal = auth.currentUser.uid;
+    localStorage.setItem('schuermann_auth_user', auth.currentUser.uid);
+    return auth.currentUser.uid;
   }
 
-  let bestMatch = null;
-  let bestScore = 0;
+  const user = await new Promise(resolve => {
+    let unsubscribe = function() {};
 
-  candidates.forEach(snap => {
-    const data = snap.data() || {};
-    const arrays = getProfileArrays(data);
-    const score =
-      arrays.workSessions.length * 100 +
-      arrays.leaveDays.length * 10 +
-      arrays.trash.length;
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestMatch = { snap, data, arrays };
-    }
+    unsubscribe = auth.onAuthStateChanged(currentUser => {
+      unsubscribe();
+      resolve(currentUser || null);
+    });
   });
 
-  return bestMatch;
+  if (!user) return '';
+
+  authenticatedUserGlobal = user.uid;
+  localStorage.setItem('schuermann_auth_user', user.uid);
+  return user.uid;
 }
 
-async function recoverLegacyUserData(uid, currentData) {
-  const displayName =
-    currentData?.name ||
-    localStorage.getItem('schuermann_current_user') ||
-    '';
-
-  const currentArrays = getProfileArrays(currentData);
-  const legacy = await findLegacyUserProfile(uid, displayName);
-
-  if (!legacy) return currentData;
-
-  const recoveredWork = currentArrays.workSessions.length
-    ? currentArrays.workSessions
-    : legacy.arrays.workSessions;
-
-  const recoveredLeave = currentArrays.leaveDays.length
-    ? currentArrays.leaveDays
-    : legacy.arrays.leaveDays;
-
-  const recoveredTrash = currentArrays.trash.length
-    ? currentArrays.trash
-    : legacy.arrays.trash;
-
-  const recoveredAnything =
-    recoveredWork.length > currentArrays.workSessions.length ||
-    recoveredLeave.length > currentArrays.leaveDays.length ||
-    recoveredTrash.length > currentArrays.trash.length;
-
-  if (!recoveredAnything) return currentData;
-
-  const recoveredData = {
-    ...currentData,
-    name: currentData?.name || legacy.data.name || displayName,
-    companyName: currentData?.companyName || legacy.data.companyName || '',
-    vacationAllowed:
-      currentData?.vacationAllowed ??
-      legacy.data.vacationAllowed ??
-      30,
-    workSessions: recoveredWork,
-    leaveDays: recoveredLeave,
-    trash: recoveredTrash,
-    recoveredFromProfile: legacy.snap.id,
-    recoveredAt: Date.now()
-  };
-
-  await db.collection('userProfiles').doc(uid).set(recoveredData, {
-    merge: true
-  });
-
-  console.info('Recovered legacy Firebase profile:', legacy.snap.id);
-  return recoveredData;
+async function getCollectionSnapshotFromServer() {
+  try {
+    return await db.collection('userProfiles').get({ source: 'server' });
+  } catch (error) {
+    console.warn('Server profile scan failed, using available cache:', error);
+    return db.collection('userProfiles').get();
+  }
 }
 
-async function persistUserDataNow() {
-  if (!authenticatedUserGlobal || authenticatedUserRoleGlobal === 'admin') return;
+async function findBestUserProfile(uid) {
+  const displayName = localStorage.getItem('schuermann_current_user') || '';
+  const normalizedName = normalizeCloudIdentity(displayName);
+  const normalizedEmail = normalizeCloudIdentity(
+    String(auth.currentUser?.email || '').split('@')[0]
+  );
 
-  if (_cloudDataLoadedForUid !== authenticatedUserGlobal) {
-    console.warn('Save skipped because cloud data has not loaded yet.');
-    return;
+  const candidates = new Map();
+
+  function addCandidate(snapshot) {
+    if (!snapshot?.exists) return;
+
+    const data = snapshot.data() || {};
+    const dataUid = String(data.uid || '');
+    const dataName = normalizeCloudIdentity(
+      data.name || data.displayName || data.username
+    );
+    const documentName = normalizeCloudIdentity(snapshot.id);
+
+    const isUidMatch = snapshot.id === uid || dataUid === uid;
+    const isNameMatch = normalizedName && (
+      dataName === normalizedName ||
+      documentName === normalizedName
+    );
+    const isEmailMatch = normalizedEmail && (
+      dataName === normalizedEmail ||
+      documentName === normalizedEmail
+    );
+
+    if (!isUidMatch && !isNameMatch && !isEmailMatch) return;
+
+    const entryCount = getProfileEntryCount(data);
+    let score = 0;
+
+    if (isUidMatch) score += 100000;
+    if (isNameMatch) score += 50000;
+    if (isEmailMatch) score += 40000;
+
+    // A matching legacy profile with data is preferred over a new empty UID profile.
+    if (entryCount > 0) score += 200000 + Math.min(entryCount, 10000);
+
+    candidates.set(snapshot.id, {
+      snapshot,
+      data,
+      score,
+      entryCount
+    });
   }
 
   try {
-    const docRef = db.collection('userProfiles').doc(authenticatedUserGlobal);
+    addCandidate(
+      await db.collection('userProfiles').doc(uid).get({ source: 'server' })
+    );
+  } catch (error) {
+    console.warn('Direct server profile load failed:', error);
+
+    try {
+      addCandidate(await db.collection('userProfiles').doc(uid).get());
+    } catch (cacheError) {
+      console.warn('Direct cached profile load failed:', cacheError);
+    }
+  }
+
+  const allProfiles = await getCollectionSnapshotFromServer();
+  allProfiles.forEach(addCandidate);
+
+  const sortedCandidates = [...candidates.values()].sort((a, b) => {
+    return b.score - a.score;
+  });
+
+  return sortedCandidates[0] || null;
+}
+
+function hasSuspiciousEmptyOverwrite() {
+  const currentTotal =
+    globalLoggedSessionsDatabaseMock.length +
+    vacationLoggedDaysArrayCache.length +
+    recentlyDeletedItemsBinCache.length;
+
+  const baselineTotal =
+    _cloudBaseline.work +
+    _cloudBaseline.leave +
+    _cloudBaseline.trash;
+
+  return baselineTotal > 0 && currentTotal === 0;
+}
+
+async function persistUserDataNow() {
+  if (_cloudDataLoading || !_cloudDataLoaded) return;
+  if (authenticatedUserRoleGlobal === 'admin') return;
+
+  try {
+    const uid = await getAuthenticatedUid();
+    if (!uid || !_cloudProfileRef) {
+      console.warn('Cloud save blocked: no verified profile document.');
+      return;
+    }
+
+    if (hasSuspiciousEmptyOverwrite()) {
+      console.error('Cloud save blocked: attempted to replace existing data with empty arrays.');
+      showToast(
+        'Speichern gestoppt: Leere Daten würden vorhandene Cloud-Daten überschreiben.',
+        'error'
+      );
+      return;
+    }
+
+    const latestSnapshot = await _cloudProfileRef.get({ source: 'server' });
+    if (!latestSnapshot.exists) {
+      throw new Error('The verified cloud profile no longer exists.');
+    }
+
+    const latestData = latestSnapshot.data() || {};
+    const latestCount = getProfileEntryCount(latestData);
+    const currentCount =
+      globalLoggedSessionsDatabaseMock.length +
+      vacationLoggedDaysArrayCache.length +
+      recentlyDeletedItemsBinCache.length;
+
+    if (latestCount > 0 && currentCount === 0) {
+      throw new Error('Blocked an unsafe empty cloud overwrite.');
+    }
+
     const vacAllowedVal = parseFloat(
       document.getElementById('vacation-allowed-bank')?.value
     );
 
     const dataToSave = {
+      uid,
       name:
         localStorage.getItem('schuermann_current_user') ||
-        authenticatedUserGlobal,
-      updatedAt: Date.now(),
-      vacationAllowed: isNaN(vacAllowedVal) ? 30 : vacAllowedVal,
-      workSessions: globalLoggedSessionsDatabaseMock,
-      leaveDays: vacationLoggedDaysArrayCache,
-      trash: recentlyDeletedItemsBinCache
+        latestData.name ||
+        uid,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      vacationAllowed: isNaN(vacAllowedVal)
+        ? (parseFloat(latestData.vacationAllowed) || 30)
+        : vacAllowedVal
     };
 
-    await docRef.set(dataToSave, { merge: true });
-  } catch (err) {
-    console.error('Save failed:', err);
+    dataToSave[_cloudFieldNames.work] =
+      Array.isArray(globalLoggedSessionsDatabaseMock)
+        ? globalLoggedSessionsDatabaseMock
+        : [];
+
+    dataToSave[_cloudFieldNames.leave] =
+      Array.isArray(vacationLoggedDaysArrayCache)
+        ? vacationLoggedDaysArrayCache
+        : [];
+
+    dataToSave[_cloudFieldNames.trash] =
+      Array.isArray(recentlyDeletedItemsBinCache)
+        ? recentlyDeletedItemsBinCache
+        : [];
+
+    await _cloudProfileRef.set(dataToSave, { merge: true });
+
+    _cloudBaseline = {
+      work: globalLoggedSessionsDatabaseMock.length,
+      leave: vacationLoggedDaysArrayCache.length,
+      trash: recentlyDeletedItemsBinCache.length
+    };
+  } catch (error) {
+    console.error('Cloud save failed:', error);
+    showToast('Cloud-Speicherung wurde aus Sicherheitsgründen gestoppt.', 'error');
+    throw error;
   }
 }
 
 function persistUserData() {
+  if (_cloudDataLoading || !_cloudDataLoaded) return;
+
   if (_persistTimer) clearTimeout(_persistTimer);
   _persistTimer = setTimeout(persistUserDataNow, 400);
 }
 
 async function loadUserDataFromCloud() {
-  if (!authenticatedUserGlobal || authenticatedUserRoleGlobal === 'admin') return;
+  if (authenticatedUserRoleGlobal === 'admin') return false;
 
-  const uid = authenticatedUserGlobal;
-  _cloudDataLoadedForUid = '';
+  _cloudDataLoading = true;
+  _cloudDataLoaded = false;
+  _cloudProfileRef = null;
 
   try {
-    const docRef = db.collection('userProfiles').doc(uid);
-    const snap = await docRef.get();
-    let data = snap.exists ? (snap.data() || {}) : {};
+    const uid = await getAuthenticatedUid();
+    if (!uid) {
+      throw new Error('No authenticated Firebase user found.');
+    }
 
-    const beforeRecovery = getProfileArrays(data);
-    data = await recoverLegacyUserData(uid, data);
-    const loaded = getProfileArrays(data);
+    const profile = await findBestUserProfile(uid);
+    if (!profile?.snapshot?.exists) {
+      throw new Error('No matching Firebase profile was found.');
+    }
 
-    globalLoggedSessionsDatabaseMock = loaded.workSessions;
-    vacationLoggedDaysArrayCache = loaded.leaveDays;
-    recentlyDeletedItemsBinCache = loaded.trash;
+    const data = profile.data || {};
+    const workResult = readArrayFieldDetailed(data, WORK_FIELD_NAMES);
+    const leaveResult = readArrayFieldDetailed(data, LEAVE_FIELD_NAMES);
+    const trashResult = readArrayFieldDetailed(data, TRASH_FIELD_NAMES);
+
+    globalLoggedSessionsDatabaseMock = workResult.values;
+    vacationLoggedDaysArrayCache = leaveResult.values;
+    recentlyDeletedItemsBinCache = trashResult.values;
+
+    _cloudFieldNames = {
+      work: workResult.fieldName || 'workSessions',
+      leave: leaveResult.fieldName || 'leaveDays',
+      trash: trashResult.fieldName || 'trash'
+    };
+
+    _cloudBaseline = {
+      work: globalLoggedSessionsDatabaseMock.length,
+      leave: vacationLoggedDaysArrayCache.length,
+      trash: recentlyDeletedItemsBinCache.length
+    };
+
+    _cloudProfileRef = profile.snapshot.ref;
 
     const storedAllowance = parseFloat(data.vacationAllowed);
     if (!isNaN(storedAllowance)) {
-      const inp = document.getElementById('vacation-allowed-bank');
-      if (inp) inp.value = storedAllowance;
+      const input = document.getElementById('vacation-allowed-bank');
+      if (input) input.value = storedAllowance;
     }
 
-    _cloudDataLoadedForUid = uid;
-
-    if (
-      loaded.workSessions.length > beforeRecovery.workSessions.length ||
-      loaded.leaveDays.length > beforeRecovery.leaveDays.length
-    ) {
-      showToast(
-        `✓ Alte Daten wiederhergestellt: ${loaded.workSessions.length} Arbeitszeiteinträge`,
-        'success'
-      );
+    if (data.name) {
+      localStorage.setItem('schuermann_current_user', data.name);
     }
-  } catch (err) {
-    console.error('Load failed:', err);
-    showToast('Cloud-Daten konnten nicht geladen werden.', 'error');
-    throw err;
+
+    if (data.companyName) {
+      localStorage.setItem('schuermann_company_name', data.companyName);
+    }
+
+    _cloudDataLoaded = true;
+
+    console.info(
+      `Loaded ${globalLoggedSessionsDatabaseMock.length} work logs from profile ${profile.snapshot.id}.`
+    );
+
+    return true;
+  } catch (error) {
+    console.error('Cloud load failed:', error);
+
+    globalLoggedSessionsDatabaseMock = [];
+    vacationLoggedDaysArrayCache = [];
+    recentlyDeletedItemsBinCache = [];
+
+    showToast(
+      'Cloud-Daten konnten nicht sicher geladen werden. Speichern ist deaktiviert.',
+      'error'
+    );
+
+    return false;
+  } finally {
+    _cloudDataLoading = false;
   }
 }
 
@@ -237,51 +383,60 @@ const OFFLINE_QUEUE_KEY = 'sch_offline_queue';
 
 function getOfflineQueue() {
   try {
-    return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
-  } catch (e) {
+    const value = JSON.parse(
+      localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]'
+    );
+    return Array.isArray(value) ? value : [];
+  } catch (error) {
     return [];
   }
 }
 
-function saveOfflineQueue(q) {
-  localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(q));
-  const badge = document.getElementById('offline-queue-badge');
+function saveOfflineQueue(queue) {
+  const safeQueue = Array.isArray(queue) ? queue : [];
+  localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(safeQueue));
 
-  if (badge) {
-    badge.classList.toggle('visible', q.length > 0);
-    if (q.length) badge.textContent = '● ' + q.length + ' offline';
-  }
+  const badge = document.getElementById('offline-queue-badge');
+  if (!badge) return;
+
+  badge.classList.toggle('visible', safeQueue.length > 0);
+  badge.textContent = safeQueue.length
+    ? '● ' + safeQueue.length + ' offline'
+    : '● Offline';
 }
 
 function updateOfflineBadge() {
-  const q = getOfflineQueue();
-  const badge = document.getElementById('offline-queue-badge');
-
-  if (badge) {
-    badge.classList.toggle('visible', q.length > 0);
-    if (q.length) badge.textContent = '● ' + q.length + ' offline';
-  }
+  saveOfflineQueue(getOfflineQueue());
 }
 
 async function flushOfflineQueue() {
-  if (!authenticatedUserGlobal || authenticatedUserRoleGlobal === 'admin') return;
+  if (authenticatedUserRoleGlobal === 'admin') return;
+  if (!_cloudDataLoaded || !_cloudProfileRef) return;
 
-  const q = getOfflineQueue();
-  if (!q.length) return;
+  const queue = getOfflineQueue();
+  if (!queue.length) return;
 
   showToast(
     activeLanguageGlobal === 'de'
-      ? '↑ ' + q.length + ' Offline-Einträge werden synchronisiert...'
-      : '↑ Syncing ' + q.length + ' offline entries...'
+      ? '↑ ' + queue.length + ' Offline-Einträge werden synchronisiert...'
+      : '↑ Syncing ' + queue.length + ' offline entries...',
+    'info'
   );
 
   const failed = [];
 
-  for (const entry of q) {
+  for (const entry of queue) {
     try {
-      globalLoggedSessionsDatabaseMock.push(entry);
+      const alreadyExists = globalLoggedSessionsDatabaseMock.some(item => {
+        return item.id && entry.id && item.id === entry.id;
+      });
+
+      if (!alreadyExists) {
+        globalLoggedSessionsDatabaseMock.push(entry);
+      }
+
       await persistUserDataNow();
-    } catch (e) {
+    } catch (error) {
       failed.push(entry);
     }
   }
@@ -292,8 +447,10 @@ async function flushOfflineQueue() {
     showToast(
       activeLanguageGlobal === 'de'
         ? '✓ Alle Einträge synchronisiert'
-        : '✓ All entries synced'
+        : '✓ All entries synced',
+      'success'
     );
+
     runGlobalApplicationMetricsEngine();
     renderHistoricalRecordsSheet();
   }
@@ -321,53 +478,45 @@ function restoreDraftWorkEntry() {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return;
 
-    const d = JSON.parse(raw);
+    const draft = JSON.parse(raw);
 
-    if (d.date) {
-      const el = document.getElementById('log-date-picker');
-      if (el) el.value = d.date;
-    }
+    const dateElement = document.getElementById('log-date-picker');
+    const projectElement = document.getElementById('log-project-name');
+    const startElement = document.getElementById('log-start-time');
+    const endElement = document.getElementById('log-end-time');
+    const notesElement = document.getElementById('log-notes');
 
-    if (d.project) {
-      const el = document.getElementById('log-project-name');
-      if (el) el.value = d.project;
-    }
+    if (draft.date && dateElement) dateElement.value = draft.date;
+    if (draft.project && projectElement) projectElement.value = draft.project;
+    if (draft.start && startElement) startElement.value = draft.start;
+    if (draft.end && endElement) endElement.value = draft.end;
+    if (draft.notes && notesElement) notesElement.value = draft.notes;
 
-    if (d.start) {
-      const el = document.getElementById('log-start-time');
-      if (el) el.value = d.start;
-    }
+    if (draft.brk != null) {
+      activeSelectedFormBreakDuration = Number(draft.brk) || 0;
 
-    if (d.end) {
-      const el = document.getElementById('log-end-time');
-      if (el) el.value = d.end;
-    }
-
-    if (d.notes) {
-      const el = document.getElementById('log-notes');
-      if (el) el.value = d.notes;
-    }
-
-    if (d.brk != null) {
-      activeSelectedFormBreakDuration = d.brk;
-
-      document.querySelectorAll('.break-pill').forEach(p => {
+      document.querySelectorAll('.break-pill').forEach(pill => {
         const minutes = parseInt(
-          p.getAttribute('onclick')?.match(/\d+/)?.[0] || '0'
+          pill.getAttribute('onclick')?.match(/\d+/)?.[0] || '0'
         );
-        p.classList.toggle('active', minutes === d.brk);
+
+        pill.classList.toggle(
+          'active',
+          minutes === activeSelectedFormBreakDuration
+        );
       });
     }
 
-    if (d.project || d.notes) {
+    if (draft.project || draft.notes) {
       showToast(
         activeLanguageGlobal === 'de'
           ? '📝 Entwurf wiederhergestellt'
-          : '📝 Draft restored'
+          : '📝 Draft restored',
+        'info'
       );
     }
-  } catch (e) {
-    console.warn('Draft restore failed:', e);
+  } catch (error) {
+    console.warn('Draft restore failed:', error);
   }
 }
 
