@@ -1,0 +1,376 @@
+let _persistTimer = null;
+let _cloudDataLoadedForUid = '';
+
+function getStoredArray(data, keys) {
+  for (const key of keys) {
+    if (Array.isArray(data?.[key])) return data[key];
+  }
+  return [];
+}
+
+function normalizeAccountKey(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function getProfileArrays(data) {
+  return {
+    workSessions: getStoredArray(data, [
+      'workSessions',
+      'workLogs',
+      'sessions',
+      'loggedSessions',
+      'globalLoggedSessionsDatabaseMock'
+    ]),
+    leaveDays: getStoredArray(data, [
+      'leaveDays',
+      'vacationDays',
+      'vacationLogs',
+      'vacationLoggedDaysArrayCache'
+    ]),
+    trash: getStoredArray(data, [
+      'trash',
+      'deletedItems',
+      'recentlyDeletedItemsBinCache'
+    ])
+  };
+}
+
+async function findLegacyUserProfile(uid, displayName) {
+  const candidates = new Map();
+  const directIds = [
+    displayName,
+    String(displayName || '').toLowerCase(),
+    normalizeAccountKey(displayName)
+  ].filter(Boolean);
+
+  for (const docId of [...new Set(directIds)]) {
+    if (docId === uid) continue;
+    try {
+      const snap = await db.collection('userProfiles').doc(docId).get();
+      if (snap.exists) candidates.set(snap.id, snap);
+    } catch (err) {
+      console.warn('Legacy profile lookup failed:', docId, err);
+    }
+  }
+
+  const queries = [
+    ['name', '==', displayName],
+    ['uid', '==', uid]
+  ];
+
+  for (const [field, operator, value] of queries) {
+    if (!value) continue;
+    try {
+      const snap = await db.collection('userProfiles')
+        .where(field, operator, value)
+        .limit(10)
+        .get();
+
+      snap.forEach(doc => {
+        if (doc.id !== uid) candidates.set(doc.id, doc);
+      });
+    } catch (err) {
+      console.warn('Legacy profile query failed:', field, err);
+    }
+  }
+
+  let bestMatch = null;
+  let bestScore = 0;
+
+  candidates.forEach(snap => {
+    const data = snap.data() || {};
+    const arrays = getProfileArrays(data);
+    const score =
+      arrays.workSessions.length * 100 +
+      arrays.leaveDays.length * 10 +
+      arrays.trash.length;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = { snap, data, arrays };
+    }
+  });
+
+  return bestMatch;
+}
+
+async function recoverLegacyUserData(uid, currentData) {
+  const displayName =
+    currentData?.name ||
+    localStorage.getItem('schuermann_current_user') ||
+    '';
+
+  const currentArrays = getProfileArrays(currentData);
+  const legacy = await findLegacyUserProfile(uid, displayName);
+
+  if (!legacy) return currentData;
+
+  const recoveredWork = currentArrays.workSessions.length
+    ? currentArrays.workSessions
+    : legacy.arrays.workSessions;
+
+  const recoveredLeave = currentArrays.leaveDays.length
+    ? currentArrays.leaveDays
+    : legacy.arrays.leaveDays;
+
+  const recoveredTrash = currentArrays.trash.length
+    ? currentArrays.trash
+    : legacy.arrays.trash;
+
+  const recoveredAnything =
+    recoveredWork.length > currentArrays.workSessions.length ||
+    recoveredLeave.length > currentArrays.leaveDays.length ||
+    recoveredTrash.length > currentArrays.trash.length;
+
+  if (!recoveredAnything) return currentData;
+
+  const recoveredData = {
+    ...currentData,
+    name: currentData?.name || legacy.data.name || displayName,
+    companyName: currentData?.companyName || legacy.data.companyName || '',
+    vacationAllowed:
+      currentData?.vacationAllowed ??
+      legacy.data.vacationAllowed ??
+      30,
+    workSessions: recoveredWork,
+    leaveDays: recoveredLeave,
+    trash: recoveredTrash,
+    recoveredFromProfile: legacy.snap.id,
+    recoveredAt: Date.now()
+  };
+
+  await db.collection('userProfiles').doc(uid).set(recoveredData, {
+    merge: true
+  });
+
+  console.info('Recovered legacy Firebase profile:', legacy.snap.id);
+  return recoveredData;
+}
+
+async function persistUserDataNow() {
+  if (!authenticatedUserGlobal || authenticatedUserRoleGlobal === 'admin') return;
+
+  if (_cloudDataLoadedForUid !== authenticatedUserGlobal) {
+    console.warn('Save skipped because cloud data has not loaded yet.');
+    return;
+  }
+
+  try {
+    const docRef = db.collection('userProfiles').doc(authenticatedUserGlobal);
+    const vacAllowedVal = parseFloat(
+      document.getElementById('vacation-allowed-bank')?.value
+    );
+
+    const dataToSave = {
+      name:
+        localStorage.getItem('schuermann_current_user') ||
+        authenticatedUserGlobal,
+      updatedAt: Date.now(),
+      vacationAllowed: isNaN(vacAllowedVal) ? 30 : vacAllowedVal,
+      workSessions: globalLoggedSessionsDatabaseMock,
+      leaveDays: vacationLoggedDaysArrayCache,
+      trash: recentlyDeletedItemsBinCache
+    };
+
+    await docRef.set(dataToSave, { merge: true });
+  } catch (err) {
+    console.error('Save failed:', err);
+  }
+}
+
+function persistUserData() {
+  if (_persistTimer) clearTimeout(_persistTimer);
+  _persistTimer = setTimeout(persistUserDataNow, 400);
+}
+
+async function loadUserDataFromCloud() {
+  if (!authenticatedUserGlobal || authenticatedUserRoleGlobal === 'admin') return;
+
+  const uid = authenticatedUserGlobal;
+  _cloudDataLoadedForUid = '';
+
+  try {
+    const docRef = db.collection('userProfiles').doc(uid);
+    const snap = await docRef.get();
+    let data = snap.exists ? (snap.data() || {}) : {};
+
+    const beforeRecovery = getProfileArrays(data);
+    data = await recoverLegacyUserData(uid, data);
+    const loaded = getProfileArrays(data);
+
+    globalLoggedSessionsDatabaseMock = loaded.workSessions;
+    vacationLoggedDaysArrayCache = loaded.leaveDays;
+    recentlyDeletedItemsBinCache = loaded.trash;
+
+    const storedAllowance = parseFloat(data.vacationAllowed);
+    if (!isNaN(storedAllowance)) {
+      const inp = document.getElementById('vacation-allowed-bank');
+      if (inp) inp.value = storedAllowance;
+    }
+
+    _cloudDataLoadedForUid = uid;
+
+    if (
+      loaded.workSessions.length > beforeRecovery.workSessions.length ||
+      loaded.leaveDays.length > beforeRecovery.leaveDays.length
+    ) {
+      showToast(
+        `✓ Alte Daten wiederhergestellt: ${loaded.workSessions.length} Arbeitszeiteinträge`,
+        'success'
+      );
+    }
+  } catch (err) {
+    console.error('Load failed:', err);
+    showToast('Cloud-Daten konnten nicht geladen werden.', 'error');
+    throw err;
+  }
+}
+
+const OFFLINE_QUEUE_KEY = 'sch_offline_queue';
+
+function getOfflineQueue() {
+  try {
+    return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveOfflineQueue(q) {
+  localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(q));
+  const badge = document.getElementById('offline-queue-badge');
+
+  if (badge) {
+    badge.classList.toggle('visible', q.length > 0);
+    if (q.length) badge.textContent = '● ' + q.length + ' offline';
+  }
+}
+
+function updateOfflineBadge() {
+  const q = getOfflineQueue();
+  const badge = document.getElementById('offline-queue-badge');
+
+  if (badge) {
+    badge.classList.toggle('visible', q.length > 0);
+    if (q.length) badge.textContent = '● ' + q.length + ' offline';
+  }
+}
+
+async function flushOfflineQueue() {
+  if (!authenticatedUserGlobal || authenticatedUserRoleGlobal === 'admin') return;
+
+  const q = getOfflineQueue();
+  if (!q.length) return;
+
+  showToast(
+    activeLanguageGlobal === 'de'
+      ? '↑ ' + q.length + ' Offline-Einträge werden synchronisiert...'
+      : '↑ Syncing ' + q.length + ' offline entries...'
+  );
+
+  const failed = [];
+
+  for (const entry of q) {
+    try {
+      globalLoggedSessionsDatabaseMock.push(entry);
+      await persistUserDataNow();
+    } catch (e) {
+      failed.push(entry);
+    }
+  }
+
+  saveOfflineQueue(failed);
+
+  if (!failed.length) {
+    showToast(
+      activeLanguageGlobal === 'de'
+        ? '✓ Alle Einträge synchronisiert'
+        : '✓ All entries synced'
+    );
+    runGlobalApplicationMetricsEngine();
+    renderHistoricalRecordsSheet();
+  }
+}
+
+const DRAFT_KEY = 'sch_work_draft';
+
+function saveDraftWorkEntry() {
+  const draft = {
+    date: document.getElementById('log-date-picker')?.value || '',
+    project: document.getElementById('log-project-name')?.value || '',
+    start: document.getElementById('log-start-time')?.value || '',
+    end: document.getElementById('log-end-time')?.value || '',
+    notes: document.getElementById('log-notes')?.value || '',
+    brk: activeSelectedFormBreakDuration
+  };
+
+  if (draft.project || draft.notes) {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  }
+}
+
+function restoreDraftWorkEntry() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+
+    const d = JSON.parse(raw);
+
+    if (d.date) {
+      const el = document.getElementById('log-date-picker');
+      if (el) el.value = d.date;
+    }
+
+    if (d.project) {
+      const el = document.getElementById('log-project-name');
+      if (el) el.value = d.project;
+    }
+
+    if (d.start) {
+      const el = document.getElementById('log-start-time');
+      if (el) el.value = d.start;
+    }
+
+    if (d.end) {
+      const el = document.getElementById('log-end-time');
+      if (el) el.value = d.end;
+    }
+
+    if (d.notes) {
+      const el = document.getElementById('log-notes');
+      if (el) el.value = d.notes;
+    }
+
+    if (d.brk != null) {
+      activeSelectedFormBreakDuration = d.brk;
+
+      document.querySelectorAll('.break-pill').forEach(p => {
+        const minutes = parseInt(
+          p.getAttribute('onclick')?.match(/\d+/)?.[0] || '0'
+        );
+        p.classList.toggle('active', minutes === d.brk);
+      });
+    }
+
+    if (d.project || d.notes) {
+      showToast(
+        activeLanguageGlobal === 'de'
+          ? '📝 Entwurf wiederhergestellt'
+          : '📝 Draft restored'
+      );
+    }
+  } catch (e) {
+    console.warn('Draft restore failed:', e);
+  }
+}
+
+function clearDraftWorkEntry() {
+  localStorage.removeItem(DRAFT_KEY);
+}
