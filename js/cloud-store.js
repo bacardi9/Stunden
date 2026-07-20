@@ -89,6 +89,7 @@ function getProfileEntryCount(data) {
   const work = readArrayFieldDetailed(data, WORK_FIELD_NAMES).values.length;
   const leave = readArrayFieldDetailed(data, LEAVE_FIELD_NAMES).values.length;
   const trash = readArrayFieldDetailed(data, TRASH_FIELD_NAMES).values.length;
+
   return work + leave + trash;
 }
 
@@ -100,9 +101,7 @@ async function getAuthenticatedUid() {
   }
 
   const user = await new Promise(resolve => {
-    let unsubscribe = function() {};
-
-    unsubscribe = auth.onAuthStateChanged(currentUser => {
+    const unsubscribe = auth.onAuthStateChanged(currentUser => {
       unsubscribe();
       resolve(currentUser || null);
     });
@@ -112,89 +111,43 @@ async function getAuthenticatedUid() {
 
   authenticatedUserGlobal = user.uid;
   localStorage.setItem('schuermann_auth_user', user.uid);
+
   return user.uid;
 }
 
-async function getCollectionSnapshotFromServer() {
-  try {
-    return await db.collection('userProfiles').get({ source: 'server' });
-  } catch (error) {
-    console.warn('Server profile scan failed, using available cache:', error);
-    return db.collection('userProfiles').get();
-  }
-}
-
+// Normal users may only read their own UID-based profile document.
 async function findBestUserProfile(uid) {
-  const displayName = localStorage.getItem('schuermann_current_user') || '';
-  const normalizedName = normalizeCloudIdentity(displayName);
-  const normalizedEmail = normalizeCloudIdentity(
-    String(auth.currentUser?.email || '').split('@')[0]
-  );
+  if (!uid) return null;
 
-  const candidates = new Map();
-
-  function addCandidate(snapshot) {
-    if (!snapshot?.exists) return;
-
-    const data = snapshot.data() || {};
-    const dataUid = String(data.uid || '');
-    const dataName = normalizeCloudIdentity(
-      data.name || data.displayName || data.username
-    );
-    const documentName = normalizeCloudIdentity(snapshot.id);
-
-    const isUidMatch = snapshot.id === uid || dataUid === uid;
-    const isNameMatch = normalizedName && (
-      dataName === normalizedName ||
-      documentName === normalizedName
-    );
-    const isEmailMatch = normalizedEmail && (
-      dataName === normalizedEmail ||
-      documentName === normalizedEmail
-    );
-
-    if (!isUidMatch && !isNameMatch && !isEmailMatch) return;
-
-    const entryCount = getProfileEntryCount(data);
-    let score = 0;
-
-    if (isUidMatch) score += 100000;
-    if (isNameMatch) score += 50000;
-    if (isEmailMatch) score += 40000;
-
-    // A matching legacy profile with data is preferred over a new empty UID profile.
-    if (entryCount > 0) score += 200000 + Math.min(entryCount, 10000);
-
-    candidates.set(snapshot.id, {
-      snapshot,
-      data,
-      score,
-      entryCount
-    });
-  }
+  const profileRef = db.collection('userProfiles').doc(uid);
+  let snapshot;
 
   try {
-    addCandidate(
-      await db.collection('userProfiles').doc(uid).get({ source: 'server' })
+    snapshot = await profileRef.get({ source: 'server' });
+  } catch (serverError) {
+    console.warn(
+      'Server profile load failed, trying Firestore cache:',
+      serverError
     );
-  } catch (error) {
-    console.warn('Direct server profile load failed:', error);
 
     try {
-      addCandidate(await db.collection('userProfiles').doc(uid).get());
+      snapshot = await profileRef.get({ source: 'cache' });
     } catch (cacheError) {
-      console.warn('Direct cached profile load failed:', cacheError);
+      console.error('Cached profile load failed:', cacheError);
+      throw serverError;
     }
   }
 
-  const allProfiles = await getCollectionSnapshotFromServer();
-  allProfiles.forEach(addCandidate);
+  if (!snapshot?.exists) return null;
 
-  const sortedCandidates = [...candidates.values()].sort((a, b) => {
-    return b.score - a.score;
-  });
+  const data = snapshot.data() || {};
 
-  return sortedCandidates[0] || null;
+  return {
+    snapshot,
+    data,
+    score: 100000,
+    entryCount: getProfileEntryCount(data)
+  };
 }
 
 function hasSuspiciousEmptyOverwrite() {
@@ -217,27 +170,38 @@ async function persistUserDataNow() {
 
   try {
     const uid = await getAuthenticatedUid();
+
     if (!uid || !_cloudProfileRef) {
       console.warn('Cloud save blocked: no verified profile document.');
       return;
     }
 
+    if (_cloudProfileRef.id !== uid) {
+      throw new Error('Cloud save blocked: profile ownership mismatch.');
+    }
+
     if (hasSuspiciousEmptyOverwrite()) {
-      console.error('Cloud save blocked: attempted to replace existing data with empty arrays.');
+      console.error(
+        'Cloud save blocked: attempted to replace existing data with empty arrays.'
+      );
+
       showToast(
         'Speichern gestoppt: Leere Daten würden vorhandene Cloud-Daten überschreiben.',
         'error'
       );
+
       return;
     }
 
     const latestSnapshot = await _cloudProfileRef.get({ source: 'server' });
+
     if (!latestSnapshot.exists) {
       throw new Error('The verified cloud profile no longer exists.');
     }
 
     const latestData = latestSnapshot.data() || {};
     const latestCount = getProfileEntryCount(latestData);
+
     const currentCount =
       globalLoggedSessionsDatabaseMock.length +
       vacationLoggedDaysArrayCache.length +
@@ -287,7 +251,12 @@ async function persistUserDataNow() {
     };
   } catch (error) {
     console.error('Cloud save failed:', error);
-    showToast('Cloud-Speicherung wurde aus Sicherheitsgründen gestoppt.', 'error');
+
+    showToast(
+      'Cloud-Speicherung wurde aus Sicherheitsgründen gestoppt.',
+      'error'
+    );
+
     throw error;
   }
 }
@@ -308,13 +277,21 @@ async function loadUserDataFromCloud() {
 
   try {
     const uid = await getAuthenticatedUid();
+
     if (!uid) {
       throw new Error('No authenticated Firebase user found.');
     }
 
     const profile = await findBestUserProfile(uid);
+
     if (!profile?.snapshot?.exists) {
-      throw new Error('No matching Firebase profile was found.');
+      throw new Error(
+        `No UID-based Firebase profile was found for ${uid}.`
+      );
+    }
+
+    if (profile.snapshot.id !== uid) {
+      throw new Error('Loaded profile does not belong to the signed-in user.');
     }
 
     const data = profile.data || {};
@@ -341,6 +318,7 @@ async function loadUserDataFromCloud() {
     _cloudProfileRef = profile.snapshot.ref;
 
     const storedAllowance = parseFloat(data.vacationAllowed);
+
     if (!isNaN(storedAllowance)) {
       const input = document.getElementById('vacation-allowed-bank');
       if (input) input.value = storedAllowance;
@@ -364,12 +342,12 @@ async function loadUserDataFromCloud() {
   } catch (error) {
     console.error('Cloud load failed:', error);
 
-    globalLoggedSessionsDatabaseMock = [];
-    vacationLoggedDaysArrayCache = [];
-    recentlyDeletedItemsBinCache = [];
+    // Preserve current in-memory data. Saving remains disabled.
+    _cloudDataLoaded = false;
+    _cloudProfileRef = null;
 
     showToast(
-      'Cloud-Daten konnten nicht sicher geladen werden. Speichern ist deaktiviert.',
+      'Cloud-Daten konnten nicht sicher geladen werden. Lokale Daten bleiben erhalten; Speichern ist deaktiviert.',
       'error'
     );
 
@@ -386,6 +364,7 @@ function getOfflineQueue() {
     const value = JSON.parse(
       localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]'
     );
+
     return Array.isArray(value) ? value : [];
   } catch (error) {
     return [];
@@ -487,7 +466,9 @@ function restoreDraftWorkEntry() {
     const notesElement = document.getElementById('log-notes');
 
     if (draft.date && dateElement) dateElement.value = draft.date;
-    if (draft.project && projectElement) projectElement.value = draft.project;
+    if (draft.project && projectElement) {
+      projectElement.value = draft.project;
+    }
     if (draft.start && startElement) startElement.value = draft.start;
     if (draft.end && endElement) endElement.value = draft.end;
     if (draft.notes && notesElement) notesElement.value = draft.notes;
