@@ -2,11 +2,13 @@ let _persistTimer = null;
 let _cloudDataLoading = false;
 let _cloudDataLoaded = false;
 let _cloudProfileRef = null;
+
 let _cloudFieldNames = {
   work: 'workSessions',
   leave: 'leaveDays',
   trash: 'trash'
 };
+
 let _cloudBaseline = {
   work: 0,
   leave: 0,
@@ -77,18 +79,29 @@ function readArrayFieldDetailed(data, fieldNames) {
       }
 
       if (value && typeof value === 'object') {
-        return { values: toArray(value), fieldName };
+        return {
+          values: toArray(value),
+          fieldName
+        };
       }
     }
   }
 
-  return { values: [], fieldName: null };
+  return {
+    values: [],
+    fieldName: null
+  };
 }
 
 function getProfileEntryCount(data) {
-  const work = readArrayFieldDetailed(data, WORK_FIELD_NAMES).values.length;
-  const leave = readArrayFieldDetailed(data, LEAVE_FIELD_NAMES).values.length;
-  const trash = readArrayFieldDetailed(data, TRASH_FIELD_NAMES).values.length;
+  const work =
+    readArrayFieldDetailed(data, WORK_FIELD_NAMES).values.length;
+
+  const leave =
+    readArrayFieldDetailed(data, LEAVE_FIELD_NAMES).values.length;
+
+  const trash =
+    readArrayFieldDetailed(data, TRASH_FIELD_NAMES).values.length;
 
   return work + leave + trash;
 }
@@ -96,49 +109,77 @@ function getProfileEntryCount(data) {
 async function getAuthenticatedUid() {
   if (auth.currentUser?.uid) {
     authenticatedUserGlobal = auth.currentUser.uid;
-    localStorage.setItem('schuermann_auth_user', auth.currentUser.uid);
+
+    localStorage.setItem(
+      'schuermann_auth_user',
+      auth.currentUser.uid
+    );
+
     return auth.currentUser.uid;
   }
 
   const user = await new Promise(resolve => {
-    const unsubscribe = auth.onAuthStateChanged(currentUser => {
-      unsubscribe();
+    let unsubscribe = null;
+
+    unsubscribe = auth.onAuthStateChanged(currentUser => {
+      if (unsubscribe) unsubscribe();
       resolve(currentUser || null);
     });
   });
 
-  if (!user) return '';
+  if (!user?.uid) return '';
 
   authenticatedUserGlobal = user.uid;
-  localStorage.setItem('schuermann_auth_user', user.uid);
+
+  localStorage.setItem(
+    'schuermann_auth_user',
+    user.uid
+  );
 
   return user.uid;
 }
 
-// Normal users may only read their own UID-based profile document.
 async function findBestUserProfile(uid) {
   if (!uid) return null;
 
-  const profileRef = db.collection('userProfiles').doc(uid);
+  const profileRef = db
+    .collection('userProfiles')
+    .doc(uid);
+
   let snapshot;
 
   try {
-    snapshot = await profileRef.get({ source: 'server' });
+    snapshot = await profileRef.get({
+      source: 'server'
+    });
   } catch (serverError) {
     console.warn(
-      'Server profile load failed, trying Firestore cache:',
+      'Server profile load failed, trying cache:',
       serverError
     );
 
     try {
-      snapshot = await profileRef.get({ source: 'cache' });
+      snapshot = await profileRef.get({
+        source: 'cache'
+      });
     } catch (cacheError) {
-      console.error('Cached profile load failed:', cacheError);
+      console.warn(
+        'Cached profile load failed:',
+        cacheError
+      );
+
       throw serverError;
     }
   }
 
-  if (!snapshot?.exists) return null;
+  if (!snapshot.exists) {
+    return {
+      snapshot,
+      data: {},
+      score: 0,
+      entryCount: 0
+    };
+  }
 
   const data = snapshot.data() || {};
 
@@ -152,9 +193,9 @@ async function findBestUserProfile(uid) {
 
 function hasSuspiciousEmptyOverwrite() {
   const currentTotal =
-    globalLoggedSessionsDatabaseMock.length +
-    vacationLoggedDaysArrayCache.length +
-    recentlyDeletedItemsBinCache.length;
+    (globalLoggedSessionsDatabaseMock?.length || 0) +
+    (vacationLoggedDaysArrayCache?.length || 0) +
+    (recentlyDeletedItemsBinCache?.length || 0);
 
   const baselineTotal =
     _cloudBaseline.work +
@@ -164,112 +205,173 @@ function hasSuspiciousEmptyOverwrite() {
   return baselineTotal > 0 && currentTotal === 0;
 }
 
+function getCurrentCloudData() {
+  return {
+    work: Array.isArray(globalLoggedSessionsDatabaseMock)
+      ? globalLoggedSessionsDatabaseMock
+      : [],
+    leave: Array.isArray(vacationLoggedDaysArrayCache)
+      ? vacationLoggedDaysArrayCache
+      : [],
+    trash: Array.isArray(recentlyDeletedItemsBinCache)
+      ? recentlyDeletedItemsBinCache
+      : []
+  };
+}
+
 async function persistUserDataNow() {
-  if (_cloudDataLoading || !_cloudDataLoaded) return;
-  if (authenticatedUserRoleGlobal === 'admin') return;
+  if (_cloudDataLoading) return false;
+
+  if (authenticatedUserRoleGlobal === 'admin') {
+    return false;
+  }
 
   try {
     const uid = await getAuthenticatedUid();
 
-    if (!uid || !_cloudProfileRef) {
-      console.warn('Cloud save blocked: no verified profile document.');
-      return;
+    if (!uid || !auth.currentUser) {
+      throw new Error(
+        'Cloud save blocked: no authenticated Firebase user.'
+      );
     }
 
-    if (_cloudProfileRef.id !== uid) {
-      throw new Error('Cloud save blocked: profile ownership mismatch.');
+    if (auth.currentUser.uid !== uid) {
+      throw new Error(
+        'Cloud save blocked: authentication UID mismatch.'
+      );
     }
+
+    const profileRef = db
+      .collection('userProfiles')
+      .doc(uid);
+
+    _cloudProfileRef = profileRef;
 
     if (hasSuspiciousEmptyOverwrite()) {
-      console.error(
-        'Cloud save blocked: attempted to replace existing data with empty arrays.'
+      throw new Error(
+        'Cloud save blocked: existing cloud data would be replaced with empty arrays.'
       );
-
-      showToast(
-        'Speichern gestoppt: Leere Daten würden vorhandene Cloud-Daten überschreiben.',
-        'error'
-      );
-
-      return;
     }
 
-    const latestSnapshot = await _cloudProfileRef.get({ source: 'server' });
+    const currentData = getCurrentCloudData();
 
-    if (!latestSnapshot.exists) {
-      throw new Error('The verified cloud profile no longer exists.');
+    let latestData = {};
+    let latestSnapshot = null;
+
+    try {
+      latestSnapshot = await profileRef.get({
+        source: 'server'
+      });
+
+      if (latestSnapshot.exists) {
+        latestData = latestSnapshot.data() || {};
+      }
+    } catch (readError) {
+      console.warn(
+        'Pre-save profile check failed; continuing with merge save:',
+        readError
+      );
     }
 
-    const latestData = latestSnapshot.data() || {};
     const latestCount = getProfileEntryCount(latestData);
 
     const currentCount =
-      globalLoggedSessionsDatabaseMock.length +
-      vacationLoggedDaysArrayCache.length +
-      recentlyDeletedItemsBinCache.length;
+      currentData.work.length +
+      currentData.leave.length +
+      currentData.trash.length;
 
     if (latestCount > 0 && currentCount === 0) {
-      throw new Error('Blocked an unsafe empty cloud overwrite.');
+      throw new Error(
+        'Cloud save blocked: unsafe empty overwrite.'
+      );
     }
 
-    const vacAllowedVal = parseFloat(
-      document.getElementById('vacation-allowed-bank')?.value
+    const vacationInput =
+      document.getElementById('vacation-allowed-bank');
+
+    const vacationValue = parseFloat(
+      vacationInput?.value
     );
+
+    const displayName =
+      localStorage.getItem('schuermann_current_user') ||
+      latestData.name ||
+      auth.currentUser.displayName ||
+      uid;
 
     const dataToSave = {
       uid,
-      name:
-        localStorage.getItem('schuermann_current_user') ||
-        latestData.name ||
-        uid,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      vacationAllowed: isNaN(vacAllowedVal)
-        ? (parseFloat(latestData.vacationAllowed) || 30)
-        : vacAllowedVal
+      name: displayName,
+      updatedAt:
+        firebase.firestore.FieldValue.serverTimestamp(),
+      vacationAllowed: Number.isFinite(vacationValue)
+        ? vacationValue
+        : (parseFloat(latestData.vacationAllowed) || 30)
     };
 
     dataToSave[_cloudFieldNames.work] =
-      Array.isArray(globalLoggedSessionsDatabaseMock)
-        ? globalLoggedSessionsDatabaseMock
-        : [];
+      currentData.work;
 
     dataToSave[_cloudFieldNames.leave] =
-      Array.isArray(vacationLoggedDaysArrayCache)
-        ? vacationLoggedDaysArrayCache
-        : [];
+      currentData.leave;
 
     dataToSave[_cloudFieldNames.trash] =
-      Array.isArray(recentlyDeletedItemsBinCache)
-        ? recentlyDeletedItemsBinCache
-        : [];
+      currentData.trash;
 
-    await _cloudProfileRef.set(dataToSave, { merge: true });
+    // merge:true preserves all other existing profile fields.
+    await profileRef.set(dataToSave, {
+      merge: true
+    });
 
     _cloudBaseline = {
-      work: globalLoggedSessionsDatabaseMock.length,
-      leave: vacationLoggedDaysArrayCache.length,
-      trash: recentlyDeletedItemsBinCache.length
+      work: currentData.work.length,
+      leave: currentData.leave.length,
+      trash: currentData.trash.length
     };
+
+    _cloudDataLoaded = true;
+    _cloudProfileRef = profileRef;
+
+    console.info(
+      `Cloud save successful: ${currentData.work.length} work logs saved to userProfiles/${uid}.`
+    );
+
+    return true;
   } catch (error) {
     console.error('Cloud save failed:', error);
 
     showToast(
-      'Cloud-Speicherung wurde aus Sicherheitsgründen gestoppt.',
+      error?.code === 'permission-denied'
+        ? 'Cloud-Speicherung nicht erlaubt. Bitte Firebase-Regeln und Anmeldung prüfen.'
+        : 'Cloud-Speicherung fehlgeschlagen. Deine Daten bleiben in der App erhalten.',
       'error'
     );
 
-    throw error;
+    return false;
   }
 }
 
 function persistUserData() {
-  if (_cloudDataLoading || !_cloudDataLoaded) return;
+  if (_cloudDataLoading) return;
 
-  if (_persistTimer) clearTimeout(_persistTimer);
-  _persistTimer = setTimeout(persistUserDataNow, 400);
+  if (authenticatedUserRoleGlobal === 'admin') {
+    return;
+  }
+
+  if (_persistTimer) {
+    clearTimeout(_persistTimer);
+  }
+
+  _persistTimer = setTimeout(async () => {
+    _persistTimer = null;
+    await persistUserDataNow();
+  }, 400);
 }
 
 async function loadUserDataFromCloud() {
-  if (authenticatedUserRoleGlobal === 'admin') return false;
+  if (authenticatedUserRoleGlobal === 'admin') {
+    return false;
+  }
 
   _cloudDataLoading = true;
   _cloudDataLoaded = false;
@@ -278,30 +380,100 @@ async function loadUserDataFromCloud() {
   try {
     const uid = await getAuthenticatedUid();
 
-    if (!uid) {
-      throw new Error('No authenticated Firebase user found.');
-    }
-
-    const profile = await findBestUserProfile(uid);
-
-    if (!profile?.snapshot?.exists) {
+    if (!uid || !auth.currentUser) {
       throw new Error(
-        `No UID-based Firebase profile was found for ${uid}.`
+        'No authenticated Firebase user found.'
       );
     }
 
-    if (profile.snapshot.id !== uid) {
-      throw new Error('Loaded profile does not belong to the signed-in user.');
+    if (auth.currentUser.uid !== uid) {
+      throw new Error(
+        'Authenticated Firebase UID does not match the active user.'
+      );
+    }
+
+    const profileRef = db
+      .collection('userProfiles')
+      .doc(uid);
+
+    const profile = await findBestUserProfile(uid);
+    const snapshot = profile?.snapshot;
+
+    if (!snapshot) {
+      throw new Error(
+        'Firebase profile could not be loaded.'
+      );
+    }
+
+    _cloudProfileRef = profileRef;
+
+    // A missing UID profile can be initialized without deleting local data.
+    if (!snapshot.exists) {
+      const currentData = getCurrentCloudData();
+
+      await profileRef.set({
+        uid,
+        name:
+          localStorage.getItem('schuermann_current_user') ||
+          auth.currentUser.displayName ||
+          uid,
+        vacationAllowed: 30,
+        workSessions: currentData.work,
+        leaveDays: currentData.leave,
+        trash: currentData.trash,
+        createdAt:
+          firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt:
+          firebase.firestore.FieldValue.serverTimestamp()
+      }, {
+        merge: true
+      });
+
+      _cloudFieldNames = {
+        work: 'workSessions',
+        leave: 'leaveDays',
+        trash: 'trash'
+      };
+
+      _cloudBaseline = {
+        work: currentData.work.length,
+        leave: currentData.leave.length,
+        trash: currentData.trash.length
+      };
+
+      _cloudDataLoaded = true;
+
+      console.info(
+        `Created UID-based profile userProfiles/${uid}.`
+      );
+
+      return true;
+    }
+
+    if (snapshot.id !== uid) {
+      throw new Error(
+        'Loaded profile does not belong to the authenticated user.'
+      );
     }
 
     const data = profile.data || {};
-    const workResult = readArrayFieldDetailed(data, WORK_FIELD_NAMES);
-    const leaveResult = readArrayFieldDetailed(data, LEAVE_FIELD_NAMES);
-    const trashResult = readArrayFieldDetailed(data, TRASH_FIELD_NAMES);
+    const workResult =
+      readArrayFieldDetailed(data, WORK_FIELD_NAMES);
 
-    globalLoggedSessionsDatabaseMock = workResult.values;
-    vacationLoggedDaysArrayCache = leaveResult.values;
-    recentlyDeletedItemsBinCache = trashResult.values;
+    const leaveResult =
+      readArrayFieldDetailed(data, LEAVE_FIELD_NAMES);
+
+    const trashResult =
+      readArrayFieldDetailed(data, TRASH_FIELD_NAMES);
+
+    globalLoggedSessionsDatabaseMock =
+      workResult.values;
+
+    vacationLoggedDaysArrayCache =
+      leaveResult.values;
+
+    recentlyDeletedItemsBinCache =
+      trashResult.values;
 
     _cloudFieldNames = {
       work: workResult.fieldName || 'workSessions',
@@ -315,39 +487,50 @@ async function loadUserDataFromCloud() {
       trash: recentlyDeletedItemsBinCache.length
     };
 
-    _cloudProfileRef = profile.snapshot.ref;
+    const storedAllowance = parseFloat(
+      data.vacationAllowed
+    );
 
-    const storedAllowance = parseFloat(data.vacationAllowed);
+    if (Number.isFinite(storedAllowance)) {
+      const input =
+        document.getElementById('vacation-allowed-bank');
 
-    if (!isNaN(storedAllowance)) {
-      const input = document.getElementById('vacation-allowed-bank');
-      if (input) input.value = storedAllowance;
+      if (input) {
+        input.value = storedAllowance;
+      }
     }
 
     if (data.name) {
-      localStorage.setItem('schuermann_current_user', data.name);
+      localStorage.setItem(
+        'schuermann_current_user',
+        data.name
+      );
     }
 
     if (data.companyName) {
-      localStorage.setItem('schuermann_company_name', data.companyName);
+      localStorage.setItem(
+        'schuermann_company_name',
+        data.companyName
+      );
     }
 
     _cloudDataLoaded = true;
 
     console.info(
-      `Loaded ${globalLoggedSessionsDatabaseMock.length} work logs from profile ${profile.snapshot.id}.`
+      `Loaded ${globalLoggedSessionsDatabaseMock.length} work logs from userProfiles/${uid}.`
     );
 
     return true;
   } catch (error) {
     console.error('Cloud load failed:', error);
 
-    // Preserve current in-memory data. Saving remains disabled.
     _cloudDataLoaded = false;
     _cloudProfileRef = null;
 
     showToast(
-      'Cloud-Daten konnten nicht sicher geladen werden. Lokale Daten bleiben erhalten; Speichern ist deaktiviert.',
+      error?.code === 'permission-denied'
+        ? 'Cloud-Zugriff nicht erlaubt. Bitte Firebase-Regeln und Anmeldung prüfen.'
+        : 'Cloud-Daten konnten nicht geladen werden. Vorhandene Daten bleiben erhalten.',
       'error'
     );
 
@@ -372,15 +555,27 @@ function getOfflineQueue() {
 }
 
 function saveOfflineQueue(queue) {
-  const safeQueue = Array.isArray(queue) ? queue : [];
-  localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(safeQueue));
+  const safeQueue = Array.isArray(queue)
+    ? queue
+    : [];
 
-  const badge = document.getElementById('offline-queue-badge');
+  localStorage.setItem(
+    OFFLINE_QUEUE_KEY,
+    JSON.stringify(safeQueue)
+  );
+
+  const badge =
+    document.getElementById('offline-queue-badge');
+
   if (!badge) return;
 
-  badge.classList.toggle('visible', safeQueue.length > 0);
+  badge.classList.toggle(
+    'visible',
+    safeQueue.length > 0
+  );
+
   badge.textContent = safeQueue.length
-    ? '● ' + safeQueue.length + ' offline'
+    ? `● ${safeQueue.length} offline`
     : '● Offline';
 }
 
@@ -389,16 +584,22 @@ function updateOfflineBadge() {
 }
 
 async function flushOfflineQueue() {
-  if (authenticatedUserRoleGlobal === 'admin') return;
-  if (!_cloudDataLoaded || !_cloudProfileRef) return;
+  if (authenticatedUserRoleGlobal === 'admin') {
+    return;
+  }
+
+  if (!_cloudDataLoaded || !_cloudProfileRef) {
+    return;
+  }
 
   const queue = getOfflineQueue();
+
   if (!queue.length) return;
 
   showToast(
     activeLanguageGlobal === 'de'
-      ? '↑ ' + queue.length + ' Offline-Einträge werden synchronisiert...'
-      : '↑ Syncing ' + queue.length + ' offline entries...',
+      ? `↑ ${queue.length} Offline-Einträge werden synchronisiert...`
+      : `↑ Syncing ${queue.length} offline entries...`,
     'info'
   );
 
@@ -406,15 +607,22 @@ async function flushOfflineQueue() {
 
   for (const entry of queue) {
     try {
-      const alreadyExists = globalLoggedSessionsDatabaseMock.some(item => {
-        return item.id && entry.id && item.id === entry.id;
-      });
+      const alreadyExists =
+        globalLoggedSessionsDatabaseMock.some(item => {
+          return item.id &&
+            entry.id &&
+            item.id === entry.id;
+        });
 
       if (!alreadyExists) {
         globalLoggedSessionsDatabaseMock.push(entry);
       }
 
-      await persistUserDataNow();
+      const saved = await persistUserDataNow();
+
+      if (!saved) {
+        failed.push(entry);
+      }
     } catch (error) {
       failed.push(entry);
     }
@@ -439,53 +647,95 @@ const DRAFT_KEY = 'sch_work_draft';
 
 function saveDraftWorkEntry() {
   const draft = {
-    date: document.getElementById('log-date-picker')?.value || '',
-    project: document.getElementById('log-project-name')?.value || '',
-    start: document.getElementById('log-start-time')?.value || '',
-    end: document.getElementById('log-end-time')?.value || '',
-    notes: document.getElementById('log-notes')?.value || '',
+    date:
+      document.getElementById('log-date-picker')
+        ?.value || '',
+    project:
+      document.getElementById('log-project-name')
+        ?.value || '',
+    start:
+      document.getElementById('log-start-time')
+        ?.value || '',
+    end:
+      document.getElementById('log-end-time')
+        ?.value || '',
+    notes:
+      document.getElementById('log-notes')
+        ?.value || '',
     brk: activeSelectedFormBreakDuration
   };
 
   if (draft.project || draft.notes) {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify(draft)
+    );
   }
 }
 
 function restoreDraftWorkEntry() {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
+
     if (!raw) return;
 
     const draft = JSON.parse(raw);
 
-    const dateElement = document.getElementById('log-date-picker');
-    const projectElement = document.getElementById('log-project-name');
-    const startElement = document.getElementById('log-start-time');
-    const endElement = document.getElementById('log-end-time');
-    const notesElement = document.getElementById('log-notes');
+    const dateElement =
+      document.getElementById('log-date-picker');
 
-    if (draft.date && dateElement) dateElement.value = draft.date;
+    const projectElement =
+      document.getElementById('log-project-name');
+
+    const startElement =
+      document.getElementById('log-start-time');
+
+    const endElement =
+      document.getElementById('log-end-time');
+
+    const notesElement =
+      document.getElementById('log-notes');
+
+    if (draft.date && dateElement) {
+      dateElement.value = draft.date;
+    }
+
     if (draft.project && projectElement) {
       projectElement.value = draft.project;
     }
-    if (draft.start && startElement) startElement.value = draft.start;
-    if (draft.end && endElement) endElement.value = draft.end;
-    if (draft.notes && notesElement) notesElement.value = draft.notes;
+
+    if (draft.start && startElement) {
+      startElement.value = draft.start;
+    }
+
+    if (draft.end && endElement) {
+      endElement.value = draft.end;
+    }
+
+    if (draft.notes && notesElement) {
+      notesElement.value = draft.notes;
+    }
 
     if (draft.brk != null) {
-      activeSelectedFormBreakDuration = Number(draft.brk) || 0;
+      activeSelectedFormBreakDuration =
+        Number(draft.brk) || 0;
 
-      document.querySelectorAll('.break-pill').forEach(pill => {
-        const minutes = parseInt(
-          pill.getAttribute('onclick')?.match(/\d+/)?.[0] || '0'
-        );
+      document
+        .querySelectorAll('.break-pill')
+        .forEach(pill => {
+          const onclickValue =
+            pill.getAttribute('onclick') || '';
 
-        pill.classList.toggle(
-          'active',
-          minutes === activeSelectedFormBreakDuration
-        );
-      });
+          const minutes = parseInt(
+            onclickValue.match(/\d+/)?.[0] || '0',
+            10
+          );
+
+          pill.classList.toggle(
+            'active',
+            minutes === activeSelectedFormBreakDuration
+          );
+        });
     }
 
     if (draft.project || draft.notes) {
