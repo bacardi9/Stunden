@@ -2,6 +2,7 @@ let _persistTimer = null;
 let _cloudDataLoading = false;
 let _cloudDataLoaded = false;
 let _cloudProfileRef = null;
+let _firebaseReady = false;
 
 let _cloudFieldNames = {
   work: 'workSessions',
@@ -38,6 +39,29 @@ const TRASH_FIELD_NAMES = [
   'deletedItems',
   'trashItems'
 ];
+
+// ── CHECK FIREBASE READY ──────────────────────────────────────────
+function waitForFirebaseReady() {
+  return new Promise(resolve => {
+    if (typeof firebase === 'undefined' || !firebase.auth || !firebase.firestore) {
+      setTimeout(() => waitForFirebaseReady().then(resolve), 100);
+      return;
+    }
+    _firebaseReady = true;
+    resolve();
+  });
+}
+
+// Wait for Firebase on page load
+document.addEventListener('DOMContentLoaded', async function() {
+  await waitForFirebaseReady();
+  // Monitor auth state changes
+  auth.onAuthStateChanged(user => {
+    if (user && authenticatedUserRoleGlobal !== 'admin') {
+      loadUserDataFromCloud().catch(e => console.warn('Auto-load failed:', e));
+    }
+  });
+});
 
 function normalizeCloudIdentity(value) {
   return String(value || '')
@@ -221,6 +245,8 @@ function getCurrentCloudData() {
 
 async function persistUserDataNow() {
   if (_cloudDataLoading) return false;
+  if (!_firebaseReady) return false;
+  if (!auth.currentUser) return false;
 
   if (authenticatedUserRoleGlobal === 'admin') {
     return false;
@@ -333,7 +359,7 @@ async function persistUserDataNow() {
     _cloudProfileRef = profileRef;
 
     console.info(
-      `Cloud save successful: ${currentData.work.length} work logs saved to userProfiles/${uid}.`
+      `✓ Cloud save successful: ${currentData.work.length} work logs saved.`
     );
 
     return true;
@@ -342,8 +368,8 @@ async function persistUserDataNow() {
 
     showToast(
       error?.code === 'permission-denied'
-        ? 'Cloud-Speicherung nicht erlaubt. Bitte Firebase-Regeln und Anmeldung prüfen.'
-        : 'Cloud-Speicherung fehlgeschlagen. Deine Daten bleiben in der App erhalten.',
+        ? 'Cloud-Speicherung nicht erlaubt.'
+        : 'Cloud-Speicherung fehlgeschlagen.',
       'error'
     );
 
@@ -353,6 +379,8 @@ async function persistUserDataNow() {
 
 function persistUserData() {
   if (_cloudDataLoading) return;
+  if (!_firebaseReady) return;
+  if (!auth.currentUser) return;
 
   if (authenticatedUserRoleGlobal === 'admin') {
     return;
@@ -365,10 +393,13 @@ function persistUserData() {
   _persistTimer = setTimeout(async () => {
     _persistTimer = null;
     await persistUserDataNow();
-  }, 400);
+  }, 500);
 }
 
 async function loadUserDataFromCloud() {
+  if (!_firebaseReady) return false;
+  if (!auth.currentUser) return false;
+
   if (authenticatedUserRoleGlobal === 'admin') {
     return false;
   }
@@ -407,7 +438,6 @@ async function loadUserDataFromCloud() {
 
     _cloudProfileRef = profileRef;
 
-    // A missing UID profile can be initialized without deleting local data.
     if (!snapshot.exists) {
       const currentData = getCurrentCloudData();
 
@@ -444,7 +474,7 @@ async function loadUserDataFromCloud() {
       _cloudDataLoaded = true;
 
       console.info(
-        `Created UID-based profile userProfiles/${uid}.`
+        `✓ Created new cloud profile for ${uid}.`
       );
 
       return true;
@@ -517,7 +547,7 @@ async function loadUserDataFromCloud() {
     _cloudDataLoaded = true;
 
     console.info(
-      `Loaded ${globalLoggedSessionsDatabaseMock.length} work logs from userProfiles/${uid}.`
+      `✓ Loaded ${globalLoggedSessionsDatabaseMock.length} work logs from cloud.`
     );
 
     return true;
@@ -529,8 +559,8 @@ async function loadUserDataFromCloud() {
 
     showToast(
       error?.code === 'permission-denied'
-        ? 'Cloud-Zugriff nicht erlaubt. Bitte Firebase-Regeln und Anmeldung prüfen.'
-        : 'Cloud-Daten konnten nicht geladen werden. Vorhandene Daten bleiben erhalten.',
+        ? 'Cloud-Zugriff nicht erlaubt.'
+        : 'Cloud-Daten konnten nicht geladen werden.',
       'error'
     );
 
@@ -584,13 +614,9 @@ function updateOfflineBadge() {
 }
 
 async function flushOfflineQueue() {
-  if (authenticatedUserRoleGlobal === 'admin') {
-    return;
-  }
-
-  if (!_cloudDataLoaded || !_cloudProfileRef) {
-    return;
-  }
+  if (!_firebaseReady || !auth.currentUser) return;
+  if (authenticatedUserRoleGlobal === 'admin') return;
+  if (!_cloudDataLoaded || !_cloudProfileRef) return;
 
   const queue = getOfflineQueue();
 
