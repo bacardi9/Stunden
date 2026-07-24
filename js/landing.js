@@ -86,7 +86,7 @@ function normalizeUserName(name) {
 function getUserEmail(name) {
   const normalizedName = normalizeUserName(name);
   if (!normalizedName) return null;
-  return `${normalizedName}@meinestunden.online`;
+  return `${normalizedName}@sch.local`;
 }
 
 function setModalMessage(id, message, type) {
@@ -117,9 +117,8 @@ async function handleModalLogin(event) {
     return;
   }
 
-  // Check if input looks like an email
   const isEmailFormat = username.includes('@');
-  
+
   if (button) button.disabled = true;
 
   setModalMessage(
@@ -130,21 +129,30 @@ async function handleModalLogin(event) {
 
   try {
     let credential;
-    
+
     if (isEmailFormat) {
-      // Try direct email login
-      credential = await auth.signInWithEmailAndPassword(username, password);
+      credential = await auth.signInWithEmailAndPassword(
+        username,
+        password
+      );
     } else {
-      // Generate email from name and try login
       const email = getUserEmail(username);
+
       if (!email) {
-        throw new Error('invalid-email');
+        const invalidEmailError = new Error('Invalid username');
+        invalidEmailError.code = 'auth/invalid-email';
+        throw invalidEmailError;
       }
-      credential = await auth.signInWithEmailAndPassword(email, password);
+
+      credential = await auth.signInWithEmailAndPassword(
+        email,
+        password
+      );
     }
 
-    const displayName = credential.user.displayName || 
-                       (isEmailFormat ? username.split('@')[0] : username);
+    const displayName =
+      credential.user.displayName ||
+      (isEmailFormat ? username.split('@')[0] : username);
 
     localStorage.setItem(
       'schuermann_auth_user',
@@ -178,18 +186,24 @@ async function handleModalLogin(event) {
 
     localStorage.removeItem('schuermann_auth_user');
 
-    let errorMessage = 'Anmeldung fehlgeschlagen. Bitte Zugangsdaten prüfen.';
-    
+    let errorMessage =
+      'Anmeldung fehlgeschlagen. Bitte Zugangsdaten prüfen.';
+
     if (error?.code === 'auth/invalid-email') {
-      errorMessage = 'Bitte einen gültigen Namen oder eine gültige E-Mail-Adresse eingeben.';
-    } else if (error?.code === 'auth/user-not-found' || 
-               error?.code === 'auth/wrong-password' ||
-               error?.code === 'auth/invalid-credential') {
+      errorMessage =
+        'Bitte einen gültigen Namen oder eine gültige E-Mail-Adresse eingeben.';
+    } else if (
+      error?.code === 'auth/user-not-found' ||
+      error?.code === 'auth/wrong-password' ||
+      error?.code === 'auth/invalid-credential'
+    ) {
       errorMessage = 'Name nicht gefunden oder Kennwort falsch.';
     } else if (error?.code === 'auth/too-many-requests') {
-      errorMessage = 'Zu viele Anmeldeversuche. Bitte später erneut versuchen.';
+      errorMessage =
+        'Zu viele Anmeldeversuche. Bitte später erneut versuchen.';
     } else if (error?.code === 'auth/network-request-failed') {
-      errorMessage = 'Keine Verbindung zu Firebase. Bitte Internetverbindung prüfen.';
+      errorMessage =
+        'Keine Verbindung zu Firebase. Bitte Internetverbindung prüfen.';
     }
 
     setModalMessage(
@@ -225,6 +239,7 @@ function regGoToStep2() {
   }
 
   const normalizedName = normalizeUserName(name);
+
   if (!normalizedName) {
     setModalMessage(
       'reg-step1-msg',
@@ -294,6 +309,7 @@ async function handleRegisterAndPay() {
   }
 
   const normalizedName = normalizeUserName(name);
+
   if (!normalizedName) {
     regGoToStep1();
 
@@ -326,6 +342,7 @@ async function handleRegisterAndPay() {
 
   try {
     const email = getUserEmail(name);
+
     if (!email) {
       throw new Error('invalid-name');
     }
@@ -389,13 +406,16 @@ async function handleRegisterAndPay() {
     console.error('Registration failed:', error);
 
     let errorMessage = 'Das Konto konnte nicht erstellt werden.';
-    
+
     if (error?.code === 'auth/email-already-in-use') {
-      errorMessage = 'Für diesen Namen besteht bereits ein Konto. Bitte anmelden.';
+      errorMessage =
+        'Für diesen Namen besteht bereits ein Konto. Bitte anmelden.';
     } else if (error?.code === 'auth/weak-password') {
-      errorMessage = 'Das Kennwort ist zu schwach. Bitte mindestens 6 Zeichen verwenden.';
+      errorMessage =
+        'Das Kennwort ist zu schwach. Bitte mindestens 6 Zeichen verwenden.';
     } else if (error?.code === 'auth/network-request-failed') {
-      errorMessage = 'Keine Verbindung zu Firebase. Bitte Internetverbindung prüfen.';
+      errorMessage =
+        'Keine Verbindung zu Firebase. Bitte Internetverbindung prüfen.';
     } else if (error?.code === 'auth/invalid-email') {
       errorMessage = 'Der eingegebene Name ist ungültig.';
     }
