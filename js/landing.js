@@ -1,238 +1,440 @@
-// ══════════════════════════════════════════════════════════════════
-//  LANDING PAGE — Modal controls, Login flow, Register flow
-// ══════════════════════════════════════════════════════════════════
+function setShellVisibility(activeShellId) {
+  ['landing-page', 'app-view', 'admin-full-view', 'login-view'].forEach(id => {
+    const element = document.getElementById(id);
+    if (!element) return;
+
+    const active = id === activeShellId;
+    element.classList.toggle('app-shell-hidden', !active);
+    element.style.display = active ? 'block' : 'none';
+  });
+
+  document.body.classList.toggle(
+    'admin-mode',
+    activeShellId === 'admin-full-view'
+  );
+}
+
+function showLandingPage() {
+  setShellVisibility('landing-page');
+}
+
+function showUserApplication(user) {
+  setShellVisibility('app-view');
+
+  const storedName =
+    localStorage.getItem('schuermann_current_user') ||
+    user?.displayName ||
+    user?.email?.split('@')[0] ||
+    'User';
+
+  const profileName = document.getElementById('dash-profile-username');
+  const sidebarName = document.getElementById('user-profile-title');
+
+  if (profileName) profileName.textContent = storedName;
+  if (sidebarName) sidebarName.textContent = storedName;
+
+  if (typeof renderHistoricalRecordsSheet === 'function') {
+    renderHistoricalRecordsSheet();
+  }
+
+  if (typeof renderVacationRecordsSheet === 'function') {
+    renderVacationRecordsSheet();
+  }
+
+  if (typeof renderRecentlyDeletedBinSheet === 'function') {
+    renderRecentlyDeletedBinSheet();
+  }
+
+  if (typeof runGlobalApplicationMetricsEngine === 'function') {
+    runGlobalApplicationMetricsEngine();
+  }
+}
 
 function openLoginModal() {
-  document.getElementById('modal-login-backdrop').classList.add('open');
-  setTimeout(function() { var el = document.getElementById('modal-username'); if (el) el.focus(); }, 100);
+  document.getElementById('modal-login-backdrop')?.classList.add('open');
+
+  setTimeout(() => {
+    document.getElementById('modal-username')?.focus();
+  }, 50);
 }
+
 function closeLoginModal() {
-  document.getElementById('modal-login-backdrop').classList.remove('open');
-  var m = document.getElementById('modal-login-msg');
-  if (m) { m.textContent = ''; m.className = 'modal-msg'; }
+  document.getElementById('modal-login-backdrop')?.classList.remove('open');
+  setModalMessage('modal-login-msg', '', '');
 }
+
 function openRegisterModal() {
-  document.getElementById('modal-register-backdrop').classList.add('open');
-  regGoToStep1();
-  setTimeout(function() { var el = document.getElementById('reg-name'); if (el) el.focus(); }, 100);
+  document.getElementById('modal-register-backdrop')?.classList.add('open');
 }
+
 function closeRegisterModal() {
-  document.getElementById('modal-register-backdrop').classList.remove('open');
-  var m1 = document.getElementById('reg-step1-msg'); if (m1) m1.textContent = '';
-  var m2 = document.getElementById('reg-step2-msg'); if (m2) m2.textContent = '';
+  document.getElementById('modal-register-backdrop')?.classList.remove('open');
+}
+
+function normalizeUserName(name) {
+  return String(name || '')
+    .trim()
+    .toLowerCase()
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .replace(/\s+/g, '')
+    .replace(/[^a-z0-9._-]/g, '');
+}
+
+function getUserEmail(name) {
+  const normalizedName = normalizeUserName(name);
+  if (!normalizedName) return null;
+  return `${normalizedName}@meinestunden.online`;
+}
+
+function setModalMessage(id, message, type) {
+  const element = document.getElementById(id);
+  if (!element) return;
+
+  element.textContent = message;
+  element.className = `modal-msg${type ? ` ${type}` : ''}`;
+}
+
+async function handleModalLogin(event) {
+  event.preventDefault();
+
+  const username =
+    document.getElementById('modal-username')?.value.trim() || '';
+
+  const password =
+    document.getElementById('modal-passcode')?.value || '';
+
+  const button = document.getElementById('modal-login-btn');
+
+  if (!username || !password) {
+    setModalMessage(
+      'modal-login-msg',
+      'Bitte Name und Kennwort eingeben.',
+      'error'
+    );
+    return;
+  }
+
+  // Check if input looks like an email
+  const isEmailFormat = username.includes('@');
+  
+  if (button) button.disabled = true;
+
+  setModalMessage(
+    'modal-login-msg',
+    'Anmeldung wird geprüft ...',
+    ''
+  );
+
+  try {
+    let credential;
+    
+    if (isEmailFormat) {
+      // Try direct email login
+      credential = await auth.signInWithEmailAndPassword(username, password);
+    } else {
+      // Generate email from name and try login
+      const email = getUserEmail(username);
+      if (!email) {
+        throw new Error('invalid-email');
+      }
+      credential = await auth.signInWithEmailAndPassword(email, password);
+    }
+
+    const displayName = credential.user.displayName || 
+                       (isEmailFormat ? username.split('@')[0] : username);
+
+    localStorage.setItem(
+      'schuermann_auth_user',
+      credential.user.uid
+    );
+
+    localStorage.setItem(
+      'schuermann_current_user',
+      displayName
+    );
+
+    authenticatedUserGlobal = credential.user.uid;
+    authenticatedUserRoleGlobal = 'user';
+
+    closeLoginModal();
+    showUserApplication(credential.user);
+
+    if (typeof loadUserDataFromCloud === 'function') {
+      await loadUserDataFromCloud();
+    }
+
+    if (typeof renderHistoricalRecordsSheet === 'function') {
+      renderHistoricalRecordsSheet();
+    }
+
+    if (typeof runGlobalApplicationMetricsEngine === 'function') {
+      runGlobalApplicationMetricsEngine();
+    }
+  } catch (error) {
+    console.error('Login failed:', error);
+
+    localStorage.removeItem('schuermann_auth_user');
+
+    let errorMessage = 'Anmeldung fehlgeschlagen. Bitte Zugangsdaten prüfen.';
+    
+    if (error?.code === 'auth/invalid-email') {
+      errorMessage = 'Bitte einen gültigen Namen oder eine gültige E-Mail-Adresse eingeben.';
+    } else if (error?.code === 'auth/user-not-found' || 
+               error?.code === 'auth/wrong-password' ||
+               error?.code === 'auth/invalid-credential') {
+      errorMessage = 'Name nicht gefunden oder Kennwort falsch.';
+    } else if (error?.code === 'auth/too-many-requests') {
+      errorMessage = 'Zu viele Anmeldeversuche. Bitte später erneut versuchen.';
+    } else if (error?.code === 'auth/network-request-failed') {
+      errorMessage = 'Keine Verbindung zu Firebase. Bitte Internetverbindung prüfen.';
+    }
+
+    setModalMessage(
+      'modal-login-msg',
+      errorMessage,
+      'error'
+    );
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+function regGoToStep2() {
+  const name =
+    document.getElementById('reg-name')?.value.trim() || '';
+
+  const company =
+    document.getElementById('reg-company')?.value.trim() || '';
+
+  const password =
+    document.getElementById('reg-password')?.value || '';
+
+  const confirmation =
+    document.getElementById('reg-password2')?.value || '';
+
+  if (!name || !company || !password || !confirmation) {
+    setModalMessage(
+      'reg-step1-msg',
+      'Bitte alle Felder ausfüllen.',
+      'error'
+    );
+    return;
+  }
+
+  const normalizedName = normalizeUserName(name);
+  if (!normalizedName) {
+    setModalMessage(
+      'reg-step1-msg',
+      'Bitte einen gültigen Namen eingeben.',
+      'error'
+    );
+    return;
+  }
+
+  if (password.length < 6) {
+    setModalMessage(
+      'reg-step1-msg',
+      'Das Kennwort muss mindestens 6 Zeichen haben.',
+      'error'
+    );
+    return;
+  }
+
+  if (password !== confirmation) {
+    setModalMessage(
+      'reg-step1-msg',
+      'Die Kennwörter stimmen nicht überein.',
+      'error'
+    );
+    return;
+  }
+
+  setModalMessage('reg-step1-msg', '', '');
+
+  document.getElementById('reg-tab-1')?.classList.remove('active');
+  document.getElementById('reg-tab-2')?.classList.add('active');
+  document.getElementById('reg-panel-1')?.classList.remove('active');
+  document.getElementById('reg-panel-2')?.classList.add('active');
 }
 
 function regGoToStep1() {
-  document.getElementById('reg-panel-1').classList.add('active');
-  document.getElementById('reg-panel-2').classList.remove('active');
-  document.getElementById('reg-tab-1').classList.add('active');
-  document.getElementById('reg-tab-1').classList.remove('done');
-  document.getElementById('reg-tab-2').classList.remove('active');
+  document.getElementById('reg-tab-1')?.classList.add('active');
+  document.getElementById('reg-tab-2')?.classList.remove('active');
+  document.getElementById('reg-panel-1')?.classList.add('active');
+  document.getElementById('reg-panel-2')?.classList.remove('active');
 }
-function regGoToStep2() {
-  var name    = document.getElementById('reg-name').value.trim();
-  var company = document.getElementById('reg-company').value.trim();
-  var pw      = document.getElementById('reg-password').value;
-  var pw2     = document.getElementById('reg-password2').value;
-  var msg     = document.getElementById('reg-step1-msg');
-  if (!name)         { showRegMsg(msg, 'Bitte vollständigen Namen eingeben.'); return; }
-  if (!company)      { showRegMsg(msg, 'Bitte Firmen- / Betriebsnamen eingeben.'); return; }
-  if (pw.length < 6) { showRegMsg(msg, 'Kennwort muss mind. 6 Zeichen haben.'); return; }
-  if (pw !== pw2)    { showRegMsg(msg, 'Kennwörter stimmen nicht überein.'); return; }
-  msg.textContent = ''; msg.className = 'modal-msg';
-  document.getElementById('reg-panel-1').classList.remove('active');
-  document.getElementById('reg-panel-2').classList.add('active');
-  document.getElementById('reg-tab-1').classList.remove('active');
-  document.getElementById('reg-tab-1').classList.add('done');
-  document.getElementById('reg-tab-2').classList.add('active');
-}
-function showRegMsg(el, text) { el.textContent = text; el.className = 'modal-msg error'; }
 
-// ── Register & Pay ────────────────────────────────────────────────
 async function handleRegisterAndPay() {
-  var btn     = document.getElementById('reg-pay-btn');
-  var msg     = document.getElementById('reg-step2-msg');
-  var name    = document.getElementById('reg-name').value.trim();
-  var company = document.getElementById('reg-company').value.trim();
-  var pw      = document.getElementById('reg-password').value;
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Konto wird erstellt…';
-  msg.textContent = ''; msg.className = 'modal-msg';
+  const name =
+    document.getElementById('reg-name')?.value.trim() || '';
+
+  const company =
+    document.getElementById('reg-company')?.value.trim() || '';
+
+  const password =
+    document.getElementById('reg-password')?.value || '';
+
+  const confirmation =
+    document.getElementById('reg-password2')?.value || '';
+
+  const button = document.getElementById('reg-pay-btn');
+
+  if (!name || !company || password.length < 6) {
+    regGoToStep1();
+
+    setModalMessage(
+      'reg-step1-msg',
+      'Bitte gültige Kontodaten eingeben.',
+      'error'
+    );
+    return;
+  }
+
+  const normalizedName = normalizeUserName(name);
+  if (!normalizedName) {
+    regGoToStep1();
+
+    setModalMessage(
+      'reg-step1-msg',
+      'Bitte einen gültigen Namen eingeben.',
+      'error'
+    );
+    return;
+  }
+
+  if (password !== confirmation) {
+    regGoToStep1();
+
+    setModalMessage(
+      'reg-step1-msg',
+      'Die Kennwörter stimmen nicht überein.',
+      'error'
+    );
+    return;
+  }
+
+  if (button) button.disabled = true;
+
+  setModalMessage(
+    'reg-step2-msg',
+    'Konto wird erstellt ...',
+    ''
+  );
+
   try {
-    var loginKey = name.toLowerCase()
-      .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
-      .replace(/[^a-z0-9]/gi,'');
-    if (!loginKey) throw new Error('Ungültiger Name');
-    var email = loginKey + '@sch.local';
-    var cred  = await auth.createUserWithEmailAndPassword(email, pw);
-    var displayName = name.split(' ').map(function(w) {
-      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
-    }).join(' ');
-    await db.collection('userProfiles').doc(cred.user.uid).set({
-      name: displayName, companyName: company, uid: cred.user.uid, isAdmin: false,
-      vacationAllowed: 30,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      lastLogin:  firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-    authenticatedUserGlobal     = cred.user.uid;
+    const email = getUserEmail(name);
+    if (!email) {
+      throw new Error('invalid-name');
+    }
+
+    const credential = await auth.createUserWithEmailAndPassword(
+      email,
+      password
+    );
+
+    await credential.user.updateProfile({
+      displayName: name
+    });
+
+    await db
+      .collection('userProfiles')
+      .doc(credential.user.uid)
+      .set({
+        uid: credential.user.uid,
+        name,
+        email,
+        companyName: company,
+        vacationAllowed: 30,
+        workSessions: [],
+        leaveDays: [],
+        trash: [],
+        createdAt:
+          firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt:
+          firebase.firestore.FieldValue.serverTimestamp()
+      }, {
+        merge: true
+      });
+
+    localStorage.setItem(
+      'schuermann_auth_user',
+      credential.user.uid
+    );
+
+    localStorage.setItem(
+      'schuermann_current_user',
+      name
+    );
+
+    localStorage.setItem(
+      'schuermann_company_name',
+      company
+    );
+
+    authenticatedUserGlobal = credential.user.uid;
     authenticatedUserRoleGlobal = 'user';
-    localStorage.setItem('schuermann_auth_user',    cred.user.uid);
-    localStorage.setItem('schuermann_auth_role',    'user');
-    localStorage.setItem('schuermann_current_user', displayName);
-    localStorage.setItem('schuermann_company_name', company);
-    msg.textContent = '✓ Konto erstellt! Du wirst weitergeleitet…';
-    msg.className = 'modal-msg success';
-    setTimeout(function() {
-      closeRegisterModal();
-      launchSessionUI();
-    }, 800);
-  } catch(err) {
-    console.error(err);
-    var errMsg = 'Fehler beim Erstellen des Kontos.';
-    if (err.code === 'auth/email-already-in-use') errMsg = 'Dieser Name ist bereits vergeben. Bitte melde dich an.';
-    else if (err.code === 'auth/weak-password')   errMsg = 'Kennwort zu schwach – mind. 6 Zeichen.';
-    msg.textContent = errMsg; msg.className = 'modal-msg error';
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-lock"></i> Jetzt kaufen & Konto aktivieren — 9,99 €';
-  }
-}
 
-// ── Login via modal ───────────────────────────────────────────────
-async function handleModalLogin(e) {
-  e.preventDefault();
-  var rawName = document.getElementById('modal-username').value.trim().replace(/\s+/g, ' ');
-  var code    = document.getElementById('modal-passcode').value.trim();
-  var msg     = document.getElementById('modal-login-msg');
-  var btn     = document.getElementById('modal-login-btn');
+    setModalMessage(
+      'reg-step2-msg',
+      'Konto erfolgreich erstellt.',
+      'success'
+    );
 
-  msg.textContent = 'Verbindung wird hergestellt…';
-  msg.className   = 'modal-msg success';
-  btn.disabled    = true;
-  btn.innerHTML   = '<i class="fa-solid fa-circle-notch fa-spin" style="margin-right:8px;"></i>Anmelden…';
+    closeRegisterModal();
+    showUserApplication(credential.user);
+  } catch (error) {
+    console.error('Registration failed:', error);
 
-  try {
-    var loginKey = rawName.toLowerCase()
-      .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
-      .replace(/[^a-z0-9]/gi,'');
-    if (!loginKey) throw new Error('empty-name');
-
-    var email = loginKey + '@sch.local';
-    var cred  = await auth.signInWithEmailAndPassword(email, code);
-
-    authenticatedUserGlobal = cred.user.uid;
-
-    var displayName = rawName.split(' ').map(function(w) {
-      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
-    }).join(' ');
-
-    var isAdminFlag = false, companyName = '';
-    try {
-      var snap = await db.collection('userProfiles').doc(cred.user.uid).get();
-      if (snap.exists) {
-        isAdminFlag = snap.data().isAdmin === true;
-        companyName = snap.data().companyName || '';
-        if (snap.data().name) displayName = snap.data().name;
-      }
-    } catch(profileErr) {
-      console.warn('Profile load error (non-fatal):', profileErr);
+    let errorMessage = 'Das Konto konnte nicht erstellt werden.';
+    
+    if (error?.code === 'auth/email-already-in-use') {
+      errorMessage = 'Für diesen Namen besteht bereits ein Konto. Bitte anmelden.';
+    } else if (error?.code === 'auth/weak-password') {
+      errorMessage = 'Das Kennwort ist zu schwach. Bitte mindestens 6 Zeichen verwenden.';
+    } else if (error?.code === 'auth/network-request-failed') {
+      errorMessage = 'Keine Verbindung zu Firebase. Bitte Internetverbindung prüfen.';
+    } else if (error?.code === 'auth/invalid-email') {
+      errorMessage = 'Der eingegebene Name ist ungültig.';
     }
 
-    authenticatedUserRoleGlobal = isAdminFlag ? 'admin' : 'user';
-    localStorage.setItem('schuermann_auth_user',    cred.user.uid);
-    localStorage.setItem('schuermann_auth_role',    authenticatedUserRoleGlobal);
-    localStorage.setItem('schuermann_current_user', displayName);
-    if (companyName) localStorage.setItem('schuermann_company_name', companyName);
-
-    db.collection('userProfiles').doc(cred.user.uid).set({
-      name: displayName, uid: cred.user.uid,
-      lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true }).catch(function(e){ console.warn('lastLogin update failed:', e); });
-
-    msg.textContent = 'Willkommen, ' + displayName + '!';
-    msg.className   = 'modal-msg success';
-
-    // Close modal then go straight to launchSessionUI — no intermediate _showApp()
-    setTimeout(function() {
-      closeLoginModal();
-      launchSessionUI();
-    }, 400);
-
-  } catch(err) {
-    console.error('Login error:', err);
-    var errText = 'Mitarbeiter nicht gefunden oder falsches Kennwort.';
-    if (err.code === 'auth/network-request-failed') errText = 'Kein Internet. Bitte Verbindung prüfen.';
-    if (err.code === 'auth/too-many-requests')      errText = 'Zu viele Versuche. Bitte kurz warten.';
-    msg.textContent = errText;
-    msg.className   = 'modal-msg error';
-    btn.disabled    = false;
-    btn.innerHTML   = '<i class="fa-solid fa-right-to-bracket" style="margin-right:8px;"></i>Anmelden';
+    setModalMessage(
+      'reg-step2-msg',
+      errorMessage,
+      'error'
+    );
+  } finally {
+    if (button) button.disabled = false;
   }
 }
 
-// ── Backwards-compat stubs ────────────────────────────────────────
-function hideLandingShowApp() {
-  var lp = document.getElementById('landing-page');
-  if (lp) lp.style.display = 'none';
-}
-function _showApp() {
-  launchSessionUI();
-}
+document.addEventListener('DOMContentLoaded', () => {
+  showLandingPage();
 
-// ── Sign-out patches ──────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
+  if (typeof auth === 'undefined') {
+    console.error('Firebase Auth is not available.');
+    localStorage.removeItem('schuermann_auth_user');
+    return;
+  }
 
-  var _origSignOut = window.handleSecureSignOutRequest;
-  window.handleSecureSignOutRequest = function() {
-    if (typeof toggleSidebarDrawer === 'function') toggleSidebarDrawer(false);
-    if (typeof showConfirmModal === 'function') {
-      showConfirmModal(
-        (typeof activeLanguageGlobal !== 'undefined' && activeLanguageGlobal === 'de')
-          ? 'Wirklich abmelden?' : 'Sign out?',
-        function() {
-          auth.signOut().catch(function(){});
-          localStorage.removeItem('schuermann_auth_user');
-          localStorage.removeItem('schuermann_auth_role');
-          authenticatedUserGlobal      = '';
-          authenticatedUserRoleGlobal  = 'user';
-          globalLoggedSessionsDatabaseMock = [];
-          vacationLoggedDaysArrayCache     = [];
-          recentlyDeletedItemsBinCache     = [];
-          adminAllEntriesCache             = [];
-          _hideEl('app-view');
-          _hideEl('admin-full-view');
-          _hideEl('login-view');
-          document.body.classList.remove('admin-mode');
-          var lp = document.getElementById('landing-page');
-          if (lp) { lp.classList.remove('app-shell-hidden'); lp.style.display = 'block'; }
-        }
-      );
-    } else if (typeof _origSignOut === 'function') {
-      _origSignOut.apply(this, arguments);
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      authenticatedUserGlobal = '';
+      authenticatedUserRoleGlobal = 'user';
+      localStorage.removeItem('schuermann_auth_user');
+      showLandingPage();
+      return;
     }
-  };
 
-  var _origAdminSignOut = window.handleAdminSignOut;
-  if (typeof _origAdminSignOut === 'function') {
-    window.handleAdminSignOut = function() {
-      if (typeof showConfirmModal === 'function') {
-        showConfirmModal('Wirklich abmelden?', function() {
-          auth.signOut().catch(function(){});
-          localStorage.removeItem('schuermann_auth_user');
-          localStorage.removeItem('schuermann_auth_role');
-          authenticatedUserGlobal     = '';
-          authenticatedUserRoleGlobal = 'user';
-          _hideEl('app-view');
-          _hideEl('admin-full-view');
-          document.body.classList.remove('admin-mode');
-          var lp = document.getElementById('landing-page');
-          if (lp) { lp.classList.remove('app-shell-hidden'); lp.style.display = 'block'; }
-        });
-      }
-    };
-  }
-});
+    authenticatedUserGlobal = user.uid;
 
-// ── ESC closes modals ─────────────────────────────────────────────
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') { closeLoginModal(); closeRegisterModal(); }
+    localStorage.setItem(
+      'schuermann_auth_user',
+      user.uid
+    );
+
+    showUserApplication(user);
+  });
 });
