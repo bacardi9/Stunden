@@ -1,418 +1,477 @@
-function getDefault20to20Period() {
-  const now = new Date(), day = now.getDate();
-  let start, end;
-  if (day >= 20) { start = new Date(now.getFullYear(), now.getMonth(), 20); end = new Date(now.getFullYear(), now.getMonth()+1, 19); }
-  else           { start = new Date(now.getFullYear(), now.getMonth()-1, 20); end = new Date(now.getFullYear(), now.getMonth(), 19); }
-  start.setHours(0,0,0,0); end.setHours(23,59,59,999);
-  return { start, end };
+function getPDFCompanyName() {
+  return (
+    localStorage.getItem('schuermann_company_name') ||
+    'Meine Stunden Online'
+  ).trim();
 }
 
-function parseDMY(dmy) {
-  const [d,m,y] = dmy.split('/').map(Number);
-  return new Date(y, m-1, d);
+function getPDFEmployeeName() {
+  return (
+    localStorage.getItem('schuermann_current_user') ||
+    auth.currentUser?.displayName ||
+    'Mitarbeiter'
+  ).trim();
 }
 
-function drawSchuermannLogo(doc, x, y, pageWidth, margin) {
-  doc.setFillColor(192, 57, 43);
-  doc.rect(x, y, 2.5, 14, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
-  doc.setTextColor(15, 23, 42);
-  doc.text('SCHÜRMANN', x + 6, y + 6.5);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(80, 80, 80);
-  doc.text('Gebäude  +  Energie', x + 6, y + 12);
-  doc.setDrawColor(192, 57, 43);
-  doc.setLineWidth(0.4);
-  doc.line(x, y + 14.5, x + 68, y + 14.5);
-}
+function getDefaultPayrollPeriod() {
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
 
-function triggerPDFExportEngine(useCustom = false) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
-  const pageWidth = doc.internal.pageSize.getWidth(), pageHeight = doc.internal.pageSize.getHeight(), margin = 15;
-  let y = margin;
+  let start;
+  let end;
 
-  const user = localStorage.getItem('schuermann_current_user')
-    || localStorage.getItem('schuermann_auth_display')
-    || 'Mitarbeiter';
+  if (today.getDate() >= 20) {
+    start = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      20,
+      12
+    );
 
-  const sessions = (globalLoggedSessionsDatabaseMock || []).filter(s => s.type === 'work' || s.type === 'schule');
-
-  let periodStart, periodEnd;
-  if (useCustom) {
-    const startVal = document.getElementById('export-start-date')?.value;
-    const endVal   = document.getElementById('export-end-date')?.value;
-    if (startVal && endVal) { periodStart = new Date(startVal); periodStart.setHours(0,0,0,0); periodEnd = new Date(endVal); periodEnd.setHours(23,59,59,999); }
-    else { const def = getDefault20to20Period(); periodStart = def.start; periodEnd = def.end; }
-  } else { const def = getDefault20to20Period(); periodStart = def.start; periodEnd = def.end; }
-
-  const filteredSessions = sessions.filter(s => { const d = parseDMY(s.date); return d >= periodStart && d <= periodEnd; });
-
-  // Filter leave days in period
-  const filteredLeave = (vacationLoggedDaysArrayCache || []).filter(l => {
-    try { const d = parseDMY(l.date); return d >= periodStart && d <= periodEnd; } catch(e) { return false; }
-  });
-  const vacDays  = filteredLeave.filter(l => l.type === 'vacation');
-  const sickDays = filteredLeave.filter(l => l.type === 'sick');
-
-  const today = new Date().toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' });
-
-  const groups = {};
-  filteredSessions.forEach(s => { (groups[s.date] = groups[s.date] || []).push(s); });
-  const dateKeys = Object.keys(groups).sort((a, b) => {
-    const [da,ma,ya] = a.split('/').map(Number), [db,mb,yb] = b.split('/').map(Number);
-    return new Date(ya,ma-1,da) - new Date(yb,mb-1,db);
-  });
-
-  const totalNet   = filteredSessions.reduce((sum,s) => sum + ((s.duration||0)-((s.breakTime||0)/60)), 0);
-  const primaryRed = [192,57,43], darkSlate = [44,62,80], lightGray = [248,250,252], borderGray = [229,231,235], textDark = [15,23,42], textMuted = [100,116,139];
-
-  // ── Header ──
-  doc.setFillColor(...primaryRed); doc.rect(0, 0, pageWidth, 3, 'F');
-  y = 8;
-  drawSchuermannLogo(doc, margin, y, pageWidth, margin);
-  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...textDark);
-  doc.text('ARBEITSBERICHT', pageWidth - margin, y + 6, {align:'right'});
-  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...textMuted);
-  doc.text('Ausstellungsdatum: ' + today, pageWidth - margin, y + 12, {align:'right'});
-
-  y += 20;
-  doc.setDrawColor(...primaryRed); doc.setLineWidth(0.8); doc.line(margin, y, pageWidth - margin, y);
-  y += 8;
-
-  // ── Summary cards: MITARBEITER | ARBEITSTAGE | GESAMTARBEITSZEIT | URLAUB | KRANKTAGE ──
-  const cards = [
-    {label:'MITARBEITER',      value: user,                   accent: false},
-    {label:'ARBEITSTAGE',      value: filteredSessions.filter(s=>s.type==='work').length + ' Einträge', accent: false},
-    {label:'GESAMTARBEITSZEIT',value: totalNet.toFixed(2)+' h', accent: true},
-    {label:'URLAUBSTAGE',      value: vacDays.length + ' Tage',  accent: false, color:[59,130,246]},
-    {label:'KRANKTAGE',        value: sickDays.length + ' Tage', accent: false, color:[220,38,38]},
-  ];
-  const cardW = (pageWidth - margin*2 - (cards.length-1)*2) / cards.length;
-  const cardH = 18;
-  cards.forEach((card, i) => {
-    const x = margin + i*(cardW+2);
-    doc.setFillColor(...(card.accent ? darkSlate : lightGray));
-    doc.roundedRect(x, y, cardW, cardH, 2, 2, 'F');
-    const accentColor = card.color || (card.accent ? primaryRed : darkSlate);
-    doc.setFillColor(...accentColor);
-    doc.rect(x, y, 2, cardH, 'F');
-    doc.setFontSize(6); doc.setFont('helvetica','bold');
-    doc.setTextColor(...(card.accent ? [203,213,225] : textMuted));
-    doc.text(card.label, x+5, y+5.5);
-    doc.setFontSize(9); doc.setFont('helvetica','bold');
-    doc.setTextColor(...(card.accent ? [255,255,255] : (card.color || textDark)));
-    doc.text(card.value, x+5, y+13);
-  });
-  y += cardH + 10;
-
-  const fmtDate = (key) => { const [d,m,yr] = key.split('/').map(Number); return new Date(yr,m-1,d).toLocaleDateString('de-DE', {weekday:'long',day:'2-digit',month:'long',year:'numeric'}); };
-
-  // ── Work entries ──
-  if (!dateKeys.length) {
-    doc.setFontSize(11); doc.setTextColor(...textMuted);
-    doc.text('Keine Arbeitseinträge vorhanden.', pageWidth/2, y+10, {align:'center'});
-    y += 20;
+    end = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      19,
+      12
+    );
   } else {
-    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...primaryRed);
-    doc.text('ARBEITSZEIT', margin, y); y += 6;
-    doc.setDrawColor(...borderGray); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth-margin, y); y += 6;
+    start = new Date(
+      today.getFullYear(),
+      today.getMonth() - 1,
+      20,
+      12
+    );
 
-    dateKeys.forEach(key => {
-      const items = groups[key].slice().sort((a,b) => (a.startTime||'').localeCompare(b.startTime||''));
-      let dailyNet = 0, dailyBreak = 0;
-      const estimatedHeight = 25 + items.length*8 + 10;
-      if (y + estimatedHeight > pageHeight - 20) {
-        doc.addPage(); y = margin;
-        doc.setFillColor(...primaryRed); doc.rect(0,0,pageWidth,3,'F');
-        drawSchuermannLogo(doc, margin, 8, pageWidth, margin);
-        y = 30;
-      }
-
-      doc.setFillColor(243,244,246); doc.roundedRect(margin,y,pageWidth-margin*2,8,1,1,'F');
-      doc.setFillColor(...primaryRed); doc.rect(margin,y+7,pageWidth-margin*2,1,'F');
-      doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(...textDark);
-      doc.text(fmtDate(key), margin+4, y+5.5);
-      y += 10;
-
-      const tableData = items.map(s => {
-        const isSchule = s.type === 'schule';
-        const net = isSchule ? 0 : ((s.duration||0)-((s.breakTime||0)/60));
-        dailyNet += net; dailyBreak += isSchule ? 0 : ((s.breakTime||0)/60);
-        return [
-          isSchule ? '—' : (s.startTime && s.endTime ? s.startTime+' – '+s.endTime : '—'),
-          isSchule ? 'BERUFSSCHULE (Schultag)' : (s.project||'—'),
-          isSchule ? '—' : net.toFixed(2)+' h'
-        ];
-      });
-
-      doc.autoTable({
-        startY: y,
-        head: [['ZEIT','BAUSTELLE','DAUER']],
-        body: tableData,
-        margin: {top:28, left:margin, right:margin, bottom:15},
-        styles: {fontSize:9, cellPadding:3, textColor:textDark, lineColor:borderGray, lineWidth:0.1},
-        headStyles: {fillColor:darkSlate, textColor:[255,255,255], fontStyle:'bold', fontSize:8, cellPadding:2.5},
-        alternateRowStyles: {fillColor:[250,251,252]},
-        columnStyles: {0:{cellWidth:35}, 2:{cellWidth:25, halign:'right'}},
-        didDrawPage: (data) => {
-          if (data.pageNumber > 1) { doc.setFillColor(...primaryRed); doc.rect(0,0,pageWidth,3,'F'); }
-        }
-      });
-      y = doc.lastAutoTable.finalY + 1;
-
-      doc.setFillColor(248,250,252); doc.rect(margin,y,pageWidth-margin*2,7,'F');
-      doc.setDrawColor(...borderGray); doc.line(margin,y,pageWidth-margin,y);
-      doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...textMuted);
-      doc.text('Tagesarbeit: '+dailyNet.toFixed(2)+' h    |    Pause: '+dailyBreak.toFixed(2)+' h', pageWidth-margin-4, y+4.5, {align:'right'});
-      y += 12;
-    });
+    end = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      19,
+      12
+    );
   }
 
-  // ── Vacation section ──
-  if (vacDays.length > 0) {
-    if (y + 30 > pageHeight - 20) { doc.addPage(); y = margin; doc.setFillColor(...primaryRed); doc.rect(0,0,pageWidth,3,'F'); drawSchuermannLogo(doc, margin, 8, pageWidth, margin); y = 30; }
-    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(59,130,246);
-    doc.text('URLAUBSTAGE', margin, y); y += 6;
-    doc.setDrawColor(...borderGray); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth-margin, y); y += 4;
-    const vacSorted = [...vacDays].sort((a,b) => parseDMY(a.date) - parseDMY(b.date));
-    doc.autoTable({
-      startY: y,
-      head: [['DATUM','GRUND']],
-      body: vacSorted.map(l => [
-        (() => { try { const [d,m,yr]=l.date.split('/').map(Number); return new Date(yr,m-1,d).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'long',year:'numeric'}); } catch(e){ return l.date; } })(),
-        l.notes || 'Erholungsurlaub'
-      ]),
-      margin: {left:margin, right:margin, bottom:15},
-      styles: {fontSize:9, cellPadding:3, textColor:textDark, lineColor:borderGray, lineWidth:0.1},
-      headStyles: {fillColor:[59,130,246], textColor:[255,255,255], fontStyle:'bold', fontSize:8},
-      alternateRowStyles: {fillColor:[239,246,255]},
-      columnStyles: {0:{cellWidth:65}},
-    });
-    y = doc.lastAutoTable.finalY + 10;
-  }
-
-  // ── Sick days section ──
-  if (sickDays.length > 0) {
-    if (y + 30 > pageHeight - 20) { doc.addPage(); y = margin; doc.setFillColor(...primaryRed); doc.rect(0,0,pageWidth,3,'F'); drawSchuermannLogo(doc, margin, 8, pageWidth, margin); y = 30; }
-    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(220,38,38);
-    doc.text('KRANKMELDUNGEN', margin, y); y += 6;
-    doc.setDrawColor(...borderGray); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth-margin, y); y += 4;
-    const sickSorted = [...sickDays].sort((a,b) => parseDMY(a.date) - parseDMY(b.date));
-    doc.autoTable({
-      startY: y,
-      head: [['DATUM','BEMERKUNG']],
-      body: sickSorted.map(l => [
-        (() => { try { const [d,m,yr]=l.date.split('/').map(Number); return new Date(yr,m-1,d).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'long',year:'numeric'}); } catch(e){ return l.date; } })(),
-        l.notes || 'Arbeitsunfähigkeit'
-      ]),
-      margin: {left:margin, right:margin, bottom:15},
-      styles: {fontSize:9, cellPadding:3, textColor:textDark, lineColor:borderGray, lineWidth:0.1},
-      headStyles: {fillColor:[220,38,38], textColor:[255,255,255], fontStyle:'bold', fontSize:8},
-      alternateRowStyles: {fillColor:[254,242,242]},
-      columnStyles: {0:{cellWidth:65}},
-    });
-    y = doc.lastAutoTable.finalY + 10;
-  }
-
-  // ── Footer on every page ──
-  const totalPages = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    doc.setDrawColor(...borderGray); doc.setLineWidth(0.3);
-    doc.line(margin, pageHeight-12, pageWidth-margin, pageHeight-12);
-    doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...textMuted);
-    doc.text('Schürmann Gebäude + Energie', margin, pageHeight-8);
-    doc.text(user + '  |  Erstellt am ' + today, pageWidth/2, pageHeight-8, {align:'center'});
-    doc.text('Seite '+i+' von '+totalPages, pageWidth-margin, pageHeight-8, {align:'right'});
-    doc.setFontSize(8); doc.setTextColor(150,150,150);
-    doc.text('https://meinestunden.online/', pageWidth/2, pageHeight-4, {align:'center'});
-  }
-
-  const lang = activeLanguageGlobal==='en' ? 'en-GB' : 'de-DE';
-  const fmt = d => d.toLocaleDateString(lang,{day:'2-digit',month:'short',year:'numeric'}).replace(/\./g,'').replace(/\s+/g,'_');
-  const safeName = user.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_äöüÄÖÜß-]/g,'');
-  doc.save(safeName+'_'+fmt(periodStart)+'-'+fmt(periodEnd)+'.pdf');
+  return {
+    startTimestamp: start.getTime(),
+    endTimestamp: end.getTime(),
+    startLabel: formatPDFDate(start),
+    endLabel: formatPDFDate(end)
+  };
 }
 
-function generateEmployeePDFDocument(employeeName) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
-  const pageWidth = doc.internal.pageSize.getWidth(), pageHeight = doc.internal.pageSize.getHeight(), margin = 15;
+function getSelectedPDFPeriod(useCustomPeriod) {
+  if (!useCustomPeriod) {
+    return getDefaultPayrollPeriod();
+  }
 
-  const empData    = adminAllEntriesCache.filter(r => r.user === employeeName);
-  const defPeriod  = getDefault20to20Period();
-  const empPeriod  = empData.filter(r => {
-    if (!r.date) return true;
-    try { const d = r.date.includes('/') ? parseDMY(r.date) : new Date(r.date); return d >= defPeriod.start && d <= defPeriod.end; }
-    catch(e) { return true; }
-  });
-  const workEntries = empPeriod.filter(r => r.category === 'WORK');
-  const vacEntries  = empPeriod.filter(r => r.category === 'VACATION');
-  const sickEntries = empPeriod.filter(r => r.category === 'SICK');
-  const totalHours  = workEntries.reduce((sum,r) => sum+r.hrs, 0);
-  const today       = new Date().toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'});
+  const startValue =
+    document.getElementById('export-start-date')?.value.trim() || '';
 
-  const workByDate = {};
-  workEntries.forEach(s => { (workByDate[s.rawDate] = workByDate[s.rawDate]||[]).push(s); });
-  const dateKeys = Object.keys(workByDate).sort((a,b) => {
-    const parse = k => { const [d,m,y] = k.split('/').map(Number); return new Date(y,m-1,d); };
-    return parse(a) - parse(b);
-  });
+  const endValue =
+    document.getElementById('export-end-date')?.value.trim() || '';
 
-  const red=[192,57,43], slate=[44,62,80], hdrGray=[236,240,244], sumGray=[248,250,252], txtDark=[15,23,42], txtMuted=[100,116,139], white=[255,255,255], borderGray=[229,231,235];
-  const fmtDate = (key) => { const [d,m,y] = key.split('/').map(Number); return new Date(y,m-1,d).toLocaleDateString('de-DE', {weekday:'short',day:'2-digit',month:'long',year:'numeric'}); };
+  const startTimestamp = parseDMYLocal(startValue);
+  const endTimestamp = parseDMYLocal(endValue);
 
-  const drawHeader = () => {
-    doc.setFillColor(...red); doc.rect(0,0,pageWidth,3,'F');
-    drawSchuermannLogo(doc, margin, 8, pageWidth, margin);
-    doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(...txtDark);
-    doc.text('Arbeitsbericht', pageWidth-margin, 13, {align:'right'});
-    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...txtMuted);
-    doc.text(today, pageWidth-margin, 19.5, {align:'right'});
-    doc.setDrawColor(...hdrGray); doc.setLineWidth(0.5); doc.line(margin, 26, pageWidth-margin, 26);
+  if (
+    !Number.isFinite(startTimestamp) ||
+    !Number.isFinite(endTimestamp)
+  ) {
+    throw new Error(
+      'Bitte einen gültigen Exportzeitraum auswählen.'
+    );
+  }
+
+  if (endTimestamp < startTimestamp) {
+    throw new Error(
+      'Das Enddatum darf nicht vor dem Startdatum liegen.'
+    );
+  }
+
+  return {
+    startTimestamp,
+    endTimestamp,
+    startLabel: startValue,
+    endLabel: endValue
   };
+}
 
-  drawHeader(); let y = 33;
+function formatPDFDate(date) {
+  return new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }).format(date);
+}
 
-  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...txtDark);
-  doc.text(employeeName, margin, y); y += 6;
-  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...txtMuted);
-  doc.text(
-    workEntries.length+' Arbeitseinträge   |   Gesamtarbeit: '+totalHours.toFixed(2)+' h'
-    +(vacEntries.length?'   |   Urlaub: '+vacEntries.length+' Tag(e)':'')
-    +(sickEntries.length?'   |   Krank: '+sickEntries.length+' Tag(e)':''),
-    margin, y
-  ); y += 10;
+function formatPDFHours(value) {
+  const hours = Number(value);
+  return `${Number.isFinite(hours) ? hours.toFixed(2) : '0.00'} h`;
+}
 
-  // ── Summary cards ──
-  const summaryCards = [
-    {label:'ARBEITSSTUNDEN', value:totalHours.toFixed(2)+' h', color:slate},
-    {label:'URLAUBSTAGE',    value:vacEntries.length+' Tage',   color:[59,130,246]},
-    {label:'KRANKTAGE',      value:sickEntries.length+' Tage',  color:[220,38,38]},
-  ];
-  const scW = (pageWidth - margin*2 - 4) / summaryCards.length, scH = 16;
-  summaryCards.forEach((c, i) => {
-    const x = margin + i*(scW+2);
-    doc.setFillColor(...sumGray); doc.roundedRect(x, y, scW, scH, 2, 2, 'F');
-    doc.setFillColor(...c.color); doc.rect(x, y, 2, scH, 'F');
-    doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...txtMuted);
-    doc.text(c.label, x+5, y+5.5);
-    doc.setFontSize(10); doc.setTextColor(...c.color);
-    doc.text(c.value, x+5, y+13);
+function getPDFRecordTimestamp(record) {
+  const timestamp = Number(record?.dateTimestamp);
+
+  if (Number.isFinite(timestamp)) {
+    return timestamp;
+  }
+
+  return parseDMYLocal(record?.date || '');
+}
+
+function getPDFRecords(period) {
+  return (globalLoggedSessionsDatabaseMock || [])
+    .filter(record => {
+      const timestamp = getPDFRecordTimestamp(record);
+
+      return Number.isFinite(timestamp) &&
+        timestamp >= period.startTimestamp &&
+        timestamp <= period.endTimestamp;
+    })
+    .sort((left, right) => {
+      return getPDFRecordTimestamp(left) -
+        getPDFRecordTimestamp(right);
+    });
+}
+
+function createPDFRows(records) {
+  return records.map(record => {
+    const isSchool =
+      String(record.type || '').toUpperCase() === 'SCHOOL';
+
+    const project =
+      record.project ||
+      record.projectName ||
+      (isSchool ? 'Berufsschule' : '—');
+
+    const start =
+      record.startTime ||
+      record.start ||
+      '—';
+
+    const end =
+      record.endTime ||
+      record.end ||
+      '—';
+
+    const breakMinutes = Number(
+      record.breakMinutes ??
+      record.breakDuration ??
+      0
+    ) || 0;
+
+    const duration = Number(
+      record.duration ??
+      record.hours ??
+      record.netHours ??
+      0
+    ) || 0;
+
+    return [
+      record.date || '—',
+      isSchool ? 'Schultag' : project,
+      isSchool ? '—' : start,
+      isSchool ? '—' : end,
+      isSchool ? '—' : `${breakMinutes} Min.`,
+      isSchool ? 'Schule' : formatPDFHours(duration)
+    ];
   });
-  y += scH + 10;
+}
 
-  // ── Work table ──
-  if (dateKeys.length) {
-    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...red);
-    doc.text('ARBEITSZEIT', margin, y); y += 6;
-    doc.setDrawColor(...borderGray); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth-margin, y); y += 4;
+function sanitizePDFFileName(value) {
+  return String(value || 'Stundenzettel')
+    .trim()
+    .replace(/[äÄ]/g, 'ae')
+    .replace(/[öÖ]/g, 'oe')
+    .replace(/[üÜ]/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .replace(/[^a-zA-Z0-9_-]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
 
-    const tableBody = [], dateHeaderRows = new Set(), dailySumRows = new Set();
-    dateKeys.forEach(key => {
-      const items = workByDate[key];
-      dateHeaderRows.add(tableBody.length);
-      tableBody.push([{content:fmtDate(key),colSpan:4,styles:{}}]);
-      let dailyWork=0, dailyBreak=0;
-      items.forEach(row => {
-        const timeStr = (row.startTime&&row.endTime) ? row.startTime+' \u2013 '+row.endTime : '\u2013';
-        dailyWork += row.hrs; dailyBreak += (row.breakHrs||0);
-        tableBody.push([timeStr, row.desc||'\u2013', 'Arbeitszeit', row.hrs.toFixed(2)+' h']);
-      });
-      dailySumRows.add(tableBody.length);
-      tableBody.push([{content:'Tagesarbeit: '+dailyWork.toFixed(2)+' h   |   Pause: '+dailyBreak.toFixed(2)+' h',colSpan:4,styles:{}}]);
-    });
+function addPDFHeader(
+  documentInstance,
+  companyName,
+  employeeName,
+  period
+) {
+  const pageWidth =
+    documentInstance.internal.pageSize.getWidth();
 
-    doc.autoTable({
-      startY:y, head:[['ZEIT','PROJEKT / BAUSTELLE','AUFGABE','DAUER']], body:tableBody,
-      margin:{left:margin,right:margin}, tableWidth:'auto',
-      styles:{fontSize:9,cellPadding:{top:3,right:5,bottom:3,left:5},textColor:txtDark,lineColor:[220,225,230],lineWidth:0.1,overflow:'linebreak'},
-      headStyles:{fillColor:slate,textColor:white,fontStyle:'bold',fontSize:8,cellPadding:{top:4,right:5,bottom:4,left:5}},
-      alternateRowStyles:{fillColor:[250,251,252]},
-      columnStyles:{0:{cellWidth:34},1:{cellWidth:'auto'},2:{cellWidth:28},3:{cellWidth:22,halign:'right',fontStyle:'bold',textColor:slate}},
-      didParseCell:(data) => {
-        if (data.section !== 'body') return;
-        const ri = data.row.index;
-        if (dateHeaderRows.has(ri)) { data.cell.styles.fillColor=hdrGray; data.cell.styles.textColor=txtDark; data.cell.styles.fontStyle='bold'; data.cell.styles.fontSize=9; data.cell.styles.cellPadding={top:5,right:8,bottom:5,left:8}; }
-        if (dailySumRows.has(ri))   { data.cell.styles.fillColor=sumGray; data.cell.styles.textColor=txtMuted; data.cell.styles.fontStyle='bold'; data.cell.styles.halign='right'; data.cell.styles.fontSize=8; data.cell.styles.cellPadding={top:4,right:8,bottom:4,left:8}; data.cell.styles.lineColor=[200,210,220]; }
-      },
-      didDrawPage:(data) => {
-        if (data.pageNumber > 1) drawHeader();
-        const pg = data.pageNumber;
-        doc.setDrawColor(220,225,230); doc.setLineWidth(0.3);
-        doc.line(margin, pageHeight-12, pageWidth-margin, pageHeight-12);
-        doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...txtMuted);
-        doc.text('Schürmann Gebäude + Energie', margin, pageHeight-8);
-        doc.text(employeeName+'  |  '+today, pageWidth/2, pageHeight-8, {align:'center'});
-        doc.text('Seite '+pg, pageWidth-margin, pageHeight-8, {align:'right'});
-        doc.setFontSize(8); doc.setTextColor(150,150,150);
-        doc.text('https://meinestunden.online/', pageWidth/2, pageHeight-4, {align:'center'});
+  documentInstance.setFillColor(227, 6, 19);
+  documentInstance.rect(0, 0, pageWidth, 4, 'F');
+
+  documentInstance.setTextColor(15, 23, 42);
+  documentInstance.setFont('helvetica', 'bold');
+  documentInstance.setFontSize(18);
+  documentInstance.text(companyName, 14, 18, {
+    maxWidth: pageWidth - 28
+  });
+
+  documentInstance.setFontSize(13);
+  documentInstance.text('STUNDENZETTEL', 14, 29);
+
+  documentInstance.setFont('helvetica', 'normal');
+  documentInstance.setFontSize(10);
+  documentInstance.setTextColor(71, 85, 105);
+
+  documentInstance.text(
+    `Mitarbeiter: ${employeeName}`,
+    14,
+    38
+  );
+
+  documentInstance.text(
+    `Zeitraum: ${period.startLabel} bis ${period.endLabel}`,
+    14,
+    45
+  );
+
+  documentInstance.text(
+    `Erstellt am: ${formatPDFDate(new Date())}`,
+    14,
+    52
+  );
+}
+
+function addPDFFooter(documentInstance, companyName) {
+  const pageCount =
+    documentInstance.internal.getNumberOfPages();
+
+  for (let page = 1; page <= pageCount; page += 1) {
+    documentInstance.setPage(page);
+
+    const pageWidth =
+      documentInstance.internal.pageSize.getWidth();
+
+    const pageHeight =
+      documentInstance.internal.pageSize.getHeight();
+
+    documentInstance.setDrawColor(226, 232, 240);
+    documentInstance.line(
+      14,
+      pageHeight - 14,
+      pageWidth - 14,
+      pageHeight - 14
+    );
+
+    documentInstance.setFont('helvetica', 'normal');
+    documentInstance.setFontSize(8);
+    documentInstance.setTextColor(100, 116, 139);
+
+    documentInstance.text(
+      companyName,
+      14,
+      pageHeight - 8
+    );
+
+    documentInstance.text(
+      `Seite ${page} von ${pageCount}`,
+      pageWidth - 14,
+      pageHeight - 8,
+      {
+        align: 'right'
       }
-    });
-    y = doc.lastAutoTable.finalY + 10;
+    );
+  }
+}
+
+function buildTimesheetPDF(records, period) {
+  if (!window.jspdf?.jsPDF) {
+    throw new Error(
+      'Die PDF-Bibliothek konnte nicht geladen werden.'
+    );
   }
 
-  // ── Vacation section ──
-  if (vacEntries.length > 0) {
-    if (y + 30 > pageHeight - 20) { doc.addPage(); y = margin; drawHeader(); y = 30; }
-    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(59,130,246);
-    doc.text('URLAUBSTAGE', margin, y); y += 6;
-    doc.setDrawColor(...borderGray); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth-margin, y); y += 4;
-    const vacSorted = [...vacEntries].sort((a,b) => { const p=k=>{const[d,m,yr]=k.split('/').map(Number);return new Date(yr,m-1,d);}; return p(a.date)-p(b.date); });
-    doc.autoTable({
-      startY: y,
-      head: [['DATUM','GRUND']],
-      body: vacSorted.map(l => [fmtDate(l.date), l.desc || 'Erholungsurlaub']),
-      margin: {left:margin, right:margin, bottom:15},
-      styles: {fontSize:9, cellPadding:3, textColor:txtDark, lineColor:[220,225,230], lineWidth:0.1},
-      headStyles: {fillColor:[59,130,246], textColor:white, fontStyle:'bold', fontSize:8},
-      alternateRowStyles: {fillColor:[239,246,255]},
-      columnStyles: {0:{cellWidth:65}},
-      didDrawPage: (data) => { if (data.pageNumber > 1) drawHeader(); }
-    });
-    y = doc.lastAutoTable.finalY + 10;
+  const { jsPDF } = window.jspdf;
+  const documentInstance = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  const companyName = getPDFCompanyName();
+  const employeeName = getPDFEmployeeName();
+  const rows = createPDFRows(records);
+
+  addPDFHeader(
+    documentInstance,
+    companyName,
+    employeeName,
+    period
+  );
+
+  documentInstance.autoTable({
+    startY: 60,
+    head: [[
+      'Datum',
+      'Baustelle / Typ',
+      'Kommen',
+      'Gehen',
+      'Pause',
+      'Netto'
+    ]],
+    body: rows,
+    theme: 'grid',
+    styles: {
+      font: 'helvetica',
+      fontSize: 8.5,
+      cellPadding: 2.5,
+      textColor: [51, 65, 85],
+      lineColor: [226, 232, 240],
+      lineWidth: 0.2
+    },
+    headStyles: {
+      fillColor: [15, 23, 42],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold'
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
+    },
+    columnStyles: {
+      0: { cellWidth: 24 },
+      1: { cellWidth: 63 },
+      2: { cellWidth: 20 },
+      3: { cellWidth: 20 },
+      4: { cellWidth: 22 },
+      5: {
+        cellWidth: 25,
+        halign: 'right',
+        fontStyle: 'bold'
+      }
+    },
+    margin: {
+      top: 18,
+      right: 14,
+      bottom: 20,
+      left: 14
+    },
+    didDrawPage: data => {
+      if (data.pageNumber > 1) {
+        documentInstance.setFont('helvetica', 'bold');
+        documentInstance.setFontSize(10);
+        documentInstance.setTextColor(15, 23, 42);
+        documentInstance.text(
+          `${companyName} – Stundenzettel`,
+          14,
+          12
+        );
+      }
+    }
+  });
+
+  const totalHours = records.reduce((sum, record) => {
+    if (
+      String(record.type || '').toUpperCase() === 'SCHOOL'
+    ) {
+      return sum;
+    }
+
+    const duration = Number(
+      record.duration ??
+      record.hours ??
+      record.netHours ??
+      0
+    );
+
+    return sum + (Number.isFinite(duration) ? duration : 0);
+  }, 0);
+
+  const schoolDays = records.filter(record => {
+    return String(record.type || '').toUpperCase() === 'SCHOOL';
+  }).length;
+
+  let summaryY =
+    (documentInstance.lastAutoTable?.finalY || 60) + 10;
+
+  const pageHeight =
+    documentInstance.internal.pageSize.getHeight();
+
+  if (summaryY > pageHeight - 35) {
+    documentInstance.addPage();
+    summaryY = 24;
   }
 
-  // ── Sick days section ──
-  if (sickEntries.length > 0) {
-    if (y + 30 > pageHeight - 20) { doc.addPage(); y = margin; drawHeader(); y = 30; }
-    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(220,38,38);
-    doc.text('KRANKMELDUNGEN', margin, y); y += 6;
-    doc.setDrawColor(...borderGray); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth-margin, y); y += 4;
-    const sickSorted = [...sickEntries].sort((a,b) => { const p=k=>{const[d,m,yr]=k.split('/').map(Number);return new Date(yr,m-1,d);}; return p(a.date)-p(b.date); });
-    doc.autoTable({
-      startY: y,
-      head: [['DATUM','BEMERKUNG']],
-      body: sickSorted.map(l => [fmtDate(l.date), l.desc || 'Arbeitsunfähigkeit']),
-      margin: {left:margin, right:margin, bottom:15},
-      styles: {fontSize:9, cellPadding:3, textColor:txtDark, lineColor:[220,225,230], lineWidth:0.1},
-      headStyles: {fillColor:[220,38,38], textColor:white, fontStyle:'bold', fontSize:8},
-      alternateRowStyles: {fillColor:[254,242,242]},
-      columnStyles: {0:{cellWidth:65}},
-      didDrawPage: (data) => { if (data.pageNumber > 1) drawHeader(); }
-    });
-    y = doc.lastAutoTable.finalY + 10;
-  }
+  documentInstance.setFillColor(248, 250, 252);
+  documentInstance.roundedRect(
+    14,
+    summaryY,
+    182,
+    18,
+    2,
+    2,
+    'F'
+  );
 
-  // ── Footer on every page ──
-  const totalPages = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    doc.setDrawColor(220,225,230); doc.setLineWidth(0.3);
-    doc.line(margin, pageHeight-12, pageWidth-margin, pageHeight-12);
-    doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...txtMuted);
-    doc.text('Schürmann Gebäude + Energie', margin, pageHeight-8);
-    doc.text(employeeName+'  |  '+today, pageWidth/2, pageHeight-8, {align:'center'});
-    doc.text('Seite '+i+' von '+totalPages, pageWidth-margin, pageHeight-8, {align:'right'});
-    doc.setFontSize(8); doc.setTextColor(150,150,150);
-    doc.text('https://meinestunden.online/', pageWidth/2, pageHeight-4, {align:'center'});
-  }
+  documentInstance.setFont('helvetica', 'bold');
+  documentInstance.setFontSize(10);
+  documentInstance.setTextColor(15, 23, 42);
 
-  const lang = activeLanguageGlobal==='en' ? 'en-GB' : 'de-DE';
-  const fmt = d => d.toLocaleDateString(lang,{day:'2-digit',month:'short',year:'numeric'}).replace(/\./g,'').replace(/\s+/g,'_');
-  const safeName = employeeName.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_äöüÄÖÜß-]/g,'');
-  doc.save(safeName+'_'+fmt(defPeriod.start)+'-'+fmt(defPeriod.end)+'.pdf');
+  documentInstance.text(
+    `Einträge: ${records.length}`,
+    19,
+    summaryY + 11
+  );
+
+  documentInstance.text(
+    `Schultage: ${schoolDays}`,
+    76,
+    summaryY + 11
+  );
+
+  documentInstance.setTextColor(227, 6, 19);
+  documentInstance.text(
+    `Gesamt: ${formatPDFHours(totalHours)}`,
+    191,
+    summaryY + 11,
+    {
+      align: 'right'
+    }
+  );
+
+  addPDFFooter(documentInstance, companyName);
+
+  return documentInstance;
+}
+
+function triggerPDFExportEngine(customPeriod) {
+  try {
+    const period = getSelectedPDFPeriod(Boolean(customPeriod));
+    const records = getPDFRecords(period);
+
+    if (!records.length) {
+      showToast(
+        'Im ausgewählten Zeitraum sind keine Einträge vorhanden.',
+        'error'
+      );
+      return;
+    }
+
+    showToast('PDF wird erstellt ...', 'info');
+
+    const documentInstance =
+      buildTimesheetPDF(records, period);
+
+    const fileName = [
+      'Stundenzettel',
+      sanitizePDFFileName(getPDFEmployeeName()),
+      period.startLabel.replace(/\./g, '-'),
+      period.endLabel.replace(/\./g, '-')
+    ].join('_');
+
+    documentInstance.save(`${fileName}.pdf`);
+
+    showToast('PDF wurde heruntergeladen.', 'success');
+  } catch (error) {
+    console.error('PDF export failed:', error);
+
+    showToast(
+      error?.message || 'PDF konnte nicht erstellt werden.',
+      'error'
+    );
+  }
+}
+
+function downloadPDFReport() {
+  triggerPDFExportEngine(false);
 }
