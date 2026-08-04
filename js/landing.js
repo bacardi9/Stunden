@@ -275,6 +275,24 @@ function regGoToStep2() {
   document.getElementById('reg-panel-2')?.classList.add('active');
 }
 
+async function startSubscriptionCheckout() {
+  const functions =
+    typeof firebase?.app === 'function'
+      ? firebase.app().functions('europe-west3')
+      : null;
+
+  if (!functions) {
+    throw new Error('Firebase Functions ist nicht verfügbar.');
+  }
+
+  const createSubscriptionCheckout =
+    functions.httpsCallable('createSubscriptionCheckout');
+
+  const result = await createSubscriptionCheckout({});
+
+  return result?.data?.checkoutUrl || null;
+}
+
 function regGoToStep1() {
   document.getElementById('reg-tab-1')?.classList.add('active');
   document.getElementById('reg-tab-2')?.classList.remove('active');
@@ -396,6 +414,35 @@ async function handleRegisterAndPay() {
 
     setModalMessage(
       'reg-step2-msg',
+      'Konto erstellt — Weiterleitung zur Zahlung ...',
+      ''
+    );
+
+    let checkoutUrl = null;
+
+    try {
+      checkoutUrl = await startSubscriptionCheckout();
+    } catch (checkoutError) {
+      console.error('Checkout failed:', checkoutError);
+
+      setModalMessage(
+        'reg-step2-msg',
+        'Konto erstellt, aber die Zahlung konnte nicht gestartet werden. Bitte später erneut versuchen.',
+        'error'
+      );
+
+      closeRegisterModal();
+      showUserApplication(credential.user);
+      return;
+    }
+
+    if (checkoutUrl) {
+      window.location.href = checkoutUrl;
+      return;
+    }
+
+    setModalMessage(
+      'reg-step2-msg',
       'Konto erfolgreich erstellt.',
       'success'
     );
@@ -430,8 +477,39 @@ async function handleRegisterAndPay() {
   }
 }
 
+function handleCheckoutReturnParams() {
+  const params = new URLSearchParams(window.location.search);
+  const checkoutState = params.get('checkout');
+
+  if (!checkoutState) return;
+
+  if (checkoutState === 'success') {
+    setTimeout(() => {
+      if (typeof showToast === 'function') {
+        showToast(
+          'Zahlung erfolgreich — dein Abonnement ist aktiv.',
+          'success'
+        );
+      }
+    }, 600);
+    return;
+  }
+
+  if (checkoutState === 'cancelled') {
+    setTimeout(() => {
+      if (typeof showToast === 'function') {
+        showToast(
+          'Zahlung abgebrochen — du kannst jederzeit über dein Konto bezahlen.',
+          'error'
+        );
+      }
+    }, 600);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   showLandingPage();
+  handleCheckoutReturnParams();
 
   if (typeof auth === 'undefined') {
     console.error('Firebase Auth is not available.');
