@@ -4,12 +4,14 @@ const {
   onRequest,
   HttpsError
 } = require("firebase-functions/v2/https");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const {
   defineSecret,
   defineString
 } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
+const { Resend } = require("resend");
 
 admin.initializeApp();
 
@@ -27,6 +29,16 @@ const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
 
 const stripePriceId = defineString("STRIPE_PRICE_ID");
 const applicationUrl = defineString("APPLICATION_URL");
+
+const resendApiKey = defineSecret("RESEND_API_KEY");
+const resendFromEmail = defineString("RESEND_FROM_EMAIL");
+
+const TRIAL_DURATION_DAYS = 7;
+const OTP_EXPIRY_MINUTES = 10;
+
+function getResend() {
+  return new Resend(resendApiKey.value());
+}
 
 function getStripe() {
   return new Stripe(stripeSecretKey.value(), {
@@ -376,6 +388,324 @@ exports.createBillingPortalSession = onCall({
   };
 });
 
+// ── TRIAL & OTP ──────────────────────────────────────────────────
+
+function generateOtp() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function normalizeEmailForOtp(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+async function sendOtpEmail(email, code) {
+  const resend = getResend();
+  const from = resendFromEmail.value();
+
+  const { error } = await resend.emails.send({
+    from,
+    to: [email],
+    subject: "Dein Bestätigungscode – Meine Stunden Online",
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 20px;">
+        <div style="text-align:center;margin-bottom:28px;">
+          <div style="font-weight:900;font-size:20px;letter-spacing:-0.5px;color:#0f172a;">MEINE STUNDEN</div>
+          <div style="font-size:10px;font-weight:800;color:#E30613;letter-spacing:1px;margin-top:2px;">ONLINE</div>
+        </div>
+        <h2 style="font-size:18px;color:#0f172a;margin:0 0 8px;">Dein Bestätigungscode</h2>
+        <p style="font-size:14px;color:#475569;margin:0 0 20px;">Gib diesen Code in der App ein, um dein Konto zu aktivieren:</p>
+        <div style="background:#f8fafc;border:2px dashed #e2e8f0;border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;">
+          <span style="font-family:monospace;font-size:36px;font-weight:800;letter-spacing:8px;color:#0f172a;">${code}</span>
+        </div>
+        <p style="font-size:12px;color:#94a3b8;margin:0;">Dieser Code ist ${OTP_EXPIRY_MINUTES} Minuten gültig. Falls du diese E-Mail nicht angefordert hast, ignoriere sie bitte.</p>
+        <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
+        <p style="font-size:11px;color:#94a3b8;margin:0;">Meine Stunden Online – Professionelle Zeiterfassung für Handwerksbetriebe</p>
+      </div>
+    `
+  });
+
+  if (error) {
+    console.error("Resend send failed:", error);
+    throw new HttpsError("internal", "Die E-Mail konnte nicht gesendet werden.");
+  }
+}
+
+exports.sendRegistrationOtp = onCall({
+  secrets: [resendApiKey],
+  consumeAppCheckToken: false
+}, async request => {
+  const email = normalizeEmailForOtp(request.data?.email);
+
+  if (!email || !email.includes("@")) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Bitte eine gültige E-Mail-Adresse eingeben."
+    );
+  }
+
+  // Rate-limit: check if OTP was sent in the last 60 seconds
+  const existingDoc = await db.collection("otpCodes").doc(email).get();
+
+  if (existingDoc.exists) {
+    const data = existingDoc.data() || {};
+    const ageSeconds = data.createdAt
+      ? (Date.now() - data.createdAt.toMillis()) / 1000
+      : 999;
+
+    if (ageSeconds < 60) {
+      throw new HttpsError(
+        "resource-exhausted",
+        "Bitte warte eine Minute bevor du einen neuen Code anforderst."
+      );
+    }
+  }
+
+  const code = generateOtp();
+  const now = admin.firestore.Timestamp.now();
+  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+  await db.collection("otpCodes").doc(email).set({
+    email,
+    code,
+    createdAt: now,
+    expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+    used: false
+  });
+
+  await sendOtpEmail(email, code);
+
+  return { success: true };
+});
+
+exports.verifyOtpAndCreateAccount = onCall({
+  secrets: [resendApiKey],
+  consumeAppCheckToken: false
+}, async request => {
+  const { email, otp, name, company, password } = request.data || {};
+  const normalizedEmail = normalizeEmailForOtp(email);
+
+  if (!normalizedEmail || !normalizedEmail.includes("@")) {
+    throw new HttpsError("invalid-argument", "Ungültige E-Mail-Adresse.");
+  }
+
+  if (!otp || otp.length !== 6) {
+    throw new HttpsError("invalid-argument", "Bitte den 6-stelligen Code eingeben.");
+  }
+
+  if (!name || !company || !password || password.length < 6) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Bitte alle Felder ausfüllen (Kennwort mind. 6 Zeichen)."
+    );
+  }
+
+  // Verify OTP
+  const otpDoc = await db.collection("otpCodes").doc(normalizedEmail).get();
+
+  if (!otpDoc.exists) {
+    throw new HttpsError(
+      "not-found",
+      "Kein Code gefunden. Bitte fordere zuerst einen Code an."
+    );
+  }
+
+  const otpData = otpDoc.data() || {};
+
+  if (otpData.used) {
+    throw new HttpsError(
+      "permission-denied",
+      "Dieser Code wurde bereits verwendet."
+    );
+  }
+
+  if (otpData.expiresAt && otpData.expiresAt.toMillis() < Date.now()) {
+    throw new HttpsError(
+      "permission-denied",
+      "Der Code ist abgelaufen. Bitte fordere einen neuen an."
+    );
+  }
+
+  if (otpData.code !== otp) {
+    throw new HttpsError(
+      "permission-denied",
+      "Der Code ist falsch. Bitte überprüfe deine Eingabe."
+    );
+  }
+
+  // Check if email already registered in Firebase Auth
+  try {
+    await admin.auth().getUserByEmail(normalizedEmail);
+
+    throw new HttpsError(
+      "already-exists",
+      "Für diese E-Mail-Adresse besteht bereits ein Konto. Bitte melde dich an."
+    );
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    // auth/user-not-found is expected — continue
+  }
+
+  // Mark OTP as used
+  await db.collection("otpCodes").doc(normalizedEmail).update({ used: true });
+
+  // Create Firebase Auth user
+  const userRecord = await admin.auth().createUser({
+    email: normalizedEmail,
+    password,
+    displayName: name,
+    emailVerified: true
+  });
+
+  const uid = userRecord.uid;
+  const trialEndsAt = new Date(Date.now() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000);
+
+  // Create Firestore profile with trial
+  await db.collection("userProfiles").doc(uid).set({
+    uid,
+    name,
+    email: normalizedEmail,
+    companyName: company,
+    vacationAllowed: 30,
+    workSessions: [],
+    leaveDays: [],
+    trash: [],
+    trialActive: true,
+    trialEndsAt: admin.firestore.Timestamp.fromDate(trialEndsAt),
+    subscriptionActive: false,
+    subscriptionStatus: "trialing",
+    trialReminderSent: null,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  // Send welcome email
+  try {
+    const resend = getResend();
+    const daysText = `${TRIAL_DURATION_DAYS} Tage`;
+
+    await resend.emails.send({
+      from: resendFromEmail.value(),
+      to: [normalizedEmail],
+      subject: `Willkommen bei Meine Stunden Online – ${daysText} kostenlos testen`,
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 20px;">
+          <div style="text-align:center;margin-bottom:28px;">
+            <div style="font-weight:900;font-size:20px;letter-spacing:-0.5px;color:#0f172a;">MEINE STUNDEN</div>
+            <div style="font-size:10px;font-weight:800;color:#E30613;letter-spacing:1px;margin-top:2px;">ONLINE</div>
+          </div>
+          <h2 style="font-size:18px;color:#0f172a;margin:0 0 8px;">Willkommen, ${name}!</h2>
+          <p style="font-size:14px;color:#475569;margin:0 0 16px;">Dein Konto wurde erfolgreich erstellt. Du hast jetzt <strong>${daysText} kostenlosen Zugang</strong> zu allen Features:</p>
+          <ul style="font-size:14px;color:#475569;padding-left:20px;margin:0 0 20px;">
+            <li style="margin-bottom:6px;">PDF-Stundenzettel mit deinem Firmennamen</li>
+            <li style="margin-bottom:6px;">Automatische Überstundenberechnung</li>
+            <li style="margin-bottom:6px;">KI-Stundenzettel Scan</li>
+            <li style="margin-bottom:6px;">Cloud-Sync auf allen Geräten</li>
+          </ul>
+          <p style="font-size:13px;color:#64748b;margin:0;">Deine Testphase endet am <strong>${trialEndsAt.toLocaleDateString("de-DE")}</strong>. Danach kannst du das Abonnement für 2,99 €/Monat fortsetzen.</p>
+          <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
+          <p style="font-size:11px;color:#94a3b8;margin:0;">Meine Stunden Online – Professionelle Zeiterfassung für Handwerksbetriebe</p>
+        </div>
+      `
+    });
+  } catch (emailError) {
+    console.warn("Welcome email failed:", emailError);
+    // Non-fatal: account is already created
+  }
+
+  return {
+    success: true,
+    uid,
+    trialEndsAt: trialEndsAt.toISOString()
+  };
+});
+
+exports.sendTrialReminders = onSchedule({
+  schedule: "every day 06:00",
+  timeZone: "Europe/Berlin",
+  secrets: [resendApiKey],
+  memory: "256MiB",
+  timeoutSeconds: 300
+}, async () => {
+  const now = admin.firestore.Timestamp.now();
+  const twoDaysFromNow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+  const fourDaysFromNow = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000);
+
+  // Find users whose trial ends in 2-4 days and haven't subscribed yet
+  const snapshot = await db.collection("userProfiles")
+    .where("trialActive", "==", true)
+    .where("subscriptionActive", "==", false)
+    .where("trialEndsAt", ">=", admin.firestore.Timestamp.fromDate(twoDaysFromNow))
+    .where("trialEndsAt", "<=", admin.firestore.Timestamp.fromDate(fourDaysFromNow))
+    .get();
+
+  if (snapshot.empty) {
+    console.log("No trial reminders to send today.");
+    return;
+  }
+
+  const resend = getResend();
+  const from = resendFromEmail.value();
+  let sent = 0;
+  let failed = 0;
+
+  for (const doc of snapshot.docs) {
+    const profile = doc.data() || {};
+    const email = profile.email;
+
+    if (!email) continue;
+
+    const trialEnd = profile.trialEndsAt?.toDate();
+
+    if (!trialEnd) continue;
+
+    const daysLeft = Math.ceil((trialEnd - now.toDate()) / (24 * 60 * 60 * 1000));
+
+    // Only remind when 2-3 days left
+    if (daysLeft < 1 || daysLeft > 3) continue;
+
+    const daysText = daysLeft === 1 ? "morgen" : `in ${daysLeft} Tagen`;
+
+    try {
+      await resend.emails.send({
+        from,
+        to: [email],
+        subject: `Deine Testphase endet ${daysText} – Meine Stunden Online`,
+        html: `
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 20px;">
+            <div style="text-align:center;margin-bottom:28px;">
+              <div style="font-weight:900;font-size:20px;letter-spacing:-0.5px;color:#0f172a;">MEINE STUNDEN</div>
+              <div style="font-size:10px;font-weight:800;color:#E30613;letter-spacing:1px;margin-top:2px;">ONLINE</div>
+            </div>
+            <h2 style="font-size:18px;color:#0f172a;margin:0 0 8px;">Deine Testphase endet ${daysText}</h2>
+            <p style="font-size:14px;color:#475569;margin:0 0 16px;">Hallo ${profile.name || ""},</p>
+            <p style="font-size:14px;color:#475569;margin:0 0 16px;">deine kostenlose Testphase bei Meine Stunden Online endet am <strong>${trialEnd.toLocaleDateString("de-DE")}</strong>. Damit du weiterhin alle Features nutzen kannst, schließe jetzt dein Abonnement ab:</p>
+            <div style="text-align:center;margin:24px 0;">
+              <div style="background:#E30613;color:#fff;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;display:inline-block;">2,99 € pro Monat</div>
+            </div>
+            <p style="font-size:13px;color:#64748b;margin:0;">Melde dich in der App an und klicke auf "Jetzt abonnieren", um dein Abonnement zu starten.</p>
+            <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
+            <p style="font-size:11px;color:#94a3b8;margin:0;">Meine Stunden Online – Professionelle Zeiterfassung für Handwerksbetriebe</p>
+          </div>
+        `
+      });
+
+      await doc.ref.update({
+        trialReminderSent: now,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      sent += 1;
+    } catch (error) {
+      console.error(`Trial reminder failed for ${email}:`, error);
+      failed += 1;
+    }
+  }
+
+  console.log(`Trial reminders: ${sent} sent, ${failed} failed.`);
+});
+
+// ── STRIPE HELPERS ────────────────────────────────────────────────
+
 async function getSubscriptionUid(stripe, subscription) {
   if (subscription.metadata?.firebaseUid) {
     return subscription.metadata.firebaseUid;
@@ -451,6 +781,12 @@ async function updateSubscriptionProfile(
     update.lastPaymentStatus = paymentStatus;
     update.lastPaymentAt =
       admin.firestore.FieldValue.serverTimestamp();
+  }
+
+  // When subscription becomes active, clear trial state
+  if (subscriptionActive) {
+    update.trialActive = false;
+    update.trialEndsAt = null;
   }
 
   await db.collection("userProfiles").doc(uid).set(

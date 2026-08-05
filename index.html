@@ -159,8 +159,8 @@
     </div>
     <div class="lp-nav-actions">
       <button class="lp-btn-ghost" onclick="openLoginModal()">Anmelden</button>
-      <button class="lp-btn-primary" onclick="openRegisterModal()">
-        <i class="fa-solid fa-bolt" style="font-size:10px;"></i> Jetzt — 2,99 €/Monat
+      <button class="lp-btn-primary" onclick="openRegisterModal('trial')">
+        <i class="fa-solid fa-gift" style="font-size:10px;"></i> Kostenlos testen
       </button>
     </div>
   </nav>
@@ -169,12 +169,16 @@
     <div class="lp-hero-badge">
       <i class="fa-solid fa-circle" style="font-size:7px;color:#E30613;"></i>
       Professionelle Zeiterfassung für Handwerksbetriebe
+      <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(16,185,129,0.15);color:#10b981;font-size:11px;font-weight:800;padding:3px 10px;border-radius:99px;margin-left:10px;border:1px solid rgba(16,185,129,0.25);">🎁 7 Tage gratis</span>
     </div>
     <h1>Deine Arbeitszeit.<br><span>Automatisch erfasst.</span></h1>
-    <p style="margin-bottom:28px;">Stundenzettel erfassen, Überstunden berechnen, fehlende Tage erkennen und professionelle PDFs exportieren — alles in einer App, ab 2,99 € pro Monat.</p>
+    <p style="margin-bottom:28px;">Stundenzettel erfassen, Überstunden berechnen, fehlende Tage erkennen und professionelle PDFs exportieren — <strong style="color:#10b981;">7 Tage kostenlos testen</strong>, danach nur 2,99 € pro Monat. Keine Kreditkarte nötig.</p>
     <div class="lp-hero-btns">
-      <button class="lp-hero-btn-main" onclick="openRegisterModal()">
-        <i class="fa-solid fa-rocket"></i> Konto erstellen – 2,99 €/Monat
+      <button class="lp-hero-btn-main" onclick="openRegisterModal('trial')">
+        <i class="fa-solid fa-gift"></i> 7 Tage kostenlos testen
+      </button>
+      <button class="lp-hero-btn-secondary" onclick="openRegisterModal()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;">
+        <i class="fa-solid fa-credit-card"></i> Direkt abonnieren – 2,99 €
       </button>
       <button class="lp-hero-btn-secondary" onclick="openLoginModal()">
         <i class="fa-solid fa-right-to-bracket"></i> Bereits Kunde? Anmelden
@@ -407,7 +411,7 @@
   <section class="lp-features">
     <div class="lp-section-label">Was du bekommst</div>
     <h2 class="lp-section-title">Alles was ein Handwerksbetrieb braucht</h2>
-    <p class="lp-section-sub">2,99 € pro Monat — alle Features, jederzeit kündbar.</p>
+    <p class="lp-section-sub"><span style="background:rgba(16,185,129,0.12);color:#10b981;padding:3px 10px;border-radius:99px;font-weight:800;font-size:12px;margin-right:8px;">🎁 7 Tage gratis</span> Danach nur 2,99 € pro Monat — alle Features, jederzeit kündbar.</p>
     <div class="lp-features-grid">
       <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-file-pdf" style="color:#E30613;"></i></div><div class="lp-feature-title">PDF Export mit deinem Firmennamen</div><div class="lp-feature-desc">Dein Firmenname erscheint automatisch auf jedem exportierten Stundenzettel.</div></div>
       <div class="lp-feature-card featured"><div class="lp-feature-icon" style="background:rgba(16,185,129,0.1);"><i class="fa-solid fa-clock" style="color:#10b981;"></i></div><div class="lp-feature-title">Automatische Überstundenberechnung</div><div class="lp-feature-desc">Überstunden werden täglich automatisch berechnet und summiert.</div></div>
@@ -424,7 +428,7 @@
     <div class="lp-section-label">So funktioniert's</div>
     <h2 class="lp-section-title">In 3 Schritten startklar</h2>
     <div class="lp-steps">
-      <div class="lp-step"><div class="lp-step-num">1</div><h4>Konto erstellen</h4><p>Name, Firmenname und Kennwort eingeben. 2,99 € pro Monat bezahlen — fertig.</p></div>
+      <div class="lp-step"><div class="lp-step-num">1</div><h4>Kostenlos starten</h4><p>Name, Firma & Kennwort — <strong style="color:#10b981;">7 Tage gratis testen</strong>, keine Kreditkarte nötig. Danach nur 2,99 €/Monat.</p></div>
       <div class="lp-step"><div class="lp-step-num">2</div><h4>Stunden erfassen</h4><p>Täglich Kommen, Gehen und Pause eintragen — oder per KI-Scan von einem Foto.</p></div>
       <div class="lp-step"><div class="lp-step-num">3</div><h4>PDF exportieren</h4><p>Professioneller Stundenzettel mit deinem Firmennamen — auf Knopfdruck bereit.</p></div>
     </div>
@@ -438,10 +442,11 @@
       <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#64748b;"><i class="fa-solid fa-check-circle" style="color:#10b981;"></i> Alle Geräte</div>
     </div>
     <div class="lp-cta-price-badge"><sup>€</sup>2,99<span>pro Monat — jederzeit kündbar</span></div>
+    <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.25);color:#10b981;padding:6px 16px;border-radius:99px;font-size:13px;font-weight:800;margin-bottom:16px;">🎁 7 Tage kostenlos testen — keine Kreditkarte nötig</div>
     <h2>Bereit loszulegen?</h2>
-    <p>Konto erstellen, Firmennamen hinterlegen und sofort alle Features nutzen.</p>
+    <p>Konto erstellen, Firmennamen hinterlegen und sofort alle Features nutzen — 7 Tage lang völlig gratis.</p>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-      <button class="lp-hero-btn-main" onclick="openRegisterModal()" style="font-size:14px;padding:14px 26px;"><i class="fa-solid fa-rocket"></i> Jetzt Konto erstellen</button>
+      <button class="lp-hero-btn-main" onclick="openRegisterModal('trial')" style="font-size:14px;padding:14px 26px;"><i class="fa-solid fa-gift"></i> 7 Tage kostenlos testen</button>
       <button class="lp-hero-btn-secondary" onclick="openLoginModal()" style="font-size:14px;padding:14px 20px;"><i class="fa-solid fa-right-to-bracket"></i> Anmelden</button>
     </div>
   </div>
@@ -489,12 +494,18 @@
     <div class="reg-step-panel active" id="reg-panel-1">
       <div class="reg-step-title">Dein Konto erstellen</div>
       <div class="reg-step-sub">Gib deine Daten ein. Dein Firmenname erscheint auf allen exportierten Stundenzetteln.</div>
+      <div class="reg-trial-toggle-row" style="display:flex;background:rgba(0,0,0,0.04);padding:3px;border-radius:10px;margin-bottom:16px;gap:3px;">
+        <button type="button" id="reg-mode-sub" class="reg-mode-toggle active" onclick="setRegMode('subscribe')" style="flex:1;border:none;padding:8px 10px;font-size:12px;font-weight:700;border-radius:8px;cursor:pointer;background:#fff;color:#0f172a;box-shadow:0 1px 3px rgba(0,0,0,0.08);transition:all 0.2s;">Direkt abonnieren</button>
+        <button type="button" id="reg-mode-trial" class="reg-mode-toggle" onclick="setRegMode('trial')" style="flex:1;border:none;padding:8px 10px;font-size:12px;font-weight:700;border-radius:8px;cursor:pointer;background:transparent;color:#64748b;transition:all 0.2s;">7 Tage kostenlos testen</button>
+      </div>
       <div class="modal-form-group"><label>Dein vollständiger Name</label><input type="text" id="reg-name" placeholder="Max Mustermann" autocomplete="off" required></div>
       <div class="modal-form-group"><label>Firmen- / Betriebsname <span style="color:#E30613;font-size:10px;">(für PDF Export)</span></label><input type="text" id="reg-company" placeholder="Muster GmbH oder Einzelunternehmen" autocomplete="off" required></div>
+      <div class="modal-form-group" id="reg-email-group" style="display:none;"><label>E-Mail-Adresse <span style="color:#E30613;font-size:10px;">(für Testphase)</span></label><input type="email" id="reg-email" placeholder="max@muster-gmbh.de" autocomplete="off"></div>
       <div class="modal-form-group"><label>Kennwort wählen</label><input type="password" id="reg-password" placeholder="Mind. 6 Zeichen" required style="letter-spacing:2px;"></div>
       <div class="modal-form-group"><label>Kennwort bestätigen</label><input type="password" id="reg-password2" placeholder="Kennwort wiederholen" required style="letter-spacing:2px;"></div>
       <div class="modal-msg" id="reg-step1-msg"></div>
-      <button type="button" class="reg-next-btn" onclick="regGoToStep2()">Weiter zur Zahlung <i class="fa-solid fa-arrow-right" style="margin-left:8px;"></i></button>
+      <button type="button" id="reg-next-btn-sub" class="reg-next-btn" onclick="regGoToStep2()">Weiter zur Zahlung <i class="fa-solid fa-arrow-right" style="margin-left:8px;"></i></button>
+      <button type="button" id="reg-next-btn-trial" class="reg-next-btn" onclick="startTrialRegistration()" style="display:none;">Bestätigungscode anfordern <i class="fa-solid fa-paper-plane" style="margin-left:8px;"></i></button>
       <div class="reg-back-link">Bereits Konto? <a onclick="closeRegisterModal();openLoginModal()">Anmelden</a></div>
     </div>
     <div class="reg-step-panel" id="reg-panel-2">
@@ -516,6 +527,17 @@
       <button type="button" class="reg-pay-btn" onclick="handleRegisterAndPay()" id="reg-pay-btn"><i class="fa-solid fa-lock"></i> Jetzt abonnieren & Konto aktivieren — 2,99 €/Monat</button>
       <div class="reg-trust-line"><i class="fa-solid fa-shield-halved"></i> Sichere Zahlung · Sofortiger Zugang · Jederzeit kündbar</div>
       <div class="reg-back-link"><a onclick="regGoToStep1()">← Zurück zu Schritt 1</a></div>
+    </div>
+    <div class="reg-step-panel" id="reg-panel-3" style="display:none;">
+      <div class="reg-step-title">Code bestätigen</div>
+      <div class="reg-step-sub">Gib den 6-stelligen Code ein, den wir an <strong id="reg-otp-email-display"></strong> gesendet haben.</div>
+      <div class="modal-form-group" style="text-align:center;">
+        <input type="text" id="reg-otp-input" placeholder="000000" maxlength="6" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]*" style="font-size:28px;text-align:center;letter-spacing:12px;font-weight:800;font-family:monospace;padding:16px;max-width:220px;margin:0 auto;">
+      </div>
+      <div class="modal-msg" id="reg-otp-msg" style="margin-bottom:12px;"></div>
+      <button type="button" class="reg-pay-btn" onclick="verifyOtpAndCreateTrialAccount()" id="reg-otp-verify-btn"><i class="fa-solid fa-check-circle"></i> Konto aktivieren & Testphase starten</button>
+      <div class="reg-back-link" style="margin-top:12px;"><a onclick="startTrialRegistration()" style="font-size:12px;color:#94a3b8;">← Code erneut senden</a></div>
+      <div class="reg-back-link"><a onclick="regGoToStep1FromTrial()">← Zurück zu Schritt 1</a></div>
     </div>
   </div>
 </div>
@@ -580,6 +602,15 @@
       </div>
     </div>
   </header>
+  <div id="trial-banner" style="display:none;background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;padding:10px 20px;text-align:center;font-size:13px;font-weight:600;border-bottom:2px solid #f59e0b;position:relative;">
+    <span id="trial-banner-text">🎁 Testphase läuft</span>
+    <button onclick="startSubscriptionFromTrial()" style="margin-left:12px;background:#E30613;color:#fff;border:none;padding:6px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px rgba(227,6,19,0.3)'" onmouseout="this.style.transform='';this.style.boxShadow=''">Jetzt abonnieren — 2,99 €/Monat</button>
+    <button onclick="document.getElementById('trial-banner').style.display='none'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#92400e;font-size:16px;cursor:pointer;opacity:0.5;">×</button>
+  </div>
+  <div id="trial-expired-banner" style="display:none;background:linear-gradient(135deg,#fee2e2,#fecaca);color:#991b1b;padding:12px 20px;text-align:center;font-size:13px;font-weight:600;border-bottom:2px solid #ef4444;">
+    ⚠️ <span id="trial-expired-text">Deine Testphase ist abgelaufen.</span>
+    <button onclick="startSubscriptionFromTrial()" style="margin-left:12px;background:#E30613;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Jetzt abonnieren — 2,99 €/Monat</button>
+  </div>
   <div id="menu-backdrop" class="drawer-backdrop" onclick="toggleSidebarDrawer(false)"></div>
   <nav id="sidebar-drawer" class="sidebar-drawer">
     <div class="drawer-user-section">
