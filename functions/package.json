@@ -9,7 +9,11 @@
   "scripts": {
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "serve": "firebase emulators:start --only functions"
+    "serve": "firebase emulators:start --only functions",
+    "lint": "eslint . --fix"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0"
   },
   "dependencies": {
     "firebase-admin": "^13.0.0",
