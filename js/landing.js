@@ -218,6 +218,22 @@ async function updateTrialBanner() {
   }
 }
 
+function getCheckoutErrorMessage(error, fallback) {
+  const details =
+    typeof error?.details === 'string'
+      ? error.details
+      : error?.details?.message;
+
+  if (details) return details;
+
+  const message = String(error?.message || '');
+  if (message && !message.toLowerCase().includes('internal')) {
+    return message;
+  }
+
+  return fallback;
+}
+
 async function startSubscriptionFromTrial() {
   if (!auth.currentUser) {
     openLoginModal();
@@ -236,7 +252,13 @@ async function startSubscriptionFromTrial() {
   } catch (error) {
     console.error('startSubscriptionFromTrial failed:', error);
     if (typeof showToast === 'function') {
-      showToast('Zahlung konnte nicht gestartet werden.', 'error');
+      showToast(
+        getCheckoutErrorMessage(
+          error,
+          'Zahlung konnte nicht gestartet werden. Bitte später erneut versuchen.'
+        ),
+        'error'
+      );
     }
   }
 }
@@ -691,7 +713,10 @@ async function handleRegisterAndPay() {
 
       setModalMessage(
         'reg-step2-msg',
-        'Konto erstellt, aber die Zahlung konnte nicht gestartet werden. Bitte später erneut versuchen.',
+        `Konto erstellt, aber die Zahlung konnte nicht gestartet werden: ${getCheckoutErrorMessage(
+          checkoutError,
+          'Bitte später erneut versuchen.'
+        )}`,
         'error'
       );
 
