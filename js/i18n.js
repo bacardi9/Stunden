@@ -23,8 +23,6 @@ const uiTranslations = {
     pdfSub:'Generated via Automated Core Metrics Engine',
     setTitle:'System Settings', setAllowed:'Allowed Vacation Days (Annual)',
     setConstraint:'Daily Shift Target (Hours)', setThreshold:'Auto Break Threshold (Hours)',
-    setDisclaimer:'Altering operational constants is restricted to administrative roles.',
-    setAdmin:'Administrative Controls',
     setTrashBtn:'Open Trash Bin (Recent Deletions)',
     trashTitle:'Recently Deleted Items',
     trashDisclaimer:'Items are cached temporarily and purged after a strict 12-hour limit.',
@@ -69,8 +67,6 @@ const uiTranslations = {
     pdfSub:'Erstellt am',
     setTitle:'Einstellungen', setAllowed:'Urlaubsanspruch Tage (Jahr)',
     setConstraint:'Soll-Arbeitszeit (Std)', setThreshold:'Pausenregel Schwellenwert (Std)',
-    setDisclaimer:'Systemparameter können nur von autorisierten Nutzern geändert werden.',
-    setAdmin:'Administration',
     setTrashBtn:'Papierkorb öffnen',
     trashTitle:'Papierkorb',
     trashDisclaimer:'Gelöschte Einträge werden nach 12 Stunden endgültig entfernt.',
@@ -133,7 +129,6 @@ function setApplicationLanguage(langKey) {
   if (pdfMeta) pdfMeta.textContent = `${t.pdfMeta} ${localStorage.getItem('schuermann_current_user') || authenticatedUserGlobal}`;
 
   safeSet('lbl-set-title', t.setTitle); safeSet('lbl-set-allowed', t.setAllowed);
-  safeSet('lbl-set-disclaimer', t.setDisclaimer); safeSet('lbl-set-admin', t.setAdmin);
   safeSet('btn-set-trash', t.setTrashBtn); safeSet('lbl-trash-title', t.trashTitle);
   safeSet('lbl-trash-disclaimer', t.trashDisclaimer); safeSet('lbl-feedback-title', t.feedbackTitle);
   safeSet('lbl-feedback-input-desc', t.feedbackDesc);

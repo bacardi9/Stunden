@@ -17,7 +17,6 @@ function sanitizeHTML(str) {
 }
 
 let authenticatedUserGlobal      = '';
-let authenticatedUserRoleGlobal  = 'user';
 let activeLanguageGlobal         = 'de';
 let activeLeaveSubManagementType = 'vacation';
 let activeSelectedFormBreakDuration = 0;
@@ -26,5 +25,3 @@ let vacationLoggedDaysArrayCache     = [];
 let recentlyDeletedItemsBinCache     = [];
 let dailyWorkTimeBreakdownLogs       = {};
 let dailyOvertimeBreakdownLogs       = {};
-let adminAllEntriesCache   = [];
-let adminVacAllowanceCache = {};

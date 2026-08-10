@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   await waitForFirebaseReady();
   // Monitor auth state changes
   auth.onAuthStateChanged(user => {
-    if (user && authenticatedUserRoleGlobal !== 'admin') {
+    if (user) {
       loadUserDataFromCloud().catch(e => console.warn('Auto-load failed:', e));
     }
   });
@@ -248,10 +248,6 @@ async function persistUserDataNow() {
   if (!_firebaseReady) return false;
   if (!auth.currentUser) return false;
 
-  if (authenticatedUserRoleGlobal === 'admin') {
-    return false;
-  }
-
   try {
     const uid = await getAuthenticatedUid();
 
@@ -382,10 +378,6 @@ function persistUserData() {
   if (!_firebaseReady) return;
   if (!auth.currentUser) return;
 
-  if (authenticatedUserRoleGlobal === 'admin') {
-    return;
-  }
-
   if (_persistTimer) {
     clearTimeout(_persistTimer);
   }
@@ -399,10 +391,6 @@ function persistUserData() {
 async function loadUserDataFromCloud() {
   if (!_firebaseReady) return false;
   if (!auth.currentUser) return false;
-
-  if (authenticatedUserRoleGlobal === 'admin') {
-    return false;
-  }
 
   _cloudDataLoading = true;
   _cloudDataLoaded = false;
@@ -615,7 +603,6 @@ function updateOfflineBadge() {
 
 async function flushOfflineQueue() {
   if (!_firebaseReady || !auth.currentUser) return;
-  if (authenticatedUserRoleGlobal === 'admin') return;
   if (!_cloudDataLoaded || !_cloudProfileRef) return;
 
   const queue = getOfflineQueue();

@@ -417,36 +417,6 @@ function displayLeaveStatementBalancesSummary() {
   );
 }
 
-function toggleDarkMode() {
-  const enabled = !document.body.classList.contains('dark-mode');
-
-  document.body.classList.toggle('dark-mode', enabled);
-
-  localStorage.setItem(
-    'schuermann_dark_mode',
-    String(enabled)
-  );
-
-  const button = document.getElementById('dark-mode-btn');
-
-  if (button) {
-    button.textContent = enabled ? '☀️' : '🌙';
-  }
-}
-
-function restoreDarkModePreference() {
-  const enabled =
-    localStorage.getItem('schuermann_dark_mode') === 'true';
-
-  document.body.classList.toggle('dark-mode', enabled);
-
-  const button = document.getElementById('dark-mode-btn');
-
-  if (button) {
-    button.textContent = enabled ? '☀️' : '🌙';
-  }
-}
-
 function switchActiveView(view, element) {
   document.querySelectorAll('.content-panel').forEach(panel => {
     panel.classList.remove('active');
@@ -519,13 +489,53 @@ async function waitForCloudLoadCompletion() {
   refreshApplicationAfterCloudLoad();
 }
 
+function setDarkMode(enabled) {
+  const root = document.documentElement;
+  const body = document.body;
+  root?.classList.toggle('dark-mode', enabled);
+  body?.classList.toggle('dark-mode', enabled);
+
+  try {
+    localStorage.setItem('mso-theme', enabled ? 'dark' : 'light');
+  } catch (error) {
+    console.warn('Theme preference could not be saved:', error);
+  }
+
+  const toggle = document.getElementById('theme-toggle-btn');
+  if (toggle) {
+    toggle.setAttribute('aria-pressed', String(enabled));
+    toggle.setAttribute('aria-label', enabled ? 'Helles Design aktivieren' : 'Dunkles Design aktivieren');
+    toggle.setAttribute('title', enabled ? 'Helles Design aktivieren' : 'Dunkles Design aktivieren');
+    toggle.innerHTML = enabled
+      ? '<i class="fa-solid fa-sun" aria-hidden="true"></i><span class="theme-toggle-label">Hell</span>'
+      : '<i class="fa-solid fa-moon" aria-hidden="true"></i><span class="theme-toggle-label">Dunkel</span>';
+  }
+
+  const themeColor = document.querySelector('meta[name="theme-color"]');
+  themeColor?.setAttribute('content', enabled ? '#07080b' : '#f0f2f7');
+}
+
+function toggleDarkMode() {
+  setDarkMode(!document.body?.classList.contains('dark-mode'));
+}
+
+function restoreDarkModePreference() {
+  let theme = 'dark';
+  try {
+    theme = localStorage.getItem('mso-theme') || 'dark';
+  } catch (error) {
+    console.warn('Theme preference could not be read:', error);
+  }
+  setDarkMode(theme !== 'light');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   restoreDarkModePreference();
 
   if (typeof auth === 'undefined') return;
 
   auth.onAuthStateChanged(user => {
-    if (!user || authenticatedUserRoleGlobal === 'admin') return;
+    if (!user) return;
 
     waitForCloudLoadCompletion().catch(error => {
       console.warn('Post-login UI refresh failed:', error);

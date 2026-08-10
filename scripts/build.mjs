@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const DIST = fileURLToPath(new URL("../dist/", import.meta.url));
 
-const entries = ["index.html", "css", "js", "CNAME"];
+const entries = ["index.html", "impressum.html", "datenschutz.html", "css", "js", "CNAME"];
 
 await rm(DIST, { recursive: true, force: true });
 await mkdir(DIST, { recursive: true });

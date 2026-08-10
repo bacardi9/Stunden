@@ -1,5 +1,5 @@
 function setShellVisibility(activeShellId) {
-  ['landing-page', 'app-view', 'admin-full-view', 'login-view'].forEach(id => {
+  ['landing-page', 'app-view', 'login-view'].forEach(id => {
     const element = document.getElementById(id);
     if (!element) return;
 
@@ -8,10 +8,6 @@ function setShellVisibility(activeShellId) {
     element.style.display = active ? 'block' : 'none';
   });
 
-  document.body.classList.toggle(
-    'admin-mode',
-    activeShellId === 'admin-full-view'
-  );
 }
 
 function showLandingPage() {
@@ -132,7 +128,6 @@ async function verifyOtpAndCreateTrialAccount() {
     localStorage.setItem('schuermann_company_name', company);
 
     authenticatedUserGlobal = credential.user.uid;
-    authenticatedUserRoleGlobal = 'user';
 
     closeRegisterModal();
     showUserApplication(credential.user);
@@ -451,7 +446,6 @@ async function handleModalLogin(event) {
     );
 
     authenticatedUserGlobal = credential.user.uid;
-    authenticatedUserRoleGlobal = 'user';
 
     closeLoginModal();
     showUserApplication(credential.user);
@@ -696,7 +690,6 @@ async function handleRegisterAndPay() {
     );
 
     authenticatedUserGlobal = credential.user.uid;
-    authenticatedUserRoleGlobal = 'user';
 
     setModalMessage(
       'reg-step2-msg',
@@ -809,7 +802,6 @@ document.addEventListener('DOMContentLoaded', () => {
   auth.onAuthStateChanged(user => {
     if (!user) {
       authenticatedUserGlobal = '';
-      authenticatedUserRoleGlobal = 'user';
       localStorage.removeItem('schuermann_auth_user');
       showLandingPage();
       return;

@@ -5,6 +5,7 @@
 <meta name="color-scheme" content="dark light">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="index, follow">
 <meta name="theme-color" content="#e11d48">
 <meta name="description" content="Professionelle Zeiterfassung f&uuml;r Handwerksbetriebe. Stundenzettel erfassen, &Uuml;berstunden berechnen, PDFs exportieren. 7 Tage kostenlos testen &mdash; nur 2,99 &euro; pro Monat.">
 <meta property="og:title" content="Meine Stunden Online &ndash; Professionelle Zeiterfassung">
@@ -27,139 +28,500 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
 <link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/admin.css">
 <link rel="stylesheet" href="css/vendor-overrides.css">
 <link rel="stylesheet" href="css/landing.css">
 
-<style>
-/* ── QUICK INTRO SECTION ── */
-.lp-intro {
-  position: relative; z-index: 1;
-  max-width: 780px; margin: 0 auto;
-  padding: 40px 16px 32px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  align-items: start;
-}
-.lp-intro-item {
-  display: flex; align-items: flex-start; gap: 12px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 14px; padding: 14px 16px;
-  transition: all 0.2s;
-}
-.lp-intro-item:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.12); }
-.lp-intro-icon {
-  width: 38px; height: 38px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px; flex-shrink: 0;
-}
-.lp-intro-text h4 { font-size: 12px; font-weight: 800; color: #f1f5f9; margin-bottom: 4px; line-height: 1.3; }
-.lp-intro-text p  { font-size: 11px; color: #64748b; line-height: 1.5; }
-@media (max-width: 480px) {
-  .lp-intro { grid-template-columns: 1fr; padding: 20px 14px 16px; gap: 10px; }
-}
-.lp-showcase { position: relative; z-index: 1; padding: 20px 16px 60px; max-width: 1100px; margin: 0 auto; }
-.lp-showcase-label { text-align: center; font-size: 11px; font-weight: 800; color: #E30613; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
-.lp-showcase-title { text-align: center; font-size: clamp(22px,4vw,36px); font-weight: 900; color: #fff; letter-spacing: -1px; margin-bottom: 10px; }
-.lp-showcase-sub { text-align: center; font-size: 14px; color: #64748b; max-width: 520px; margin: 0 auto 48px; line-height: 1.6; }
-.lp-feature-row { display: flex; align-items: center; gap: 40px; margin-bottom: 64px; flex-wrap: wrap; }
-.lp-feature-row.reverse { flex-direction: row-reverse; }
-.lp-feature-row-text { flex: 1; min-width: 260px; }
-.lp-feature-row-mock { flex: 1; min-width: 260px; max-width: 380px; margin: 0 auto; }
-.lp-feature-row-badge { display: inline-flex; align-items: center; gap: 7px; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 12px; border-radius: 99px; margin-bottom: 12px; }
-.lp-feature-row-title { font-size: clamp(18px,3vw,26px); font-weight: 900; color: #fff; letter-spacing: -0.6px; line-height: 1.2; margin-bottom: 10px; }
-.lp-feature-row-desc { font-size: 13px; color: #64748b; line-height: 1.75; margin-bottom: 16px; }
-.lp-feature-row-bullets { list-style: none; padding: 0; margin: 0; }
-.lp-feature-row-bullets li { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: #94a3b8; font-weight: 500; margin-bottom: 8px; line-height: 1.5; }
-.lp-feature-row-bullets li i { color: #10b981; font-size: 12px; margin-top: 2px; flex-shrink: 0; }
-.lp-phone { background: rgba(10,16,32,0.97); border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset; width: 100%; max-width: 320px; margin: 0 auto; font-size: 11px; }
-.lp-phone-bar { background: rgba(5,8,20,0.95); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 9px 12px; display: flex; align-items: center; justify-content: space-between; }
-.lp-phone-bar-title { font-size: 10px; font-weight: 800; color: #fff; }
-.lp-phone-body { padding: 12px; }
-.mock-period-bar-wrap { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
-.mock-period-label { font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: flex; justify-content: space-between; }
-.mock-progress-track { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
-.mock-progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg,#E30613,#0ea5e9); }
-.mock-missing-btn { display: inline-flex; align-items: center; gap: 5px; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); color: #ef4444; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
-.mock-missing-panel { margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; }
-.mock-missing-chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(239,68,68,0.08); border: 1.5px solid rgba(239,68,68,0.2); color: #ef4444; padding: 4px 10px; border-radius: 99px; font-size: 10px; font-weight: 700; margin: 3px; cursor: pointer; }
-.mock-save-row { display: flex; gap: 6px; margin-top: 10px; }
-.mock-save-btn { flex: 1; background: linear-gradient(135deg,#E30613,#b8000f); border: none; color: #fff; padding: 9px; border-radius: 8px; font-size: 11px; font-weight: 800; text-align: center; }
-.mock-schule-btn { background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.2); color: #0ea5e9; padding: 9px 12px; border-radius: 8px; font-size: 10px; font-weight: 700; }
-.mock-chart-bars { display: flex; align-items: flex-end; gap: 5px; height: 80px; margin: 10px 0 8px; }
-.mock-chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; justify-content: flex-end; }
-.mock-chart-bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 3px; }
-.mock-chart-lbl { font-size: 8px; font-weight: 700; color: #475569; }
-.mock-day-detail { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px; margin-top: 8px; }
-.mock-day-entry { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
-.mock-day-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
-.mock-day-text { flex: 1; }
-.mock-day-proj { font-size: 11px; font-weight: 700; color: #e2e8f0; }
-.mock-day-meta { font-size: 9px; color: #475569; }
-.mock-day-hrs { font-size: 12px; font-weight: 800; color: #0ea5e9; }
-.mock-ai-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid #0ea5e9; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
-.mock-ai-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
-.mock-ai-field { background: rgba(255,255,255,0.05); border-radius: 6px; padding: 6px 8px; }
-.mock-ai-field-label { font-size: 8px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 2px; }
-.mock-ai-field-val { font-size: 11px; font-weight: 700; color: #e2e8f0; }
-.mock-ai-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: #10b981; font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 99px; }
-.mock-pdf-frame { background: #fff; border-radius: 8px; padding: 12px; color: #1e293b; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
-.mock-pdf-header-bar { height: 3px; background: #c0392b; border-radius: 2px; margin-bottom: 8px; }
-.mock-pdf-logo-row { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 8px; }
-.mock-pdf-logo-accent { width: 3px; height: 14px; background: #c0392b; border-radius: 1px; flex-shrink: 0; margin-top: 1px; }
-.mock-pdf-logo-name { font-size: 11px; font-weight: 900; color: #0f172a; line-height: 1; }
-.mock-pdf-logo-sub { font-size: 7px; color: #64748b; margin-top: 1px; }
-.mock-pdf-title { font-size: 9px; font-weight: 800; color: #0f172a; text-align: right; line-height: 1; margin-top: 1px; }
-.mock-pdf-date-text { font-size: 7px; color: #64748b; text-align: right; }
-.mock-pdf-divider { height: 1px; background: #e2e8f0; margin: 6px 0; }
-.mock-pdf-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-bottom: 6px; }
-.mock-pdf-card { background: #f8fafc; border-radius: 4px; padding: 5px; }
-.mock-pdf-card-lbl { font-size: 6px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; }
-.mock-pdf-card-val { font-size: 9px; font-weight: 800; color: #0f172a; }
-.mock-pdf-section { background: #f1f5f9; border-radius: 4px; padding: 4px 6px; margin-bottom: 3px; }
-.mock-pdf-section-title { font-size: 8px; font-weight: 800; color: #0f172a; margin-bottom: 3px; }
-.mock-pdf-row { display: flex; justify-content: space-between; font-size: 7px; color: #475569; padding: 2px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
-.mock-pdf-row:last-child { border-bottom: none; }
-.mock-pdf-row-hrs { font-weight: 700; color: #c0392b; }
-.mock-pdf-footer { display: flex; justify-content: space-between; font-size: 6px; color: #94a3b8; margin-top: 5px; border-top: 1px solid #e2e8f0; padding-top: 4px; }
-.mock-streak-card { background: linear-gradient(135deg, rgba(227,6,19,0.12), rgba(227,6,19,0.04)); border: 1px solid rgba(227,6,19,0.2); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-.mock-streak-flame { font-size: 24px; animation: flamePulse 1.5s ease-in-out infinite alternate; }
-@keyframes flamePulse { from{transform:scale(1)} to{transform:scale(1.1)} }
-.mock-streak-num { font-size: 20px; font-weight: 900; color: #E30613; letter-spacing: -1px; line-height: 1; }
-.mock-streak-lbl { font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
-.mock-streak-best { margin-left: auto; text-align: right; }
-.mock-streak-best-num { font-size: 12px; font-weight: 800; color: #64748b; }
-.mock-streak-best-lbl { font-size: 9px; color: #334155; font-weight: 600; }
-.lp-showcase-divider { border: none; border-top: 1px solid rgba(255,255,255,0.04); margin: 0 0 64px; }
-.lp-stats-bar { position: relative; z-index: 1; background: rgba(255,255,255,0.02); border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 28px 20px; display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
-.lp-stat-item { text-align: center; }
-.lp-stat-num { font-size: 28px; font-weight: 900; color: #fff; letter-spacing: -1.5px; line-height: 1; }
-.lp-stat-num span { color: #E30613; }
-.lp-stat-lbl { font-size: 10px; font-weight: 600; color: #475569; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-@media (max-width: 640px) {
-  .lp-feature-row, .lp-feature-row.reverse { flex-direction: column; gap: 24px; margin-bottom: 48px; }
-  .lp-feature-row-mock { min-width: unset; max-width: 100%; width: 100%; }
-  .lp-phone { max-width: 100%; }
-  .lp-stats-bar { gap: 20px; padding: 20px 16px; }
-  .lp-showcase { padding: 0 14px 48px; }
-  .lp-showcase-divider { margin: 0 0 48px; }
-}
-
-/* FOCUS VISIBILITY */
-*:focus-visible { outline: 2px solid #E30613; outline-offset: 2px; }
-</style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-functions-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-functions-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Meine Stunden Online",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "description": "Professionelle Zeiterfassung für Handwerksbetriebe. Stundenzettel erfassen, Überstunden berechnen, PDFs exportieren.",
+  "offers": {
+    "@type": "Offer",
+    "price": "2.99",
+    "priceCurrency": "EUR",
+    "description": "7 Tage kostenlos testen, danach 2,99 € pro Monat"
+  }
+}
+</script>
+<style id="dashboard-enterprise-theme">
+/* Enterprise dashboard surface: intentionally scoped to the authenticated overview. */
+html.dark-mode #view-dashboard,
+body.dark-mode #view-dashboard {
+  position: relative;
+}
+html.dark-mode #view-dashboard .panel-scroll-content,
+body.dark-mode #view-dashboard .panel-scroll-content {
+  padding: 10px 0 42px;
+}
+html.dark-mode #view-dashboard .dash-centered-logo-wrapper,
+body.dark-mode #view-dashboard .dash-centered-logo-wrapper {
+  justify-content: flex-start;
+  gap: 12px;
+  margin: 8px 4px 20px;
+  text-align: left;
+}
+html.dark-mode #view-dashboard .dash-centered-logo-wrapper > div,
+body.dark-mode #view-dashboard .dash-centered-logo-wrapper > div {
+  text-align: left !important;
+}
+html.dark-mode #view-dashboard .dash-centered-logo-wrapper > div > div:first-child,
+body.dark-mode #view-dashboard .dash-centered-logo-wrapper > div > div:first-child {
+  color: #e6e8ed !important;
+  font-size: 17px !important;
+  letter-spacing: 1.2px !important;
+}
+html.dark-mode #view-dashboard .dash-centered-logo-wrapper > div > div:last-child,
+body.dark-mode #view-dashboard .dash-centered-logo-wrapper > div > div:last-child {
+  color: #fb7185 !important;
+  letter-spacing: 2.4px !important;
+}
+html.dark-mode #view-dashboard .dash-centered-logo-wrapper::after,
+body.dark-mode #view-dashboard .dash-centered-logo-wrapper::after {
+  content: "ÜBERSICHT";
+  margin-left: auto;
+  align-self: center;
+  padding: 6px 9px;
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 999px;
+  color: #737d8c;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  white-space: nowrap;
+}
+html.dark-mode #view-dashboard .dash-centered-logo-wrapper + div,
+body.dark-mode #view-dashboard .dash-centered-logo-wrapper + div {
+  position: relative;
+  isolation: isolate;
+  min-height: 188px;
+  margin: 0 0 24px !important;
+  padding: 30px 28px 26px !important;
+  overflow: hidden;
+  text-align: left !important;
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(29,23,27,0.96) 0%, rgba(18,20,25,0.98) 50%, rgba(11,13,17,0.99) 100%);
+  box-shadow: 0 24px 55px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+html.dark-mode #view-dashboard .dash-centered-logo-wrapper + div::before,
+body.dark-mode #view-dashboard .dash-centered-logo-wrapper + div::before {
+  content: none;
+  display: none;
+  margin-bottom: 18px;
+  color: #fb7185;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
+html.dark-mode #view-dashboard .dash-centered-logo-wrapper + div::after,
+body.dark-mode #view-dashboard .dash-centered-logo-wrapper + div::after {
+  content: none;
+  display: none;
+  position: absolute;
+  top: 28px;
+  right: 26px;
+  color: rgba(255,255,255,0.16);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
+html.dark-mode #view-dashboard #lbl-dash-welcome,
+body.dark-mode #view-dashboard #lbl-dash-welcome {
+  display: block;
+  margin-bottom: 7px;
+  color: #a7afbc !important;
+  font-size: 14px;
+  font-weight: 600 !important;
+  letter-spacing: 0.1px;
+}
+html.dark-mode #view-dashboard #dash-profile-username,
+body.dark-mode #view-dashboard #dash-profile-username {
+  display: block;
+  color: #f0f2f5 !important;
+  font-size: clamp(29px, 7vw, 42px);
+  font-weight: 650 !important;
+  letter-spacing: -1.8px;
+  line-height: 1.05;
+}
+html.dark-mode #view-dashboard #period-progress-container,
+body.dark-mode #view-dashboard #period-progress-container {
+  margin-bottom: 20px;
+}
+html.dark-mode #view-dashboard #lbl-dash-title,
+body.dark-mode #view-dashboard #lbl-dash-title {
+  display: block;
+  margin: 0;
+  color: #e0e4ea !important;
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.65px;
+}
+html.dark-mode #view-dashboard #lbl-dash-title::before,
+body.dark-mode #view-dashboard #lbl-dash-title::before {
+  content: "PERFORMANCE";
+  display: block;
+  margin-bottom: 7px;
+  color: #737d8c;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
+html.dark-mode #view-dashboard .metrics-grid,
+body.dark-mode #view-dashboard .metrics-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 0 12px;
+}
+html.dark-mode #view-dashboard .metric-card,
+body.dark-mode #view-dashboard .metric-card {
+  min-height: 180px;
+  padding: 18px 17px 16px;
+  border-top: 2px solid rgba(255,255,255,0.16);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(25,27,33,0.98), rgba(14,16,21,0.98));
+  box-shadow: 0 16px 34px rgba(0,0,0,0.27), inset 0 1px 0 rgba(255,255,255,0.045);
+}
+html.dark-mode #view-dashboard .metric-card:first-child,
+body.dark-mode #view-dashboard .metric-card:first-child { border-top-color: rgba(251,113,133,0.78); }
+html.dark-mode #view-dashboard .metric-card.metric-card-accent,
+body.dark-mode #view-dashboard .metric-card.metric-card-accent { border-top-color: rgba(52,211,153,0.78); }
+html.dark-mode #view-dashboard .metric-card::before,
+body.dark-mode #view-dashboard .metric-card::before {
+  background: radial-gradient(circle at 100% 0%, rgba(227,6,19,0.13), transparent 42%), linear-gradient(135deg, rgba(255,255,255,0.045), transparent 55%);
+}
+html.dark-mode #view-dashboard .metric-card-head,
+body.dark-mode #view-dashboard .metric-card-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+html.dark-mode #view-dashboard .metric-icon,
+body.dark-mode #view-dashboard .metric-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(251,113,133,0.22);
+  border-radius: 10px;
+  color: #fb7185;
+  background: rgba(227,6,19,0.1);
+  font-size: 13px;
+}
+html.dark-mode #view-dashboard .metric-card-accent .metric-icon,
+body.dark-mode #view-dashboard .metric-card-accent .metric-icon {
+  border-color: rgba(52,211,153,0.2);
+  color: #34d399;
+  background: rgba(16,185,129,0.09);
+}
+html.dark-mode #view-dashboard .metric-card-action,
+body.dark-mode #view-dashboard .metric-card-action {
+  color: #677181;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+html.dark-mode #view-dashboard .metric-card-action i,
+body.dark-mode #view-dashboard .metric-card-action i { margin-left: 3px; font-size: 8px; }
+html.dark-mode #view-dashboard .metric-card label,
+body.dark-mode #view-dashboard .metric-card label {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 7px;
+  color: #8993a3 !important;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 1px;
+}
+html.dark-mode #view-dashboard .metric-card .value,
+body.dark-mode #view-dashboard .metric-card .value {
+  position: relative;
+  z-index: 1;
+  color: #e5e7eb !important;
+  font-size: clamp(22px, 5vw, 29px);
+  font-weight: 650;
+  letter-spacing: -1.1px;
+}
+html.dark-mode #view-dashboard .metric-card-accent .value,
+body.dark-mode #view-dashboard .metric-card-accent .value { color: #34d399 !important; }
+html.dark-mode #view-dashboard .metric-card .value::after,
+body.dark-mode #view-dashboard .metric-card .value::after {
+  display: block;
+  margin-top: 7px;
+  color: #657080;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+html.dark-mode #view-dashboard .metric-card:first-child .value::after,
+body.dark-mode #view-dashboard .metric-card:first-child .value::after { content: "Erfasste Arbeitszeit"; }
+html.dark-mode #view-dashboard .metric-card-accent .value::after,
+body.dark-mode #view-dashboard .metric-card-accent .value::after { content: "Saldo im aktuellen Zeitraum"; }
+html.dark-mode #view-dashboard .metric-card-foot,
+body.dark-mode #view-dashboard .metric-card-foot { display: none; }
+html.dark-mode #view-dashboard .dashboard-section-heading,
+body.dark-mode #view-dashboard .dashboard-section-heading { display: block; margin: 5px 0 13px; }
+html.dark-mode #view-dashboard .dashboard-section-note,
+body.dark-mode #view-dashboard .dashboard-section-note { display: none; }
+html.dark-mode #view-dashboard .metric-card::after,
+body.dark-mode #view-dashboard .metric-card::after {
+  content: "DETAILS  ↗";
+  position: absolute;
+  top: 21px;
+  right: 17px;
+  z-index: 2;
+  color: #677181;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+html.dark-mode #view-dashboard .metric-card label,
+body.dark-mode #view-dashboard .metric-card label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+html.dark-mode #view-dashboard .metric-card label::before,
+body.dark-mode #view-dashboard .metric-card label::before { content: none !important; display: none !important; }
+html.dark-mode #view-dashboard .metric-card-accent label::before,
+body.dark-mode #view-dashboard .metric-card-accent label::before { content: none !important; display: none !important; }
+html.dark-mode #view-dashboard .metric-card:first-child .value,
+body.dark-mode #view-dashboard .metric-card:first-child .value,
+html.dark-mode #view-dashboard .metric-card-accent .value,
+body.dark-mode #view-dashboard .metric-card-accent .value {
+  margin-bottom: 0;
+}
+@media (max-width: 520px) {
+  html.dark-mode #view-dashboard .dash-centered-logo-wrapper + div,
+  body.dark-mode #view-dashboard .dash-centered-logo-wrapper + div { padding: 25px 20px 22px !important; min-height: 176px; }
+  html.dark-mode #view-dashboard .dash-centered-logo-wrapper + div::after,
+  body.dark-mode #view-dashboard .dash-centered-logo-wrapper + div::after { top: 24px; right: 20px; font-size: 8px; }
+  html.dark-mode #view-dashboard .dash-centered-logo-wrapper::after,
+  body.dark-mode #view-dashboard .dash-centered-logo-wrapper::after { display: none; }
+  html.dark-mode #view-dashboard .metric-card,
+  body.dark-mode #view-dashboard .metric-card { min-height: 165px; padding: 15px 13px 14px; }
+  html.dark-mode #view-dashboard .metric-card-head,
+  body.dark-mode #view-dashboard .metric-card-head { margin-bottom: 18px; }
+  html.dark-mode #view-dashboard .metric-card-action,
+  body.dark-mode #view-dashboard .metric-card-action { font-size: 8px; }
+}
+</style>
+<style id="dashboard-interaction-theme">
+html.dark-mode #view-dashboard .dash-centered-logo-wrapper::after,
+body.dark-mode #view-dashboard .dash-centered-logo-wrapper::after { content: var(--dash-workspace-label, "ÜBERSICHT"); color: #fb7185 !important; border-color: rgba(251,113,133,.28); }
+html.dark-mode #view-dashboard .dash-centered-logo-wrapper + div::before,
+body.dark-mode #view-dashboard .dash-centered-logo-wrapper + div::before,
+html.dark-mode #view-dashboard .dash-centered-logo-wrapper + div::after,
+body.dark-mode #view-dashboard .dash-centered-logo-wrapper + div::after { content: none !important; display: none !important; }
+html.dark-mode #view-dashboard #lbl-dash-title::before,
+body.dark-mode #view-dashboard #lbl-dash-title::before { content: var(--dash-performance-label, "LEISTUNG"); }
+html.dark-mode #view-dashboard .metric-card::after,
+body.dark-mode #view-dashboard .metric-card::after { content: var(--dash-details-label, "DETAILS  ↗"); }
+
+#dashboard-action-hub { margin: 20px 0 4px; padding: 20px; border-radius: 22px; border: 1px solid rgba(15,23,42,0.08); background: rgba(255,255,255,0.72); box-shadow: 0 12px 30px rgba(15,23,42,0.06); }
+#dashboard-action-hub .dashboard-hub-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:14px; }
+#dashboard-action-hub .dashboard-hub-kicker { display:block; margin-bottom:5px; color:#64748b; font-size:9px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; }
+#dashboard-action-hub h2 { margin:0; color:#1e293b; font-size:18px; font-weight:750; letter-spacing:-0.45px; }
+#dashboard-action-hub .dashboard-hub-description { margin:5px 0 0; color:#64748b; font-size:12px; line-height:1.45; }
+#dashboard-action-hub .dashboard-action-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+#dashboard-action-hub .dashboard-action-btn { display:flex; align-items:center; gap:10px; width:100%; min-height:54px; padding:10px 12px; border:1px solid rgba(15,23,42,0.08); border-radius:14px; background:rgba(255,255,255,0.76); color:#334155; cursor:pointer; text-align:left; transition:transform .2s cubic-bezier(.16,1,.3,1),border-color .2s,background .2s,box-shadow .2s; }
+#dashboard-action-hub .dashboard-action-btn:hover { transform:translateY(-2px); border-color:rgba(227,6,19,.32); background:#fff; box-shadow:0 10px 22px rgba(15,23,42,.1); }
+#dashboard-action-hub .dashboard-action-btn:focus-visible { outline:2px solid #E30613; outline-offset:3px; }
+#dashboard-action-hub .dashboard-action-icon { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; flex:0 0 30px; border-radius:10px; background:rgba(227,6,19,.09); color:#E30613; }
+#dashboard-action-hub .dashboard-action-btn[data-action="overtime"] .dashboard-action-icon { color:#10b981; background:rgba(16,185,129,.1); }
+#dashboard-action-hub .dashboard-action-btn[data-action="vacation"] .dashboard-action-icon { color:#f59e0b; background:rgba(245,158,11,.12); }
+#dashboard-action-hub .dashboard-action-btn[data-action="scan"] .dashboard-action-icon { color:#a78bfa; background:rgba(139,92,246,.12); }
+#dashboard-action-hub .dashboard-action-label { display:flex; flex:1; flex-direction:column; gap:2px; min-width:0; }
+#dashboard-action-hub .dashboard-action-label strong { color:#1e293b; font-size:11px; font-weight:750; line-height:1.2; }
+#dashboard-action-hub .dashboard-action-label small { color:#64748b; font-size:9px; font-weight:500; line-height:1.25; }
+#dashboard-action-hub .dashboard-action-arrow { color:#94a3b8; font-size:10px; transition:transform .2s,color .2s; }
+#dashboard-action-hub .dashboard-action-btn:hover .dashboard-action-arrow { color:#E30613; transform:translateX(2px); }
+html.dark-mode #dashboard-action-hub,
+body.dark-mode #dashboard-action-hub { border-color:rgba(255,255,255,.08); background:linear-gradient(145deg,rgba(23,25,31,.9),rgba(12,14,18,.96)); box-shadow:0 18px 38px rgba(0,0,0,.23),inset 0 1px 0 rgba(255,255,255,.04); }
+html.dark-mode #dashboard-action-hub .dashboard-hub-kicker,
+body.dark-mode #dashboard-action-hub .dashboard-hub-kicker { color:#fb7185; }
+html.dark-mode #dashboard-action-hub h2,
+body.dark-mode #dashboard-action-hub h2 { color:#e2e5ea; }
+html.dark-mode #dashboard-action-hub .dashboard-hub-description,
+body.dark-mode #dashboard-action-hub .dashboard-hub-description { color:#8993a3; }
+html.dark-mode #dashboard-action-hub .dashboard-action-btn,
+body.dark-mode #dashboard-action-hub .dashboard-action-btn { border-color:rgba(255,255,255,.08); background:rgba(255,255,255,.035); color:#d9dee7; }
+html.dark-mode #dashboard-action-hub .dashboard-action-btn:hover,
+body.dark-mode #dashboard-action-hub .dashboard-action-btn:hover { border-color:rgba(227,6,19,.34); background:rgba(227,6,19,.08); box-shadow:0 12px 25px rgba(0,0,0,.22); }
+html.dark-mode #dashboard-action-hub .dashboard-action-label strong,
+body.dark-mode #dashboard-action-hub .dashboard-action-label strong { color:#dfe3e9; }
+html.dark-mode #dashboard-action-hub .dashboard-action-label small,
+body.dark-mode #dashboard-action-hub .dashboard-action-label small { color:#7f8998; }
+html.dark-mode #dashboard-action-hub .dashboard-action-arrow,
+body.dark-mode #dashboard-action-hub .dashboard-action-arrow { color:#677181; }
+html.dark-mode #view-dashboard #dash-profile-username,
+body.dark-mode #view-dashboard #dash-profile-username {
+  background: linear-gradient(100deg, #f4f5f7 0%, #fda4af 48%, #fb7185 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  text-shadow: 0 0 26px rgba(251,113,133,.14);
+  font-weight: 750 !important;
+}
+html.dark-mode #view-dashboard .metric-card label,
+body.dark-mode #view-dashboard .metric-card label { color: #fb7185 !important; }
+@media (max-width:520px) {
+  #dashboard-action-hub { padding:16px 14px; border-radius:18px; }
+  #dashboard-action-hub .dashboard-hub-heading { display:block; }
+  #dashboard-action-hub .dashboard-action-grid { grid-template-columns:1fr; }
+}
+</style>
+<script>
+(function () {
+  const copy = {
+    de: {
+      kicker: 'SCHNELLZUGRIFF',
+      title: 'Was möchtest du erledigen?',
+      description: 'Die wichtigsten Bereiche direkt von deiner Übersicht aus öffnen.',
+      work: 'Arbeitszeit erfassen',
+      workHint: 'Neue Buchung anlegen',
+      history: 'Stundenzettel-Archiv',
+      historyHint: 'Einträge und PDFs ansehen',
+      vacation: 'Urlaub & Fehlzeiten',
+      vacationHint: 'Abwesenheiten verwalten',
+      scan: 'KI-Scan öffnen',
+      scanHint: 'Stundenzettel automatisch erfassen',
+      net: 'Netto-Arbeitszeit anzeigen',
+      netHint: 'Tagesaufstellung und Einträge',
+      overtime: 'Überstunden prüfen',
+      overtimeHint: 'Saldo nach Tagen ansehen',
+      workspace: '"ÜBERSICHT"',
+      overview: '"ARBEITSBEREICH / ÜBERSICHT"',
+      control: '"STEUERZENTRALE"',
+      performance: '"LEISTUNG"',
+      details: '"DETAILS  ↗"'
+    },
+    en: {
+      kicker: 'QUICK ACCESS',
+      title: 'What would you like to do?',
+      description: 'Open the most important areas directly from your overview.',
+      work: 'Log working time',
+      workHint: 'Create a new entry',
+      history: 'Timesheet archive',
+      historyHint: 'Review entries and PDFs',
+      vacation: 'Leave & absences',
+      vacationHint: 'Manage absences',
+      scan: 'Open AI scan',
+      scanHint: 'Capture a timesheet automatically',
+      net: 'View net work time',
+      netHint: 'Daily breakdown and entries',
+      overtime: 'Review overtime',
+      overtimeHint: 'View balance by day',
+      workspace: '"PERSONAL WORKSPACE"',
+      overview: '"WORKSPACE / OVERVIEW"',
+      control: '"CONTROL CENTER"',
+      performance: '"PERFORMANCE"',
+      details: '"DETAILS  ↗"'
+    }
+  };
+
+  function activeLocale() {
+    return document.getElementById('lang-btn-de')?.classList.contains('active') ? 'de' : 'en';
+  }
+
+  function setDashboardLanguage() {
+    const locale = activeLocale();
+    const t = copy[locale];
+    const welcome = document.getElementById('lbl-dash-welcome');
+    if (welcome) welcome.textContent = locale === 'de' ? 'Willkommen zurück' : 'Welcome back';
+    const root = document.documentElement;
+    root.style.setProperty('--dash-workspace-label', t.workspace);
+    root.style.setProperty('--dash-overview-label', t.overview);
+    root.style.setProperty('--dash-control-label', t.control);
+    root.style.setProperty('--dash-performance-label', t.performance);
+    root.style.setProperty('--dash-details-label', t.details);
+    const hub = document.getElementById('dashboard-action-hub');
+    if (!hub) return;
+    hub.querySelector('[data-dashboard-copy="kicker"]').textContent = t.kicker;
+    hub.querySelector('[data-dashboard-copy="title"]').textContent = t.title;
+    hub.querySelector('[data-dashboard-copy="description"]').textContent = t.description;
+    ['work','history','vacation','scan','net','overtime'].forEach(key => {
+      hub.querySelector('[data-dashboard-copy="' + key + '"]').textContent = t[key];
+      hub.querySelector('[data-dashboard-copy="' + key + '-hint"]').textContent = t[key + 'Hint'];
+    });
+  }
+
+  function openDashboardView(view, navMatch) {
+    const nav = document.querySelector('.drawer-nav-list .nav-item[onclick*="' + navMatch + '"]');
+    if (typeof window.switchActiveView === 'function') window.switchActiveView(view, nav);
+  }
+
+  function handleDashboardAction(action) {
+    if (action === 'work') openDashboardView('log-work', 'log-work');
+    if (action === 'history') openDashboardView('history', 'history');
+    if (action === 'vacation') openDashboardView('vacation', 'vacation');
+    if (action === 'scan') openDashboardView('ai-scan', 'ai-scan');
+    if (action === 'net' && typeof window.displayWorkTimeBreakdownSummary === 'function') window.displayWorkTimeBreakdownSummary();
+    if (action === 'overtime' && typeof window.displayOvertimeBreakdownSummary === 'function') window.displayOvertimeBreakdownSummary();
+  }
+
+  function renderDashboardActionHub() {
+    const dashboard = document.getElementById('view-dashboard');
+    if (!dashboard || document.getElementById('dashboard-action-hub')) return;
+    const hub = document.createElement('section');
+    hub.id = 'dashboard-action-hub';
+    hub.setAttribute('aria-labelledby', 'dashboard-action-hub-title');
+    hub.innerHTML = '<div class="dashboard-hub-heading"><div><span class="dashboard-hub-kicker" data-dashboard-copy="kicker"></span><h2 id="dashboard-action-hub-title" data-dashboard-copy="title"></h2><p class="dashboard-hub-description" data-dashboard-copy="description"></p></div></div><div class="dashboard-action-grid"><button type="button" class="dashboard-action-btn" data-action="work"><span class="dashboard-action-icon"><i class="fa-solid fa-pen-to-square"></i></span><span class="dashboard-action-label"><strong data-dashboard-copy="work"></strong><small data-dashboard-copy="work-hint"></small></span><i class="fa-solid fa-arrow-right dashboard-action-arrow"></i></button><button type="button" class="dashboard-action-btn" data-action="history"><span class="dashboard-action-icon"><i class="fa-solid fa-clock-rotate-left"></i></span><span class="dashboard-action-label"><strong data-dashboard-copy="history"></strong><small data-dashboard-copy="history-hint"></small></span><i class="fa-solid fa-arrow-right dashboard-action-arrow"></i></button><button type="button" class="dashboard-action-btn" data-action="vacation"><span class="dashboard-action-icon"><i class="fa-solid fa-umbrella-beach"></i></span><span class="dashboard-action-label"><strong data-dashboard-copy="vacation"></strong><small data-dashboard-copy="vacation-hint"></small></span><i class="fa-solid fa-arrow-right dashboard-action-arrow"></i></button><button type="button" class="dashboard-action-btn" data-action="scan"><span class="dashboard-action-icon"><i class="fa-solid fa-camera-retro"></i></span><span class="dashboard-action-label"><strong data-dashboard-copy="scan"></strong><small data-dashboard-copy="scan-hint"></small></span><i class="fa-solid fa-arrow-right dashboard-action-arrow"></i></button><button type="button" class="dashboard-action-btn" data-action="net"><span class="dashboard-action-icon"><i class="fa-solid fa-hourglass-half"></i></span><span class="dashboard-action-label"><strong data-dashboard-copy="net"></strong><small data-dashboard-copy="net-hint"></small></span><i class="fa-solid fa-arrow-up-right-from-square dashboard-action-arrow"></i></button><button type="button" class="dashboard-action-btn" data-action="overtime"><span class="dashboard-action-icon"><i class="fa-solid fa-arrow-trend-up"></i></span><span class="dashboard-action-label"><strong data-dashboard-copy="overtime"></strong><small data-dashboard-copy="overtime-hint"></small></span><i class="fa-solid fa-arrow-up-right-from-square dashboard-action-arrow"></i></button></div>';
+    hub.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => handleDashboardAction(button.dataset.action)));
+    const metrics = dashboard.querySelector('.metrics-grid');
+    if (metrics) metrics.insertAdjacentElement('afterend', hub);
+    else dashboard.querySelector('.panel-scroll-content')?.appendChild(hub);
+    setDashboardLanguage();
+  }
+
+  function initialize() {
+    renderDashboardActionHub();
+    const originalSetLanguage = window.setApplicationLanguage;
+    if (typeof originalSetLanguage === 'function' && !originalSetLanguage.__dashboardWrapped) {
+      const wrappedSetLanguage = function (langKey) {
+        const result = originalSetLanguage.apply(this, arguments);
+        setDashboardLanguage();
+        return result;
+      };
+      wrappedSetLanguage.__dashboardWrapped = true;
+      window.setApplicationLanguage = wrappedSetLanguage;
+    }
+    setDashboardLanguage();
+  }
+
+  document.addEventListener('DOMContentLoaded', initialize);
+})();
+</script>
 </head>
 <body>
+<script>
+(function () {
+  try {
+    var theme = localStorage.getItem('mso-theme') || 'dark';
+    document.documentElement.classList.toggle('dark-mode', theme !== 'light');
+    document.body.classList.toggle('dark-mode', theme !== 'light');
+  } catch (error) {
+    document.documentElement.classList.add('dark-mode');
+    document.body.classList.add('dark-mode');
+  }
+})();
+</script>
 
 <div id="landing-page">
   <nav class="lp-nav">
@@ -468,8 +830,8 @@
     <div class="lp-footer-copy">© 2026 MeineStunden.online · Professionelle Zeiterfassung für Handwerksbetriebe</div>
     <div class="lp-footer-dev">Developed by <span>Amran Hiluf</span> &amp; MeineStunden.online</div>
     <div class="lp-footer-links" style="margin-top:12px;font-size:11px;color:#475569;display:flex;gap:16px;justify-content:center;">
-      <a href="/impressum.html" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#E30613'" onmouseout="this.style.color=''">Impressum</a>
-      <a href="/datenschutz.html" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#E30613'" onmouseout="this.style.color=''">Datenschutzerklarung</a>
+      <a href="/impressum.html" class="lp-footer-link">Impressum</a>
+      <a href="/datenschutz.html" class="lp-footer-link">Datenschutzerkl&auml;rung</a>
     </div>
   </div>
 </div>
@@ -560,7 +922,7 @@
 <!-- Hidden legacy login -->
 <div id="login-view" class="login-container">
   <div class="login-card">
-    <div class="login-logo-canvas-wrap"><canvas id="login-logo-canvas"></canvas></div>
+    <div class="login-logo-canvas-wrap"><canvas id="login-logo-canvas" aria-label="Meine Stunden Online Logo" role="img"></canvas></div>
     <div class="portal-context-caption" id="lbl-login-sub">Mitarbeiter-Portal | Zeiterfassung</div>
     <form id="login-form">
       <div class="form-group" style="text-align:left;"><label id="lbl-login-user" for="username">Mitarbeitername</label><input type="text" id="username" placeholder="Name eingeben" autocomplete="off" required></div>
@@ -601,7 +963,10 @@
     <button class="menu-trigger-btn" onclick="toggleSidebarDrawer(true)"><i class="fa-solid fa-bars"></i></button>
     <div style="display:flex;align-items:center;gap:4px;">
       <span class="offline-badge" id="offline-queue-badge">● Offline</span>
-      <button class="dark-toggle-btn" id="dark-mode-btn" onclick="toggleDarkMode()" title="Dark/Light Mode">🌙</button>
+      <button type="button" id="theme-toggle-btn" class="theme-toggle-btn" onclick="toggleDarkMode()" aria-label="Helles Design aktivieren" aria-pressed="true" title="Helles Design aktivieren">
+        <i class="fa-solid fa-sun" aria-hidden="true"></i>
+        <span class="theme-toggle-label">Hell</span>
+      </button>
       <div class="lang-selector-wrapper">
         <button type="button" id="lang-btn-en" class="lang-btn" onclick="setApplicationLanguage('en')">EN</button>
         <button type="button" id="lang-btn-de" class="lang-btn active" onclick="setApplicationLanguage('de')">DE</button>
@@ -643,7 +1008,6 @@
         <span style="font-size:9px;background:#E30613;color:#fff;padding:2px 7px;border-radius:99px;margin-left:auto;font-weight:800;">NEU</span>
       </li>
       <li class="nav-item disabled"><i class="fa-solid fa-brain"></i><span>KI-Berichtsheft <span id="nav-lbl-soon" style="font-size:10px;color:var(--primary-red);">(Bald)</span></span></li>
-      <li id="nav-admin-link" class="nav-item" onclick="switchActiveView('admin-panel', this)" style="display:none;border-left:4px solid #f59e0b;background:rgba(245,158,11,0.05);border-radius:12px;"><i class="fa-solid fa-shield-halved" style="color:#d97706;"></i><span style="font-weight:700;color:#d97706;">Admin</span></li>
       <li class="nav-item" onclick="switchActiveView('settings', this)"><i class="fa-solid fa-sliders"></i><span id="nav-lbl-set">Konfigurationen</span></li>
       <li class="nav-item" onclick="handleSecureSignOutRequest()" style="margin-top:20px;border-top:1px solid rgba(0,0,0,0.06);padding-top:14px;"><i class="fa-solid fa-right-from-bracket" style="color:var(--primary-red);"></i><span id="nav-lbl-logout" style="color:var(--primary-red);">Abmelden</span></li>
     </ul>
@@ -793,57 +1157,6 @@
         </div>
       </div>
     </div>
-    <div id="view-admin-panel" class="content-panel">
-      <div class="panel-scroll-content">
-        <div class="premium-admin-wrapper">
-          <div class="admin-gold-badge"><i class="fa-solid fa-crown"></i> Admin</div>
-          <h2 style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px;letter-spacing:-0.5px;">Verwaltung</h2>
-          <p style="font-size:13px;color:var(--admin-text-muted);margin-bottom:24px;">Übersicht aller Mitarbeiterstunden.</p>
-          <div class="admin-metrics-row">
-            <div class="admin-metric-tile"><label>Gesamteinträge</label><div class="number-callout" id="admin-stat-total">0</div></div>
-            <div class="admin-metric-tile"><label>Aktive Mitarbeiter</label><div class="number-callout" id="admin-stat-users">0</div></div>
-            <div class="admin-metric-tile"><label>Gesamtstunden (Netto)</label><div class="number-callout" id="admin-stat-hours">0.00</div></div>
-          </div>
-          <div style="display:flex;gap:8px;margin-bottom:16px;">
-            <button type="button" id="admin-tab-overview" onclick="switchAdminView('overview')" style="flex:1;background:var(--admin-gold);border:none;color:#0f172a;padding:12px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-table-list" style="margin-right:6px;"></i>Übersicht</button>
-            <button type="button" id="admin-tab-employees" onclick="switchAdminView('employees')" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);color:var(--admin-text-main);padding:12px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-users" style="margin-right:6px;"></i>Mitarbeiter</button>
-          </div>
-          <div id="admin-view-overview">
-            <div class="admin-controls-bar">
-              <div style="color:#fff;font-size:12px;font-weight:700;white-space:nowrap;"><i class="fa-solid fa-filter" style="color:var(--admin-gold);margin-right:6px;"></i>FILTER:</div>
-              <select id="admin-user-filter-dropdown" onchange="runAdminTableRender()"><option value="ALL">Alle Mitarbeiter</option></select>
-              <select id="admin-type-filter" onchange="runAdminTableRender()"><option value="ALL">Alle Typen</option><option value="WORK">Arbeitsstunden</option><option value="VACATION">Urlaub</option><option value="SICK">Krankmeldungen</option></select>
-              <button type="button" onclick="refreshAdminData()" style="background:rgba(227,6,19,0.12);border:1px solid rgba(227,6,19,0.2);color:var(--admin-gold);padding:10px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;"><i class="fa-solid fa-rotate-right" style="margin-right:6px;"></i>Aktualisieren</button>
-            </div>
-            <div class="admin-table-scroll-shield">
-              <table class="admin-enterprise-table">
-                <thead><tr><th>Mitarbeiter</th><th>Datum</th><th>Typ</th><th>Baustelle/Kunde</th><th style="text-align:right;">Dauer</th></tr></thead>
-                <tbody id="admin-global-table-body"><tr><td colspan="5" style="text-align:center;padding:40px;color:var(--admin-text-muted);"><i class="fa-solid fa-circle-notch fa-spin" style="margin-right:8px;"></i>Laden...</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-          <div id="admin-view-employees" style="display:none;">
-            <div class="admin-controls-bar">
-              <select id="admin-employee-select" onchange="renderEmployeeDetail()"><option value="">-- Mitarbeiter auswählen --</option></select>
-              <button type="button" onclick="exportEmployeePDF()" id="btn-export-employee-pdf" style="background:var(--admin-gold);border:none;color:#0f172a;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;opacity:0.5;" disabled><i class="fa-solid fa-file-pdf" style="margin-right:6px;"></i>PDF</button>
-              <button type="button" onclick="exportAllEmployeesPDF()" style="background:rgba(192,57,43,0.9);border:none;color:#fff;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;"><i class="fa-solid fa-file-zipper" style="margin-right:6px;"></i>Alle PDFs</button>
-            </div>
-            <div id="employee-stats-cards" style="display:none;gap:12px;margin-bottom:20px;">
-              <div style="flex:1;background:linear-gradient(135deg,rgba(227,6,19,0.12),rgba(227,6,19,0.04));border:1px solid rgba(227,6,19,0.2);border-radius:12px;padding:16px;"><div style="font-size:10px;color:var(--admin-gold);font-weight:700;letter-spacing:1px;margin-bottom:4px;">MITARBEITER</div><div id="emp-stat-name" style="font-size:18px;color:#fff;font-weight:800;">-</div></div>
-              <div style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;"><div style="font-size:10px;color:var(--admin-text-muted);font-weight:700;letter-spacing:1px;margin-bottom:4px;">ARBEITSSTUNDEN</div><div id="emp-stat-hours" style="font-size:18px;color:var(--admin-gold);font-weight:800;">0.00 h</div></div>
-              <div style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;"><div style="font-size:10px;color:var(--admin-text-muted);font-weight:700;letter-spacing:1px;margin-bottom:4px;">URLAUBSTAGE</div><div id="emp-stat-vacation" style="font-size:18px;color:#3b82f6;font-weight:800;">0</div></div>
-              <div style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;"><div style="font-size:10px;color:var(--admin-text-muted);font-weight:700;letter-spacing:1px;margin-bottom:4px;">KRANKTAGE</div><div id="emp-stat-sick" style="font-size:18px;color:#ef4444;font-weight:800;">0</div></div>
-            </div>
-            <div class="admin-table-scroll-shield">
-              <table class="admin-enterprise-table">
-                <thead><tr><th>Datum</th><th>Typ</th><th>Projekt/Beschreibung</th><th>Startzeit</th><th>Endzeit</th><th style="text-align:right;">Dauer</th></tr></thead>
-                <tbody id="admin-employee-table-body"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--admin-text-muted);"><i class="fa-solid fa-user-clock" style="margin-right:8px;font-size:16px;"></i>Bitte Mitarbeiter auswählen.</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
     <div id="view-settings" class="content-panel">
       <div class="panel-scroll-content">
         <div class="view-title" id="lbl-set-title" style="margin-top:0;padding-top:0;">Einstellungen</div>
@@ -865,7 +1178,6 @@
             <button class="primary-btn" style="width:auto;padding:8px 14px;font-size:12px;background:#dc2626;" onclick="logoutOtherDevicesEngine()"><i class="fa-solid fa-right-from-bracket" style="margin-right:6px;"></i><span id="lbl-logout-others">Alle anderen Geräte abmelden</span></button>
           </div>
           <hr>
-          <label id="lbl-set-admin" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:8px;letter-spacing:0.6px;">Administration</label>
           <button type="button" id="btn-set-trash" class="primary-btn" style="background:#475569;" onclick="openHiddenTrashView()"><i class="fa-solid fa-trash-can" style="margin-right:8px;"></i>Papierkorb öffnen</button>
         </div>
         <div class="view-title" id="lbl-feedback-title" style="margin-top:28px;">Feedback</div>
@@ -902,7 +1214,6 @@
 <script src="js/cloud-store.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/app-user.js"></script>
-<script src="js/admin.js"></script>
 <script src="js/pdf-export.js"></script>
 <script src="js/features.js"></script>
 <script src="js/ai-scan.js"></script>
