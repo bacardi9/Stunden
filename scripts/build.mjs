@@ -1,5 +1,4 @@
-// Production build: the site is fully static (CDN libraries, no bundler),
-// so "building" means copying the served assets into dist/ for hosting.
+// Copy assets to dist
 import { cp, mkdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 

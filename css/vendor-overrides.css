@@ -1,11 +1,11 @@
-/* ── Clickable date field groups ── */
+/* Date fields */
 .form-group:has(input[type="date"]),
 .form-group:has(.flatpickr-input) { cursor: pointer; }
 .form-group:has(.flatpickr-input):hover label { color: var(--primary-blue) !important; }
 input[type="date"]::-webkit-calendar-picker-indicator { display: none !important; }
 input[type="date"] { cursor: pointer; }
 
-/* ── PREMIUM DATE INPUT FIELD ── */
+/* Date input */
 .flatpickr-wrapper { width: 100% !important; display: block !important; position: relative; }
 .flatpickr-input {
   cursor: pointer !important; width: 100% !important; caret-color: transparent;
@@ -30,12 +30,9 @@ input[type="date"] { cursor: pointer; }
 }
 .flatpickr-wrapper:hover::after { color: var(--primary-blue); }
 
-/* ════════════════════════════════════════════════════════
-   PREMIUM CALENDAR POPUP
-   High-specificity rules to beat flatpickr dark.css
-════════════════════════════════════════════════════════ */
+/* Calendar */
 
-/* Outer calendar shell */
+/* Shell */
 .flatpickr-calendar.flatpickr-calendar {
   background: #ffffff !important;
   border: 1px solid rgba(0,0,0,0.08) !important;
@@ -56,7 +53,7 @@ input[type="date"] { cursor: pointer; }
 .flatpickr-calendar.arrowBottom:before,
 .flatpickr-calendar.arrowBottom:after { display: none !important; }
 
-/* ── Force ALL inner containers to white (dark.css sets them #3f4458) ── */
+/* White bg */
 .flatpickr-calendar .flatpickr-innerContainer,
 .flatpickr-calendar .flatpickr-rContainer { background: #ffffff !important; }
 
@@ -76,7 +73,7 @@ input[type="date"] { cursor: pointer; }
   letter-spacing: 0.4px !important;
 }
 
-/* ── Red gradient month header ── */
+
 .flatpickr-calendar .flatpickr-months {
   background: linear-gradient(135deg, #E30613 0%, #b8000f 100%) !important;
   padding: 16px 12px 14px !important;
@@ -94,7 +91,7 @@ input[type="date"] { cursor: pointer; }
   font-weight: 800 !important;
   padding-top: 4px !important;
 }
-/* Year input */
+
 .flatpickr-calendar .flatpickr-current-month .numInputWrapper input.cur-year {
   color: #ffffff !important;
   font-weight: 800 !important;
@@ -105,7 +102,7 @@ input[type="date"] { cursor: pointer; }
 .flatpickr-calendar .flatpickr-current-month .numInputWrapper span.arrowDown:after { border-top-color: #fff !important; }
 .flatpickr-calendar .flatpickr-current-month .numInputWrapper:hover { background: rgba(255,255,255,0.12) !important; }
 
-/* Month dropdown pill on the red header */
+
 .flatpickr-calendar .flatpickr-current-month select.flatpickr-monthDropdown-months {
   background: rgba(255,255,255,0.16) !important;
   color: #ffffff !important;
@@ -121,14 +118,14 @@ input[type="date"] { cursor: pointer; }
 .flatpickr-calendar .flatpickr-current-month select.flatpickr-monthDropdown-months:hover {
   background: rgba(255,255,255,0.26) !important;
 }
-/* Native <option> items when dropdown opens */
+
 .flatpickr-calendar .flatpickr-current-month select.flatpickr-monthDropdown-months option {
   background: #ffffff !important;
   color: #0f172a !important;
   font-weight: 600 !important;
 }
 
-/* Prev / Next arrows */
+
 .flatpickr-calendar .flatpickr-prev-month,
 .flatpickr-calendar .flatpickr-next-month {
   background: rgba(255,255,255,0.15) !important;
@@ -145,7 +142,7 @@ input[type="date"] { cursor: pointer; }
 .flatpickr-calendar .flatpickr-prev-month svg,
 .flatpickr-calendar .flatpickr-next-month svg { fill: #ffffff !important; width: 12px !important; }
 
-/* ── Day cells ── */
+/* Days */
 .flatpickr-calendar .flatpickr-days { padding: 0 8px !important; width: 100% !important; }
 .flatpickr-calendar .dayContainer { width: 100% !important; min-width: 0 !important; max-width: none !important; }
 
@@ -199,7 +196,7 @@ input[type="date"] { cursor: pointer; }
 .flatpickr-calendar .flatpickr-day.flatpickr-disabled,
 .flatpickr-calendar .flatpickr-day.flatpickr-disabled:hover { color: #e2e8f0 !important; background: transparent !important; border-color: transparent !important; transform: none !important; }
 
-/* ── DARK THEME DATE FIELD + CALENDAR ── */
+/* Dark */
 html.dark-mode .flatpickr-input,
 body.dark-mode .flatpickr-input {
   color: #d9dee7 !important;

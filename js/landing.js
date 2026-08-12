@@ -14,7 +14,7 @@ function showLandingPage() {
   setShellVisibility('landing-page');
 }
 
-// ── TRIAL REGISTRATION ────────────────────────────────────────────
+
 
 let _trialEmail = '';
 
@@ -69,7 +69,6 @@ async function startTrialRegistration() {
 
   setModalMessage('reg-step1-msg', '', '');
 
-  // Show step 2 (OTP panel)
   document.getElementById('reg-tab-1')?.classList.remove('active');
   document.getElementById('reg-tab-2')?.classList.add('active');
   document.getElementById('reg-panel-1')?.classList.remove('active');
@@ -120,7 +119,6 @@ async function verifyOtpAndCreateTrialAccount() {
 
     if (msgEl) { msgEl.textContent = 'Konto erstellt! Anmeldung ...'; msgEl.className = 'modal-msg success'; }
 
-    // Sign in with the new account
     const credential = await auth.signInWithEmailAndPassword(_trialEmail, password);
 
     localStorage.setItem('schuermann_auth_user', credential.user.uid);
@@ -132,7 +130,6 @@ async function verifyOtpAndCreateTrialAccount() {
     closeRegisterModal();
     showUserApplication(credential.user);
 
-    // Show trial welcome toast
     const trialEnd = result?.data?.trialEndsAt ? new Date(result.data.trialEndsAt) : null;
     if (trialEnd && typeof showToast === 'function') {
       const daysLeft = Math.ceil((trialEnd - Date.now()) / (24 * 60 * 60 * 1000));
@@ -162,7 +159,7 @@ function regGoToStep1FromTrial() {
   if (panel3) { panel3.classList.remove('active'); panel3.style.display = 'none'; }
 }
 
-// ── TRIAL BANNER & MANAGEMENT ─────────────────────────────────────
+
 
 async function updateTrialBanner() {
   if (!auth.currentUser) return;
@@ -179,14 +176,11 @@ async function updateTrialBanner() {
 
     if (!trialBanner || !trialExpired) return;
 
-    // Hide both by default
     trialBanner.style.display = 'none';
     trialExpired.style.display = 'none';
 
-    // If subscription is active, no trial banner
     if (profile.subscriptionActive) return;
 
-    // No trial data
     if (!profile.trialActive || !profile.trialEndsAt) return;
 
     const trialEnd = profile.trialEndsAt.toDate ? profile.trialEndsAt.toDate() : new Date(profile.trialEndsAt);
@@ -194,11 +188,9 @@ async function updateTrialBanner() {
     const daysLeft = Math.ceil((trialEnd - now) / (24 * 60 * 60 * 1000));
 
     if (daysLeft <= 0) {
-      // Trial expired
       trialExpired.style.display = 'block';
       if (expiredText) expiredText.textContent = `Deine Testphase ist am ${trialEnd.toLocaleDateString('de-DE')} abgelaufen.`;
     } else {
-      // Trial active
       trialBanner.style.display = 'block';
       if (trialText) {
         if (daysLeft === 1) {
@@ -258,7 +250,7 @@ async function startSubscriptionFromTrial() {
   }
 }
 
-// ── AUTH STATE CHANGE ─────────────────────────────────────────────
+
 
 function showUserApplication(user) {
   setShellVisibility('app-view');

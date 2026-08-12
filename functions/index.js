@@ -388,7 +388,7 @@ exports.createBillingPortalSession = onCall({
   };
 });
 
-// ── TRIAL & OTP ──────────────────────────────────────────────────
+
 
 function generateOtp() {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -443,7 +443,6 @@ exports.sendRegistrationOtp = onCall({
     );
   }
 
-  // Rate-limit: check if OTP was sent in the last 60 seconds
   const existingDoc = await db.collection("otpCodes").doc(email).get();
 
   if (existingDoc.exists) {
@@ -499,7 +498,6 @@ exports.verifyOtpAndCreateAccount = onCall({
     );
   }
 
-  // Verify OTP
   const otpDoc = await db.collection("otpCodes").doc(normalizedEmail).get();
 
   if (!otpDoc.exists) {
@@ -532,7 +530,6 @@ exports.verifyOtpAndCreateAccount = onCall({
     );
   }
 
-  // Check if email already registered in Firebase Auth
   try {
     await admin.auth().getUserByEmail(normalizedEmail);
 
@@ -542,13 +539,10 @@ exports.verifyOtpAndCreateAccount = onCall({
     );
   } catch (error) {
     if (error instanceof HttpsError) throw error;
-    // auth/user-not-found is expected — continue
   }
 
-  // Mark OTP as used
   await db.collection("otpCodes").doc(normalizedEmail).update({ used: true });
 
-  // Create Firebase Auth user
   const userRecord = await admin.auth().createUser({
     email: normalizedEmail,
     password,
@@ -559,7 +553,6 @@ exports.verifyOtpAndCreateAccount = onCall({
   const uid = userRecord.uid;
   const trialEndsAt = new Date(Date.now() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000);
 
-  // Create Firestore profile with trial
   await db.collection("userProfiles").doc(uid).set({
     uid,
     name,
@@ -578,7 +571,6 @@ exports.verifyOtpAndCreateAccount = onCall({
     updatedAt: admin.firestore.FieldValue.serverTimestamp()
   });
 
-  // Send welcome email
   try {
     const resend = getResend();
     const daysText = `${TRIAL_DURATION_DAYS} Tage`;
@@ -609,7 +601,6 @@ exports.verifyOtpAndCreateAccount = onCall({
     });
   } catch (emailError) {
     console.warn("Welcome email failed:", emailError);
-    // Non-fatal: account is already created
   }
 
   return {
@@ -630,7 +621,6 @@ exports.sendTrialReminders = onSchedule({
   const twoDaysFromNow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
   const fourDaysFromNow = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000);
 
-  // Find users whose trial ends in 2-4 days and haven't subscribed yet
   const snapshot = await db.collection("userProfiles")
     .where("trialActive", "==", true)
     .where("subscriptionActive", "==", false)
@@ -660,7 +650,6 @@ exports.sendTrialReminders = onSchedule({
 
     const daysLeft = Math.ceil((trialEnd - now.toDate()) / (24 * 60 * 60 * 1000));
 
-    // Only remind when 2-3 days left
     if (daysLeft < 1 || daysLeft > 3) continue;
 
     const daysText = daysLeft === 1 ? "morgen" : `in ${daysLeft} Tagen`;
@@ -704,7 +693,7 @@ exports.sendTrialReminders = onSchedule({
   console.log(`Trial reminders: ${sent} sent, ${failed} failed.`);
 });
 
-// ── STRIPE HELPERS ────────────────────────────────────────────────
+
 
 async function getSubscriptionUid(stripe, subscription) {
   if (subscription.metadata?.firebaseUid) {
@@ -783,7 +772,6 @@ async function updateSubscriptionProfile(
       admin.firestore.FieldValue.serverTimestamp();
   }
 
-  // When subscription becomes active, clear trial state
   if (subscriptionActive) {
     update.trialActive = false;
     update.trialEndsAt = null;

@@ -46,7 +46,7 @@
   "name": "Meine Stunden Online",
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
-  "description": "Professionelle Zeiterfassung für Handwerksbetriebe. Stundenzettel erfassen, Überstunden berechnen, PDFs exportieren.",
+  "description": "Zeiterfassung für Handwerksbetriebe. Stundenzettel erfassen, Überstunden berechnen, PDFs exportieren.",
   "offers": {
     "@type": "Offer",
     "price": "2.99",
@@ -56,7 +56,7 @@
 }
 </script>
 <style id="dashboard-enterprise-theme">
-/* Enterprise dashboard surface: intentionally scoped to the authenticated overview. */
+
 html.dark-mode #view-dashboard,
 body.dark-mode #view-dashboard {
   position: relative;
@@ -400,8 +400,8 @@ body.dark-mode #view-dashboard .metric-card label { color: #fb7185 !important; }
       historyHint: 'Einträge und PDFs ansehen',
       vacation: 'Urlaub & Fehlzeiten',
       vacationHint: 'Abwesenheiten verwalten',
-      scan: 'KI-Scan öffnen',
-      scanHint: 'Stundenzettel automatisch erfassen',
+      scan: 'Stundenzettel-Scan öffnen',
+      scanHint: 'Vorschau für neue Einträge öffnen',
       net: 'Netto-Arbeitszeit anzeigen',
       netHint: 'Tagesaufstellung und Einträge',
       overtime: 'Überstunden prüfen',
@@ -422,8 +422,8 @@ body.dark-mode #view-dashboard .metric-card label { color: #fb7185 !important; }
       historyHint: 'Review entries and PDFs',
       vacation: 'Leave & absences',
       vacationHint: 'Manage absences',
-      scan: 'Open AI scan',
-      scanHint: 'Capture a timesheet automatically',
+      scan: 'Open timesheet scan',
+      scanHint: 'Review a timesheet preview',
       net: 'View net work time',
       netHint: 'Daily breakdown and entries',
       overtime: 'Review overtime',
@@ -540,11 +540,11 @@ body.dark-mode #view-dashboard .metric-card label { color: #fb7185 !important; }
   <section class="lp-hero" style="padding-bottom: 28px;">
     <div class="lp-hero-badge">
       <i class="fa-solid fa-circle" style="font-size:7px;color:#E30613;"></i>
-      Professionelle Zeiterfassung für Handwerksbetriebe
+      Zeiterfassung für Handwerksbetriebe
       <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(16,185,129,0.15);color:#10b981;font-size:11px;font-weight:800;padding:3px 10px;border-radius:99px;margin-left:10px;border:1px solid rgba(16,185,129,0.25);">🎁 7 Tage gratis</span>
     </div>
-    <h1>Deine Arbeitszeit.<br><span>Automatisch erfasst.</span></h1>
-    <p style="margin-bottom:28px;">Stundenzettel erfassen, Überstunden berechnen, fehlende Tage erkennen und professionelle PDFs exportieren — <strong style="color:#10b981;">7 Tage kostenlos testen</strong>, danach nur 2,99 € pro Monat. Keine Kreditkarte nötig.</p>
+    <h1>Arbeitszeit erfassen.<br><span>Klar dokumentiert.</span></h1>
+    <p style="margin-bottom:28px;">Arbeitszeiten, Pausen und Überstunden in einem klaren System dokumentieren. <strong style="color:#10b981;">7 Tage kostenlos testen</strong>, danach 2,99 € pro Monat. Keine Kreditkarte nötig.</p>
     <div class="lp-hero-btns">
       <button class="lp-hero-btn-main" onclick="openRegisterModal('trial')">
         <i class="fa-solid fa-gift"></i> 7 Tage kostenlos testen
@@ -561,7 +561,7 @@ body.dark-mode #view-dashboard .metric-card label { color: #fb7185 !important; }
   <div class="lp-intro">
     <div class="lp-intro-item">
       <div class="lp-intro-icon" style="background:rgba(239,68,68,0.12);"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i></div>
-      <div class="lp-intro-text"><h4>Fehlende Tage automatisch erkannt</h4><p>Die App zeigt dir jeden Morgen welche Arbeitstage noch fehlen — direkt dort nachbuchen.</p></div>
+      <div class="lp-intro-text"><h4>Fehlende Tage erkennen</h4><p>Du siehst sofort, welche Arbeitstage noch fehlen, und kannst sie direkt nachtragen.</p></div>
     </div>
     <div class="lp-intro-item">
       <div class="lp-intro-icon" style="background:rgba(14,165,233,0.12);"><i class="fa-solid fa-chart-column" style="color:#0ea5e9;"></i></div>
@@ -569,23 +569,23 @@ body.dark-mode #view-dashboard .metric-card label { color: #fb7185 !important; }
     </div>
     <div class="lp-intro-item">
       <div class="lp-intro-icon" style="background:rgba(227,6,19,0.12);"><i class="fa-solid fa-wand-magic-sparkles" style="color:#E30613;"></i></div>
-      <div class="lp-intro-text"><h4>KI-Stundenzettel Scan</h4><p>Foto vom handgeschriebenen Zettel machen — Gemini AI trägt alles automatisch ein.</p></div>
+      <div class="lp-intro-text"><h4>Stundenzettel-Scan</h4><p>Foto auswählen, Vorschau prüfen und erst danach Daten übernehmen.</p></div>
     </div>
     <div class="lp-intro-item">
       <div class="lp-intro-icon" style="background:rgba(192,57,43,0.12);"><i class="fa-solid fa-file-pdf" style="color:#c0392b;"></i></div>
-      <div class="lp-intro-text"><h4>PDF mit deinem Firmennamen</h4><p>Auf Knopfdruck ein professioneller Stundenzettel-PDF mit deinem Betriebsnamen.</p></div>
+      <div class="lp-intro-text"><h4>PDF mit deinem Betriebsnamen</h4><p>Ein sauberer Arbeitsbericht mit deinem Betriebsnamen — bereit für die Weitergabe.</p></div>
     </div>
   </div>
 
   <section class="lp-showcase">
     <div class="lp-showcase-label">So sieht's aus</div>
-    <h2 class="lp-showcase-title">Echte Features. Live im Einsatz.</h2>
-    <p class="lp-showcase-sub">Kein Marketing-Blabla — sieh selbst wie die App aussieht und was sie kann.</p>
+    <h2 class="lp-showcase-title">Die wichtigsten Abläufe auf einen Blick</h2>
+    <p class="lp-showcase-sub">Klare Ansichten für Erfassung, Prüfung und Export.</p>
 
     <div class="lp-feature-row">
       <div class="lp-feature-row-text">
         <div class="lp-feature-row-badge" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;"><i class="fa-solid fa-triangle-exclamation" style="font-size:10px;"></i> Nie wieder vergessen</div>
-        <h3 class="lp-feature-row-title">Fehlende Tage werden<br>automatisch erkannt</h3>
+        <h3 class="lp-feature-row-title">Fehlende Tage werden<br>sofort sichtbar</h3>
         <p class="lp-feature-row-desc">Die App prüft jeden Morgen welche Arbeitstage noch nicht erfasst sind.</p>
         <ul class="lp-feature-row-bullets">
           <li><i class="fa-solid fa-check"></i> Alle fehlenden Werktage auf einen Blick</li>
@@ -675,25 +675,25 @@ body.dark-mode #view-dashboard .metric-card label { color: #fb7185 !important; }
 
     <div class="lp-feature-row">
       <div class="lp-feature-row-text">
-        <div class="lp-feature-row-badge" style="background:rgba(227,6,19,0.12);border:1px solid rgba(227,6,19,0.25);color:#fca5a5;"><i class="fa-solid fa-wand-magic-sparkles" style="font-size:10px;"></i> KI-Technologie</div>
-        <h3 class="lp-feature-row-title">Handzettel fotografieren —<br>KI trägt alles ein</h3>
-        <p class="lp-feature-row-desc">Gemini AI liest Datum, Zeiten, Baustelle und Pausen automatisch aus.</p>
+        <div class="lp-feature-row-badge" style="background:rgba(227,6,19,0.12);border:1px solid rgba(227,6,19,0.25);color:#fca5a5;"><i class="fa-solid fa-wand-magic-sparkles" style="font-size:10px;"></i> Stundenzettel-Scan</div>
+        <h3 class="lp-feature-row-title">Stundenzettel digital prüfen<br>und sauber übernehmen</h3>
+        <p class="lp-feature-row-desc">Fotos und erkannte Angaben vor der Übernahme kontrollieren. Die automatische Auswertung wird erst nach sicherer Dienstanbindung aktiviert.</p>
         <ul class="lp-feature-row-bullets">
-          <li><i class="fa-solid fa-check"></i> Bis zu 10 Fotos gleichzeitig scannen</li>
-          <li><i class="fa-solid fa-check"></i> Kamera direkt aus der App nutzen</li>
-          <li><i class="fa-solid fa-check"></i> Alle Felder vor dem Speichern prüfbar</li>
-          <li><i class="fa-solid fa-check"></i> Überschneidungen werden automatisch erkannt</li>
+          <li><i class="fa-solid fa-check"></i> Fotos auswählen und in der Vorschau prüfen</li>
+          <li><i class="fa-solid fa-check"></i> Kamera oder Galerie direkt aus der App öffnen</li>
+          <li><i class="fa-solid fa-check"></i> Keine Angaben ohne deine Bestätigung übernehmen</li>
+          <li><i class="fa-solid fa-check"></i> Die Vorschau vor dem Speichern sorgfältig kontrollieren</li>
         </ul>
       </div>
       <div class="lp-feature-row-mock">
         <div class="lp-phone">
-          <div class="lp-phone-bar"><div class="lp-phone-bar-title"><i class="fa-solid fa-camera-retro" style="color:#E30613;margin-right:6px;font-size:10px;"></i>KI-Stundenzettel Scan</div><span style="font-size:9px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);color:#10b981;padding:2px 8px;border-radius:6px;font-weight:800;">✓ Analyse fertig</span></div>
+          <div class="lp-phone-bar"><div class="lp-phone-bar-title"><i class="fa-solid fa-camera-retro" style="color:#E30613;margin-right:6px;font-size:10px;"></i>Stundenzettel-Scan</div><span style="font-size:9px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);color:#10b981;padding:2px 8px;border-radius:6px;font-weight:800;">Vorschau bereit</span></div>
           <div class="lp-phone-body">
             <div class="mock-ai-card">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
                 <div style="width:22px;height:22px;background:linear-gradient(135deg,#E30613,#b8000f);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;">1</div>
                 <span style="font-size:10px;font-weight:700;color:#f1f5f9;">Eintrag 1</span>
-                <div class="mock-ai-badge"><i class="fa-solid fa-check" style="font-size:8px;"></i>Sicher</div>
+                <div class="mock-ai-badge"><i class="fa-solid fa-check" style="font-size:8px;"></i>Zu prüfen</div>
               </div>
               <div class="mock-ai-field-row">
                 <div class="mock-ai-field"><div class="mock-ai-field-label">Datum</div><div class="mock-ai-field-val">10/06/2025</div></div>
@@ -706,7 +706,7 @@ body.dark-mode #view-dashboard .metric-card label { color: #fb7185 !important; }
               </div>
               <div style="text-align:center;font-size:10px;font-weight:700;color:#10b981;margin-top:8px;background:rgba(16,185,129,0.06);border-radius:6px;padding:5px;">⏱ Netto: 8.75 h (30 min Pause)</div>
             </div>
-            <button style="width:100%;background:linear-gradient(135deg,#E30613,#b8000f);border:none;color:#fff;padding:10px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;"><i class="fa-solid fa-check" style="margin-right:5px;"></i>Alle bestätigten Einträge hinzufügen</button>
+            <button style="width:100%;background:linear-gradient(135deg,#E30613,#b8000f);border:none;color:#fff;padding:10px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;"><i class="fa-solid fa-check" style="margin-right:5px;"></i>Nach Prüfung übernehmen</button>
           </div>
         </div>
       </div>
@@ -760,7 +760,7 @@ body.dark-mode #view-dashboard .metric-card label { color: #fb7185 !important; }
       </div>
       <div class="lp-feature-row-mock">
         <div class="lp-phone">
-          <div class="lp-phone-bar"><div class="lp-phone-bar-title"><i class="fa-solid fa-chart-simple" style="color:#f59e0b;margin-right:6px;font-size:10px;"></i>Dashboard</div><div style="display:flex;gap:4px;align-items:center;"><div style="width:6px;height:6px;background:#10b981;border-radius:50%;box-shadow:0 0 5px #10b981;"></div><span style="font-size:9px;color:#475569;font-weight:700;">Cloud Sync</span></div></div>
+          <div class="lp-phone-bar"><div class="lp-phone-bar-title"><i class="fa-solid fa-chart-simple" style="color:#f59e0b;margin-right:6px;font-size:10px;"></i>Dashboard</div><div style="display:flex;gap:4px;align-items:center;"><div style="width:6px;height:6px;background:#10b981;border-radius:50%;box-shadow:0 0 5px #10b981;"></div><span style="font-size:9px;color:#475569;font-weight:700;">Cloud-Sync</span></div></div>
           <div class="lp-phone-body">
             <div class="mock-streak-card"><div class="mock-streak-flame">🔥</div><div><div class="mock-streak-num">12 Tage</div><div class="mock-streak-lbl">Aktuelle Serie</div></div><div class="mock-streak-best"><div class="mock-streak-best-num">18 Tage</div><div class="mock-streak-best-lbl">Bestleistung</div></div></div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
@@ -776,7 +776,7 @@ body.dark-mode #view-dashboard .metric-card label { color: #fb7185 !important; }
   <div class="lp-stats-bar">
     <div class="lp-stat-item"><div class="lp-stat-num">2<span>,99</span></div><div class="lp-stat-lbl">Euro pro Monat</div></div>
     <div class="lp-stat-item"><div class="lp-stat-num"><span>∞</span></div><div class="lp-stat-lbl">Jederzeit kündbar</div></div>
-    <div class="lp-stat-item"><div class="lp-stat-num">10<span>+</span></div><div class="lp-stat-lbl">Premium Features</div></div>
+    <div class="lp-stat-item"><div class="lp-stat-num">10<span>+</span></div><div class="lp-stat-lbl">Funktionen</div></div>
     <div class="lp-stat-item"><div class="lp-stat-num"><span>0</span></div><div class="lp-stat-lbl">Einrichtungskosten</div></div>
   </div>
 

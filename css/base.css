@@ -43,7 +43,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Luxury ambient background */
+/* Ambient */
 body::before {
   content: "";
   position: fixed;
@@ -67,7 +67,7 @@ body::after {
   z-index: 0;
 }
 
-/* ── LOGIN ── */
+/* Login */
 .login-container {
   display: flex;
   flex-direction: column;
@@ -91,7 +91,7 @@ body::after {
   filter: blur(0px);
 }
 
-/* Animated orbs */
+/* Orbs */
 .login-container::after {
   content: "";
   position: absolute;
@@ -127,7 +127,7 @@ body::after {
   z-index: 2;
 }
 
-/* Red shimmer bar atop card */
+/* Shimmer */
 .login-card::before {
   content: "";
   position: absolute;
@@ -150,7 +150,7 @@ body::after {
   letter-spacing: 0.3px;
 }
 
-/* Login form labels */
+/* Labels */
 .login-card .form-group label {
   color: rgba(148,163,184,0.9) !important;
   font-size: 11px !important;
@@ -177,7 +177,7 @@ body::after {
 
 .login-card input::placeholder { color: rgba(148,163,184,0.4) !important; }
 
-/* ── APP HEADER ── */
+/* Header */
 .app-header {
   display: flex;
   align-items: center;
@@ -231,7 +231,7 @@ body::after {
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
 
-/* ── SIDEBAR DRAWER ── */
+/* Drawer */
 .sidebar-drawer {
   position: fixed;
   top: 0; left: -300px;
@@ -321,7 +321,7 @@ body::after {
 .nav-item.disabled:hover { background: none; color: #94a3b8; transform: none; }
 .nav-item.disabled i { color: #cbd5e1; }
 
-/* ── MAIN LAYOUT ── */
+/* Layout */
 main {
   padding: 20px;
   max-width: 640px;
@@ -348,7 +348,7 @@ main {
   letter-spacing: -0.5px;
 }
 
-/* ── DASHBOARD ── */
+/* Dashboard */
 .dash-centered-logo-wrapper {
   display: flex;
   align-items: center;
@@ -368,7 +368,7 @@ main {
 .backup-status-dot.online  { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
 .backup-status-dot.offline { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
 
-/* ── METRIC CARDS ── */
+/* Metrics */
 .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
 
 .metric-card {
@@ -417,7 +417,7 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── APP CARDS ── */
+/* Cards */
 .app-card {
   background: rgba(255,255,255,0.88);
   backdrop-filter: blur(12px);
@@ -441,7 +441,7 @@ main {
   pointer-events: none;
 }
 
-/* ── FORMS ── */
+/* Forms */
 .form-group { margin-bottom: 18px; }
 
 .form-group label {
@@ -479,7 +479,7 @@ input:focus, select:focus, textarea:focus {
   background: #fff;
 }
 
-/* ── TOGGLE SWITCH ── */
+/* Toggle */
 .toggle-switch-row {
   display: flex;
   background: rgba(0,0,0,0.05);
@@ -507,7 +507,7 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* ── BREAK PILLS ── */
+/* Pills */
 .break-options-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
 .break-pill {
   background: rgba(0,0,0,0.05);
@@ -529,7 +529,7 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 2px 8px rgba(227,6,19,0.1);
 }
 
-/* ── PRIMARY BUTTON ── */
+/* Button */
 .primary-btn {
   display: block;
   width: 100%;
@@ -568,7 +568,7 @@ input:focus, select:focus, textarea:focus {
 .primary-btn.red-btn { background: var(--primary-red); }
 .primary-btn:disabled { background: #94a3b8 !important; cursor: not-allowed; box-shadow: none !important; transform: none !important; }
 
-/* ── HISTORY ITEMS ── */
+/* History */
 .history-item {
   background: rgba(255,255,255,0.88);
   backdrop-filter: blur(8px);
@@ -614,7 +614,7 @@ input:focus, select:focus, textarea:focus {
 }
 .restore-btn:hover { background: rgba(14,165,233,0.14); }
 
-/* ── INLINE EDIT ── */
+/* Edit */
 .inline-edit-box {
   background: rgba(248,250,252,0.9);
   border: 1.5px dashed #cbd5e1;
@@ -626,7 +626,7 @@ input:focus, select:focus, textarea:focus {
 .inline-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .inline-btn { border: none; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; }
 
-/* ── MODAL ── */
+/* Modal */
 .custom-modal-backdrop {
   display: none;
   position: fixed;
@@ -722,7 +722,7 @@ input:focus, select:focus, textarea:focus {
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* ── TOAST ── */
+/* Toast */
 #toast-notification {
   position: fixed;
   top: 24px;
@@ -746,7 +746,7 @@ input:focus, select:focus, textarea:focus {
 }
 #toast-notification.show { transform: translateX(-50%) translateY(0); }
 
-/* ── SIGNATURE ── */
+/* Signature */
 .developer-signature {
   font-size: 9px;
   text-transform: uppercase;
@@ -758,7 +758,7 @@ input:focus, select:focus, textarea:focus {
   padding-top: 25px;
 }
 
-/* ── MESSAGES ── */
+/* Messages */
 .message { margin-top: 14px; font-size: 13px; font-weight: 600; text-align: center; display: none; }
 .message.error   { color: #dc2626; display: block; }
 .message.success { color: #16a34a; display: block; }
@@ -766,7 +766,7 @@ input:focus, select:focus, textarea:focus {
 #pdf-custom-header { display: none; padding-bottom: 15px; border-bottom: 2px dashed #000; margin-bottom: 20px; }
 .pdf-meta-line { font-size: 12px; margin-top: 4px; color: #444; }
 
-/* ── AUTOCOMPLETE ── */
+/* Autocomplete */
 .autocomplete-wrapper { position: relative; }
 .autocomplete-list {
   position: absolute;
@@ -799,7 +799,7 @@ input:focus, select:focus, textarea:focus {
 .autocomplete-item i { color: #94a3b8; font-size: 11px; }
 
 
-/* ── OFFLINE BADGE ── */
+/* Offline */
 .offline-badge {
   display: none;
   background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -812,7 +812,7 @@ input:focus, select:focus, textarea:focus {
 }
 .offline-badge.visible { display: inline-block; }
 
-/* ── HEADER LOGO ── */
+/* Logo */
 .header-logo-img { height: 30px; max-width: 110px; object-fit: contain; display: none; }
 .header-logo-text { display: block; }
 body.has-logo .header-logo-img { display: block; }
@@ -822,16 +822,13 @@ body.dark-mode .header-logo-text > div:first-child,
 html.dark-mode .dash-centered-logo-wrapper div[style*="color:#1e293b"],
 body.dark-mode .dash-centered-logo-wrapper div[style*="color:#1e293b"] { color: #dfe3e9 !important; }
 
-/* ── ANIMATIONS ── */
+/* Animations */
 @keyframes countPulse { 0%{transform:scale(1)} 50%{transform:scale(1.05)} 100%{transform:scale(1)} }
 .count-animate { animation: countPulse 0.4s ease-out; }@media (max-width: 768px) {
     main { padding: 14px !important; }
 }
 
-/* ══════════════════════════════════════════════════════════
-   PREMIUM DARK THEME
-   Black graphite surfaces, restrained red energy, readable type.
-══════════════════════════════════════════════════════════ */
+/* Dark */
 html.dark-mode,
 body.dark-mode {
   color-scheme: dark;
@@ -866,7 +863,7 @@ body.dark-mode::after {
   background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.025) 1px, transparent 0);
 }
 
-/* Header and theme control */
+
 html.dark-mode .app-header,
 body.dark-mode .app-header {
   background: rgba(9,10,13,0.84);
@@ -918,7 +915,7 @@ body.dark-mode .menu-trigger-btn:hover { background: rgba(227,6,19,0.14); color:
 html.dark-mode .lang-btn { color: #7f8998; }
 html.dark-mode .lang-btn.active { background: rgba(255,255,255,0.12); color: #fda4af; box-shadow: 0 1px 6px rgba(0,0,0,0.35); }
 
-/* Drawer and navigation */
+
 html.dark-mode .sidebar-drawer,
 body.dark-mode .sidebar-drawer {
   background: rgba(13,15,19,0.97);
@@ -952,7 +949,7 @@ body.dark-mode .nav-item.disabled i { color: #4b5563; }
 html.dark-mode .drawer-nav-list,
 body.dark-mode .drawer-nav-list { scrollbar-color: #343943 transparent; }
 
-/* Graphite app surfaces */
+/* Surfaces */
 html.dark-mode .metric-card,
 body.dark-mode .metric-card,
 html.dark-mode .app-card,
@@ -988,7 +985,7 @@ body.dark-mode .metric-card label,
 html.dark-mode .form-group label,
 body.dark-mode .form-group label { color: #8993a3; }
 
-/* Dark form controls: no white flash on focus */
+/* Dark form */
 html.dark-mode input[type="text"], html.dark-mode input[type="date"], html.dark-mode input[type="password"],
 html.dark-mode input[type="number"], html.dark-mode input[type="email"], html.dark-mode input[type="time"],
 html.dark-mode input[type="tel"], html.dark-mode input[type="url"], html.dark-mode select, html.dark-mode textarea,
@@ -1019,7 +1016,7 @@ body.dark-mode .break-pill { background: rgba(255,255,255,0.045); color: #9aa4b3
 html.dark-mode .break-pill.active,
 body.dark-mode .break-pill.active { background: rgba(227,6,19,0.14); color: #fda4af; border-color: rgba(227,6,19,0.44); }
 
-/* Dialogs, dropdowns and feedback surfaces */
+/* Dialogs */
 html.dark-mode .custom-report-modal,
 body.dark-mode .custom-report-modal,
 html.dark-mode .autocomplete-list,

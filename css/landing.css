@@ -1,10 +1,3 @@
-/* ══════════════════════════════════════════════════════════
-   LANDING PAGE + MODAL STYLES
-══════════════════════════════════════════════════════════ */
-
-/* REMOVED: #app-view, #admin-full-view, #login-view display:none rules */
-/* These are now controlled ONLY by JavaScript to prevent mobile override issues */
-
 #landing-page { display: block; }
 
 #landing-page {
@@ -24,7 +17,7 @@
   background-size: 28px 28px;
 }
 
-/* ── NAV ── */
+/* Nav */
 .lp-nav {
   position: sticky; top: 0; z-index: 500;
   display: flex; align-items: center; justify-content: space-between;
@@ -49,7 +42,7 @@
 }
 .lp-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(227,6,19,0.5); }
 
-/* ── HERO ── */
+/* Hero */
 .lp-hero {
   position: relative; z-index: 1;
   padding: 56px 20px 40px;
@@ -94,9 +87,7 @@
 
 .lp-trust-strip { display: none; }
 
-/* ══════════════════════════════════════════════════════════
-   QUICK INTRO CARDS
-══════════════════════════════════════════════════════════ */
+/* Intro */
 .lp-intro {
   position: relative; z-index: 1;
   max-width: 780px; margin: 0 auto;
@@ -122,9 +113,7 @@
 .lp-intro-text h4 { font-size: 12px; font-weight: 800; color: #f1f5f9; margin-bottom: 4px; line-height: 1.3; }
 .lp-intro-text p  { font-size: 11px; color: #64748b; line-height: 1.5; }
 
-/* ══════════════════════════════════════════════════════════
-   FEATURE SHOWCASE
-══════════════════════════════════════════════════════════ */
+/* Showcase */
 .lp-showcase {
   position: relative; z-index: 1;
   padding: 20px 16px 60px;
@@ -207,14 +196,14 @@
 .mock-streak-best-lbl { font-size: 9px; color: #334155; font-weight: 600; }
 .lp-showcase-divider { border: none; border-top: 1px solid rgba(255,255,255,0.04); margin: 0 0 64px; }
 
-/* ── STATS BAR ── */
+/* Stats */
 .lp-stats-bar { position: relative; z-index: 1; background: rgba(255,255,255,0.02); border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 28px 20px; display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
 .lp-stat-item { text-align: center; }
 .lp-stat-num { font-size: 28px; font-weight: 900; color: #fff; letter-spacing: -1.5px; line-height: 1; }
 .lp-stat-num span { color: #E30613; }
 .lp-stat-lbl { font-size: 10px; font-weight: 600; color: #475569; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
 
-/* ── MOCKUP SECTION ── */
+/* Mockup */
 .lp-mockup-section { position: relative; z-index: 1; padding: 0 20px 60px; display: flex; justify-content: center; }
 .lp-mockup-frame { width: 100%; max-width: 340px; background: rgba(10,16,32,0.95); border-radius: 24px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 50px rgba(227,6,19,0.06); }
 .lp-mockup-notch { width: 80px; height: 5px; background: rgba(255,255,255,0.08); border-radius: 99px; margin: 12px auto 0; }
@@ -239,7 +228,7 @@
 .lp-mockup-entry-hrs   { font-size: 11px; font-weight: 800; color: #0ea5e9; white-space: nowrap; margin-left: 8px; }
 .lp-mockup-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.2); padding: 3px 10px; border-radius: 99px; font-size: 9px; font-weight: 700; color: #10b981; margin-top: 6px; }
 
-/* ── FEATURES GRID ── */
+/* Features */
 .lp-features { position: relative; z-index: 1; padding: 60px 16px; max-width: 1000px; margin: 0 auto; }
 .lp-section-label { text-align: center; font-size: 11px; font-weight: 800; color: #E30613; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
 .lp-section-title { text-align: center; font-size: clamp(22px,4vw,36px); font-weight: 900; color: #fff; letter-spacing: -1px; margin-bottom: 10px; line-height: 1.15; }
@@ -253,7 +242,7 @@
 .lp-feature-title { font-size: 14px; font-weight: 800; color: #f1f5f9; margin-bottom: 7px; line-height: 1.2; }
 .lp-feature-desc  { font-size: 12px; color: #64748b; line-height: 1.6; }
 
-/* ── HOW IT WORKS ── */
+/* How */
 .lp-how { position: relative; z-index: 1; padding: 10px 16px 60px; max-width: 900px; margin: 0 auto; }
 .lp-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 40px; }
 .lp-step { text-align: center; padding: 24px 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 14px; }
@@ -261,7 +250,7 @@
 .lp-step h4 { font-size: 14px; font-weight: 800; color: #f1f5f9; margin-bottom: 7px; }
 .lp-step p  { font-size: 12px; color: #64748b; line-height: 1.6; }
 
-/* ── CTA BOTTOM ── */
+/* CTA */
 .lp-cta-bottom { position: relative; z-index: 1; margin: 0 16px 60px; padding: 44px 24px; background: linear-gradient(135deg, rgba(227,6,19,0.1) 0%, rgba(14,165,233,0.05) 100%); border: 1px solid rgba(227,6,19,0.2); border-radius: 20px; text-align: center; max-width: 700px; margin-left: auto; margin-right: auto; overflow: hidden; }
 .lp-cta-bottom::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #E30613 30%, #E30613 70%, transparent); }
 .lp-cta-bottom h2 { font-size: clamp(20px,4vw,30px); font-weight: 900; color: #fff; letter-spacing: -0.8px; margin-bottom: 10px; }
@@ -269,7 +258,7 @@
 .lp-cta-price-badge { display: inline-block; background: rgba(227,6,19,0.15); border: 1px solid rgba(227,6,19,0.3); color: #fca5a5; font-size: 26px; font-weight: 900; padding: 7px 22px; border-radius: 12px; margin-bottom: 20px; letter-spacing: -1px; }
 .lp-cta-price-badge span { font-size: 12px; font-weight: 600; color: #94a3b8; display: block; letter-spacing: 0; margin-top: 2px; }
 
-/* ── FOOTER ── */
+/* Footer */
 .lp-footer { position: relative; z-index: 1; padding: 32px 20px 40px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center; }
 .lp-footer-brand { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 10px; }
 .lp-footer-brand-text { font-size: 16px; font-weight: 900; letter-spacing: -0.4px; color: #fff; line-height: 1; }
@@ -279,9 +268,7 @@
 .lp-footer-dev { font-size: 11px; color: #475569; font-weight: 600; }
 .lp-footer-dev span { color: #E30613; font-weight: 700; }
 
-/* ══════════════════════════════════════════════════════════
-   LOGIN MODAL
-══════════════════════════════════════════════════════════ */
+/* Login */
 #modal-login-backdrop, #modal-register-backdrop {
   position: fixed; inset: 0; background: rgba(3,6,15,0.88);
   backdrop-filter: blur(20px) saturate(140%); z-index: 2000;
@@ -312,9 +299,7 @@
 .modal-msg.error   { color: #ef4444; }
 .modal-msg.success { color: #10b981; }
 
-/* ══════════════════════════════════════════════════════════
-   REGISTER MODAL
-══════════════════════════════════════════════════════════ */
+/* Register */
 .modal-register-box { width: 100%; max-width: 520px; background: rgba(10,16,32,0.99); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.06); animation: modalEntrance 0.28s cubic-bezier(0.16,1,0.3,1); position: relative; max-height: 92vh; overflow-y: auto; }
 .modal-register-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, #E30613 30%, #ff6b6b 50%, #E30613 70%, transparent); z-index: 1; }
 .reg-steps { display: flex; padding: 20px 24px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -349,7 +334,7 @@
 .reg-back-link { text-align: center; margin-top: 12px; font-size: 12px; color: #475569; }
 .reg-back-link a { color: #64748b; cursor: pointer; text-decoration: underline; }
 
-/* ── Shared globals ── */
+/* Shared */
 .login-logo-canvas-wrap { display: flex; align-items: center; justify-content: center; width: 100%; padding: 8px 0 28px; user-select: none; }
 #login-logo-canvas { display: block; pointer-events: none; user-select: none; filter: drop-shadow(0 0 20px rgba(227,6,19,0.2)); }
 .portal-context-caption { color: rgba(100,116,139,0.75) !important; }
@@ -388,9 +373,7 @@ input[type="password"]::placeholder { letter-spacing: 0; }
 .ai-scanning-spinner { width:56px; height:56px; border:3px solid rgba(227,6,19,0.15); border-top-color:#E30613; border-radius:50%; animation:aiSpin 0.75s linear infinite; }
 @keyframes aiSpin { to { transform:rotate(360deg); } }
 
-/* ════════════════════════════════════
-   MOBILE
-════════════════════════════════════ */
+/* Mobile */
 @media (max-width: 600px) {
   .lp-nav { padding: 12px 14px; }
   .lp-nav-brand-main { font-size: 13px; }
@@ -431,7 +414,7 @@ input[type="password"]::placeholder { letter-spacing: 0; }
   .lp-features-grid { grid-template-columns: 1fr 1fr; }
 }
 
-/* Footer legal links */
+
 .lp-footer-link { color: #64748b; text-decoration: none; transition: color 0.2s; }
 .lp-footer-link:hover { color: #E30613; }
 
@@ -442,14 +425,10 @@ input[type="password"]::placeholder { letter-spacing: 0; }
 
 
 
-/* FOCUS VISIBILITY */
+
 *:focus-visible { outline: 2px solid #E30613; outline-offset: 2px; }
 
-/* ══════════════════════════════════════════════════════════
-   PUBLIC EXPERIENCE — MATCH THE PREMIUM GRAPHITE THEME
-   The first impression and the signed-in workspace now share
-   one visual language: graphite, warm red energy, quiet type.
-══════════════════════════════════════════════════════════ */
+/* Theme */
 #landing-page {
   background: #07080b;
   color: #dfe3e9;
@@ -512,7 +491,7 @@ input[type="password"]::placeholder { letter-spacing: 0; }
 .lp-phone-bar,
 .lp-mockup-header { background: rgba(7,8,11,0.95); }
 
-/* Registration and login should feel like one product, not a separate page. */
+
 #modal-login-backdrop,
 #modal-register-backdrop { background: rgba(2,3,5,0.84); }
 .modal-login-box,
@@ -543,4 +522,96 @@ input[type="password"]::placeholder { letter-spacing: 0; }
 
 @media (max-width: 600px) {
   .lp-nav { background: rgba(9,10,13,0.94); }
+}
+
+/* Polish */
+#landing-page {
+  background: #080a0d;
+  color: #d7dce3;
+}
+#landing-page::before {
+  background: radial-gradient(ellipse 70% 45% at 8% 0%, rgba(227,6,19,0.09), transparent 62%), #080a0d;
+}
+#landing-page::after { display: none; }
+.lp-nav {
+  background: rgba(8,10,13,0.97);
+  backdrop-filter: none;
+  box-shadow: none;
+}
+.lp-hero-badge { animation: none; box-shadow: none; }
+.lp-btn-primary,
+.lp-hero-btn-main,
+.modal-login-btn,
+.reg-next-btn,
+.reg-pay-btn {
+  background: #c90b18;
+  box-shadow: none;
+}
+.lp-btn-primary:hover,
+.lp-hero-btn-main:hover,
+.modal-login-btn:hover,
+.reg-next-btn:hover,
+.reg-pay-btn:hover { transform: none; box-shadow: 0 0 0 3px rgba(201,11,24,0.18); }
+.lp-btn-ghost,
+.lp-hero-btn-secondary { transition: background-color .18s, border-color .18s, color .18s; }
+.lp-hero-btn-secondary[style] { background: rgba(255,255,255,0.045) !important; border-color: rgba(255,255,255,0.11) !important; color: #d9dee7 !important; }
+.lp-intro-item,
+.lp-feature-card,
+.lp-step,
+.lp-phone,
+.lp-mockup-frame,
+.lp-cta-bottom,
+.modal-login-box,
+.modal-register-box {
+  background: #101318;
+  box-shadow: none;
+}
+.lp-intro-item:hover,
+.lp-feature-card:hover {
+  background: #14181e;
+  border-color: rgba(227,6,19,0.35);
+  transform: none;
+  box-shadow: none;
+}
+.lp-feature-card.featured { background: #151114; }
+.lp-feature-card.featured::before { content: none; }
+.lp-cta-bottom { border-color: rgba(227,6,19,0.28); }
+.lp-cta-bottom::before { background: #c90b18; }
+.lp-mockup-frame,
+.lp-phone { border-color: rgba(255,255,255,0.1); }
+.mock-streak-flame,
+.lp-mockup-bar,
+.lp-feature-row-mock [style*="animation"] { animation: none !important; }
+.lp-step-num { background: #c90b18; box-shadow: none; }
+#landing-page .lp-intro-icon,
+#landing-page .lp-feature-icon {
+  background: rgba(201,11,24,0.1) !important;
+  border: 1px solid rgba(227,6,19,0.18);
+}
+#landing-page .lp-intro-icon i,
+#landing-page .lp-feature-icon i { color: #fb7185 !important; }
+#landing-page .lp-feature-row-badge {
+  background: rgba(201,11,24,0.1) !important;
+  border-color: rgba(227,6,19,0.22) !important;
+  color: #fda4af !important;
+}
+#landing-page .lp-feature-row-badge i { color: #fb7185 !important; }
+#landing-page .lp-feature-row-bullets li i { color: #fb7185; }
+#landing-page .lp-feature-title,
+#landing-page .lp-intro-text h4,
+#landing-page .lp-step h4 { font-weight: 700; }
+#landing-page .lp-hero h1,
+#landing-page .lp-showcase-title,
+#landing-page .lp-section-title,
+#landing-page .lp-cta-bottom h2 { font-weight: 750; }
+#landing-page .lp-hero h1 span { color: #fb7185; }
+#landing-page .lp-cta-price-badge { background: rgba(201,11,24,0.12); border-color: rgba(227,6,19,0.28); }
+#modal-login-backdrop,
+#modal-register-backdrop { backdrop-filter: none; }
+.modal-login-box,
+.modal-register-box { border-color: rgba(227,6,19,0.22); }
+.reg-price-block { background: #151114; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }

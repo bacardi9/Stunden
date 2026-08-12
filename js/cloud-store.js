@@ -40,7 +40,7 @@ const TRASH_FIELD_NAMES = [
   'trashItems'
 ];
 
-// ── CHECK FIREBASE READY ──────────────────────────────────────────
+
 function waitForFirebaseReady() {
   return new Promise(resolve => {
     if (typeof firebase === 'undefined' || !firebase.auth || !firebase.firestore) {
@@ -52,10 +52,8 @@ function waitForFirebaseReady() {
   });
 }
 
-// Wait for Firebase on page load
 document.addEventListener('DOMContentLoaded', async function() {
   await waitForFirebaseReady();
-  // Monitor auth state changes
   auth.onAuthStateChanged(user => {
     if (user) {
       loadUserDataFromCloud().catch(e => console.warn('Auto-load failed:', e));
@@ -340,7 +338,7 @@ async function persistUserDataNow() {
     dataToSave[_cloudFieldNames.trash] =
       currentData.trash;
 
-    // merge:true preserves all other existing profile fields.
+    // merge:true
     await profileRef.set(dataToSave, {
       merge: true
     });

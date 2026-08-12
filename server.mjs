@@ -1,5 +1,4 @@
-// Minimal dependency-free static file server for the Stunden app.
-// Binds to 0.0.0.0 and uses the PORT injected by the platform.
+// Static server
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
@@ -30,7 +29,7 @@ function resolvePath(urlPath) {
   const decoded = decodeURIComponent(urlPath);
   const clean = decoded === "/" ? "/index.html" : decoded;
   const filePath = normalize(join(ROOT, clean));
-  if (!filePath.startsWith(ROOT)) return null; // prevent traversal
+  if (!filePath.startsWith(ROOT)) return null;
   return filePath;
 }
 
