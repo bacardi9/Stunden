@@ -1,5 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
 :root {
   --primary-red: #E30613;
   --primary-red-glow: rgba(227,6,19,0.35);
@@ -10,6 +9,12 @@
   --card-border: rgba(220,215,205,0.6);
   --text-main: #0f172a;
   --text-muted: #64748b;
+  --admin-dark: #020617;
+  --admin-card: #070d1a;
+  --admin-gold: #E30613;
+  --admin-border: #0f1f3a;
+  --admin-text-main: #f1f5f9;
+  --admin-text-muted: #64748b;
   --warm-glow: rgba(227,6,19,0.06);
   --surface-1: rgba(255,255,255,0.85);
   --surface-2: rgba(248,250,252,0.9);
@@ -22,7 +27,6 @@
   --radius-lg: 18px;
   --radius-xl: 24px;
 }
-
 * {
   box-sizing: border-box;
   margin: 0;
