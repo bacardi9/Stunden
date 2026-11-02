@@ -23,15 +23,17 @@ const uiTranslations = {
     pdfSub:'Generated via Automated Core Metrics Engine',
     setTitle:'System Settings', setAllowed:'Allowed Vacation Days (Annual)',
     setConstraint:'Daily Shift Target (Hours)', setThreshold:'Auto Break Threshold (Hours)',
+    setDisclaimer:'Altering operational constants is restricted to administrative roles.',
+    setAdmin:'Administrative Controls',
     setTrashBtn:'Open Trash Bin (Recent Deletions)',
     trashTitle:'Recently Deleted Items',
     trashDisclaimer:'Items are cached temporarily and purged after a strict 12-hour limit.',
     feedbackTitle:'Provide System Feedback',
     feedbackDesc:'Message directly to IT Development Team',
     feedbackPlh:'Share recommendations, bugs, or feature requests...',
-    feedbackNote:"<i class='fa-solid fa-circle-info' style='margin-right:4px;color:#94a3b8;'></i> Your feedback will be sent securely to the developer.",
+    feedbackNote: "<i class='fa-solid fa-circle-info' style='margin-right:4px;color:#94a3b8;'></i> Your feedback will be sent securely to the developer.",
     feedbackBtn:'Send Feedback',
-    feedbackSending:'Sending feedback...', feedbackDone:"<i class='fa-solid fa-circle-check'></i> Feedback sent!",
+    feedbackSending:'Sending feedback...', feedbackDone: "<i class='fa-solid fa-circle-check'></i> Feedback sent!",
     modalAck:'Acknowledge', modalOtTitle:'Overtime Statement', modalWorkTitle:'Net Work Time Statement',
     modalLeaveTitle:'Leave & Absence Statement',
     noOtMsg:'No overtime hours in this period.', noWorkMsg:'No work hours logged.',
@@ -41,7 +43,19 @@ const uiTranslations = {
     lblDay:'Day', lblBreak:'Break', lblDays:'days',
     lblYearlyAllow:'Yearly Entitlement:', lblVacConsumed:'Vacation Taken:',
     lblNetVac:'Remaining Balance:', lblTotalSick:'Total Sick Days:',
-    noAbsLogs:'No absence logs found.', comingSoon:'(Coming soon)'
+    noAbsLogs:'No absence logs found.', comingSoon:'(Coming soon)',
+    pricingHeroBadge: 'Only €2.99/mo',
+    pricingHeroSub: 'Track timesheets, calculate overtime, detect missing days, and export professional PDFs — all in one app for just €2.99 per month.',
+    pricingCtaButton: 'Start now — €2.99/mo',
+    pricingRegLabel: 'Affordable monthly subscription · All premium features included',
+    pricingRegPayBtn: 'Start subscription — only €2.99/mo',
+    adminLoading: 'Loading...', adminNoEntries: 'No entries found.', adminSelectEmployee: '-- Select employee --',
+    adminPleaseSelect: 'Please select an employee.', adminConfirmExportAll: 'Create PDFs for all employees? This may take several minutes.',
+    adminExportSuccess: 'PDFs created', adminExportFailed: 'Export failed', adminDataRefreshed: 'Data refreshed',
+    aiScanMaxFiles: 'Maximum 10 photos allowed', aiScanFileTooLarge: 'is too large (max 10 MB)',
+    aiScanNoPhotos: 'Please upload at least one photo', aiScanFailed: 'Analysis failed: ',
+    aiScanReset: 'AI Scan reset', aiScanNoEntriesToAdd: 'No entries to add', aiScanNoValidEntries: 'No valid entries to add',
+    subInactiveMsg: 'Your subscription is currently inactive. Please reactivate to continue logging work hours.'
   },
   de: {
     loginSub:'Mitarbeiter-Portal | Zeiterfassung', loginUser:'Mitarbeitername', loginUserPlh:'Name eingeben',
@@ -67,15 +81,17 @@ const uiTranslations = {
     pdfSub:'Erstellt am',
     setTitle:'Einstellungen', setAllowed:'Urlaubsanspruch Tage (Jahr)',
     setConstraint:'Soll-Arbeitszeit (Std)', setThreshold:'Pausenregel Schwellenwert (Std)',
+    setDisclaimer:'Systemparameter können nur von autorisierten Nutzern geändert werden.',
+    setAdmin:'Administration',
     setTrashBtn:'Papierkorb öffnen',
     trashTitle:'Papierkorb',
     trashDisclaimer:'Gelöschte Einträge werden nach 12 Stunden endgültig entfernt.',
     feedbackTitle:'Feedback senden',
     feedbackDesc:'Nachricht an den Entwickler',
     feedbackPlh:'Vorschläge, Fehler oder Änderungswünsche...',
-    feedbackNote:"<i class='fa-solid fa-circle-info' style='margin-right:4px;color:#94a3b8;'></i> Ihre Nachricht wird direkt an den Entwickler weitergeleitet.",
+    feedbackNote: "<i class='fa-solid fa-circle-info' style='margin-right:4px;color:#94a3b8;'></i> Ihre Nachricht wird direkt an den Entwickler weitergeleitet.",
     feedbackBtn:'Feedback senden',
-    feedbackSending:'Wird gesendet...', feedbackDone:"<i class='fa-solid fa-circle-check'></i> Feedback gesendet.",
+    feedbackSending:'Wird gesendet...', feedbackDone: "<i class='fa-solid fa-circle-check'></i> Feedback gesendet.",
     modalAck:'Bestätigen', modalOtTitle:'Überstunden', modalWorkTitle:'Netto-Arbeitszeit',
     modalLeaveTitle:'Urlaub & Fehlzeiten',
     noOtMsg:'Keine Überstunden im aktuellen Zeitraum.', noWorkMsg:'Keine Arbeitsstunden erfasst.',
@@ -85,7 +101,19 @@ const uiTranslations = {
     lblDay:'Tag', lblBreak:'Pause', lblDays:'Tage',
     lblYearlyAllow:'Jahresanspruch:', lblVacConsumed:'Genommene Tage:',
     lblNetVac:'Resturlaub:', lblTotalSick:'Kranktage gesamt:',
-    noAbsLogs:'Keine Fehlzeiten eingetragen.', comingSoon:'(Bald verfügbar)'
+    noAbsLogs:'Keine Fehlzeiten eingetragen.', comingSoon:'(Bald verfügbar)',
+    pricingHeroBadge: 'Nur 2,99 €/Monat',
+    pricingHeroSub: 'Stundenzettel erfassen, Überstunden berechnen, fehlende Tage erkennen und professionelle PDFs exportieren — alles in einer App für nur 2,99 € pro Monat.',
+    pricingCtaButton: 'Jetzt starten — 2,99 €/Monat',
+    pricingRegLabel: 'Günstiges Monatsabo · Alle Premium-Features inklusive',
+    pricingRegPayBtn: 'Abo starten — nur 2,99 €/Monat',
+    adminLoading: 'Laden...', adminNoEntries: 'Keine Einträge gefunden.', adminSelectEmployee: '-- Mitarbeiter auswählen --',
+    adminPleaseSelect: 'Bitte Mitarbeiter auswählen.', adminConfirmExportAll: 'PDFs für alle Mitarbeiter erstellen? Dies kann mehrere Minuten dauern.',
+    adminExportSuccess: 'PDFs erstellt', adminExportFailed: 'Export fehlgeschlagen', adminDataRefreshed: 'Daten aktualisiert',
+    aiScanMaxFiles: 'Maximal 10 Fotos erlaubt', aiScanFileTooLarge: 'ist zu groß (max 10 MB)',
+    aiScanNoPhotos: 'Bitte mindestens ein Foto hochladen', aiScanFailed: 'Analyse fehlgeschlagen: ',
+    aiScanReset: 'KI-Scan zurückgesetzt', aiScanNoEntriesToAdd: 'Keine Einträge zum Hinzufügen', aiScanNoValidEntries: 'Keine gültigen Einträge zum Hinzufügen',
+    subInactiveMsg: 'Ihr Abonnement ist derzeit inaktiv. Bitte aktivieren Sie es erneut, um weiterhin Arbeitszeiten zu erfassen.'
   }
 };
 
@@ -94,19 +122,15 @@ function setApplicationLanguage(langKey) {
   document.getElementById('lang-btn-en').classList.toggle('active', langKey === 'en');
   document.getElementById('lang-btn-de').classList.toggle('active', langKey === 'de');
   const t = uiTranslations[langKey];
-
   safeSet('lbl-login-sub', t.loginSub); safeSet('lbl-login-user', t.loginUser);
   safeAttr('username', 'placeholder', t.loginUserPlh); safeSet('lbl-login-pass', t.loginPass);
   safeAttr('passcode', 'placeholder', t.loginPassPlh); safeSet('btn-login-submit', t.loginSubmit);
-
   safeSet('nav-lbl-dash', t.navDash); safeSet('nav-lbl-log', t.navLog);
   safeSet('nav-lbl-vac', t.navVac); safeSet('nav-lbl-hist', t.navHist);
   safeSet('nav-lbl-set', t.navSet); safeSet('nav-lbl-logout', t.navLogout);
   safeSet('nav-lbl-soon', t.comingSoon);
-
   safeSet('lbl-dash-welcome', t.dashWelcome); safeSet('lbl-dash-title', t.dashTitle);
   safeSet('lbl-card-gross', t.cardGross); safeSet('lbl-card-overtime', t.cardOvertime);
-
   safeSet('lbl-log-title', t.logTitle); safeSet('lbl-form-date', t.formDate);
   safeSet('lbl-form-project', t.formProject); safeAttr('log-project-name', 'placeholder', t.formProjectPlh);
   safeSet('lbl-form-start', t.formStart); safeSet('lbl-form-end', t.formEnd);
@@ -114,21 +138,19 @@ function setApplicationLanguage(langKey) {
   safeAttr('log-notes', 'placeholder', t.formNotesPlh); safeSet('btn-form-save', t.formSave);
   const pills = document.querySelectorAll('.break-pill');
   if (pills[0]) pills[0].textContent = (langKey === 'de') ? 'Keine' : 'None';
-
   safeSet('lbl-vac-title', t.vacTitle); safeSet('toggle-leave-vacation', t.vacToggleV);
   safeSet('toggle-leave-sick', t.vacToggleS); safeSet('lbl-vac-from-date', t.vacDateFrom);
   safeSet('lbl-vac-to-date', t.vacDateTo);
   const stmtBtn = document.getElementById('btn-leave-statement');
   if (stmtBtn) stmtBtn.innerHTML = `<i class="fa-solid fa-file-invoice" style="margin-right:8px;"></i>${t.leaveStatementBtn}`;
-
   safeSet('lbl-hist-title', t.histTitle);
   const histExportBtn = document.getElementById('btn-hist-export');
   if (histExportBtn) histExportBtn.innerHTML = `<i class="fa-solid fa-file-pdf" style="margin-right:6px;"></i>${t.histExport}`;
   safeSet('pdf-lbl-sub', t.pdfSub);
   const pdfMeta = document.getElementById('pdf-user-metadata');
   if (pdfMeta) pdfMeta.textContent = `${t.pdfMeta} ${localStorage.getItem('schuermann_current_user') || authenticatedUserGlobal}`;
-
   safeSet('lbl-set-title', t.setTitle); safeSet('lbl-set-allowed', t.setAllowed);
+  safeSet('lbl-set-disclaimer', t.setDisclaimer); safeSet('lbl-set-admin', t.setAdmin);
   safeSet('btn-set-trash', t.setTrashBtn); safeSet('lbl-trash-title', t.trashTitle);
   safeSet('lbl-trash-disclaimer', t.trashDisclaimer); safeSet('lbl-feedback-title', t.feedbackTitle);
   safeSet('lbl-feedback-input-desc', t.feedbackDesc);
@@ -138,7 +160,6 @@ function setApplicationLanguage(langKey) {
   const feedBtn = document.getElementById('btn-feedback-submit');
   if (feedBtn && !feedBtn.disabled) feedBtn.textContent = t.feedbackBtn;
   safeSet('btn-modal-close', t.modalAck);
-
   setLeaveManagementType(activeLeaveSubManagementType);
   renderHistoricalRecordsSheet();
   renderVacationRecordsSheet();
