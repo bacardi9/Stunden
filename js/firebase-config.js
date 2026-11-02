@@ -8,7 +8,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-const db   = firebase.firestore();
+const db = firebase.firestore();
 
 function sanitizeHTML(str) {
   const el = document.createElement('div');
@@ -16,12 +16,15 @@ function sanitizeHTML(str) {
   return el.innerHTML;
 }
 
-let authenticatedUserGlobal      = '';
-let activeLanguageGlobal         = 'de';
+let authenticatedUserGlobal = '';
+let authenticatedUserRoleGlobal = 'user';
+let activeLanguageGlobal = 'de';
 let activeLeaveSubManagementType = 'vacation';
 let activeSelectedFormBreakDuration = 0;
 let globalLoggedSessionsDatabaseMock = [];
-let vacationLoggedDaysArrayCache     = [];
-let recentlyDeletedItemsBinCache     = [];
-let dailyWorkTimeBreakdownLogs       = {};
-let dailyOvertimeBreakdownLogs       = {};
+let vacationLoggedDaysArrayCache = [];
+let recentlyDeletedItemsBinCache = [];
+let dailyWorkTimeBreakdownLogs = {};
+let dailyOvertimeBreakdownLogs = {};
+let adminAllEntriesCache = [];
+let adminVacAllowanceCache = {};
