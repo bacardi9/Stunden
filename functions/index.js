@@ -990,3 +990,46 @@ exports.stripeWebhook = onRequest({
       .send("Webhook processing failed");
   }
 });
+// ── NEW: Gemini AI Proxy (removes API key friction for users) ──
+const geminiApiKey = defineSecret("GEMINI_API_KEY");
+
+exports.proxyGeminiScan = onCall({
+  secrets: [geminiApiKey],
+  consumeAppCheckToken: false
+}, async (request) => {
+  const { uid } = requireUser(request);
+
+  const profileSnapshot = await db.collection("userProfiles").doc(uid).get();
+  const profile = profileSnapshot.data() || {};
+
+  if (!profile.subscriptionActive && !profile.trialActive) {
+    throw new HttpsError("permission-denied", "Active subscription required for AI Scan.");
+  }
+
+  const { imageBase64, prompt } = request.data;
+  if (!imageBase64) {
+    throw new HttpsError("invalid-argument", "Missing image data.");
+  }
+
+  const apiKey = geminiApiKey.value();
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          { text: prompt || "Extract timesheet data as JSON." },
+          { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } }
+        ]
+      }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 500 }
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new HttpsError("internal", `Gemini API Error: ${response.status} - ${errorText}`);
+  }
+
+  return await response.json();
+});
